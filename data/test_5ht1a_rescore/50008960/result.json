@@ -1,0 +1,22 @@
+{
+  "molecule_id": 50008960,
+  "smiles": "COc1cc(\\C=C\\c2cc(C)no2)ccc1O",
+  "experimental_pactivity": 4.920818753952375,
+  "original_vina_kcal": -7.474,
+  "success": true,
+  "new_vina_kcal": -7.462,
+  "all_vina_scores": [
+    -7.462,
+    -7.327,
+    -7.058,
+    -6.966,
+    -6.827,
+    -6.684,
+    -6.412,
+    -6.393,
+    -6.39
+  ],
+  "ml_score_a": 6.577141761779785,
+  "ml_score_null": 6.452996253967285,
+  "ml_delta": 0.1241455078125
+}

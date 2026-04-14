@@ -1,0 +1,29 @@
+{
+  "name": "moldesign-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "3dmol": "^2.5.4",
+    "autoprefixer": "^10.4.27",
+    "ketcher-react": "^3.12.0",
+    "ketcher-standalone": "^3.12.0",
+    "next": "14.2.25",
+    "postcss": "^8.5.8",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tailwindcss": "^4.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.14.0",
+    "@types/react": "18.3.21",
+    "@types/react-dom": "18.3.7",
+    "typescript": "5.8.3"
+  }
+}

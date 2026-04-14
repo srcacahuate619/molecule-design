@@ -1,0 +1,22 @@
+{
+  "molecule_id": 50260468,
+  "smiles": "CN1C=CC(C=C1)C1NC(=CN1c1ccc(cc1)S(N)(=O)=O)C(Cl)(Cl)Cl |c:2,5,10|",
+  "experimental_pactivity": 4.920818753952375,
+  "original_vina_kcal": -7.777,
+  "success": true,
+  "new_vina_kcal": -7.304,
+  "all_vina_scores": [
+    -7.304,
+    -7.296,
+    -7.241,
+    -7.237,
+    -6.964,
+    -6.954,
+    -6.918,
+    -6.825,
+    -6.621
+  ],
+  "ml_score_a": 7.585337162017822,
+  "ml_score_null": 8.655430793762207,
+  "ml_delta": -1.0700936317443848
+}

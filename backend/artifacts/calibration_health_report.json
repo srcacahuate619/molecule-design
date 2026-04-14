@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-04-05T04:40:57.266202+00:00",
+  "registry_hash": "fd0737dc988ac83a397e33467d598da5f3d318373022b845e7b52695a299fca0",
+  "overall_status": "warning",
+  "n_checks": 6,
+  "n_pass": 4,
+  "n_warning": 1,
+  "n_fail": 0,
+  "n_unable": 0,
+  "checks": [
+    {
+      "check_name": "parameter_staleness",
+      "status": "pass",
+      "severity": "info",
+      "message": "All parameters are within their freshness window.",
+      "details": {},
+      "recommendation": null,
+      "evidence": null
+    },
+    {
+      "check_name": "normalization_coverage",
+      "status": "pass",
+      "severity": "info",
+      "message": "Normalization range covers all observed benchmark affinities.",
+      "details": {
+        "normalization_range": [
+          -10.0,
+          -4.0
+        ],
+        "observed_range": [
+          -6.98,
+          -5.814
+        ],
+        "range_utilization": 0.194
+      },
+      "recommendation": null,
+      "evidence": null
+    },
+    {
+      "check_name": "grid_adequacy",
+      "status": "pass",
+      "severity": "info",
+      "message": "Grid size 25.0 Å is adequate for drug-like molecules.",
+      "details": {
+        "grid_size": [
+          25.0,
+          25.0,
+          25.0
+        ]
+      },
+      "recommendation": null,
+      "evidence": null
+    },
+    {
+      "check_name": "panel_quality",
+      "status": "warning",
+      "severity": "medium",
+      "message": "Panel has 1 quality issue(s).",
+      "details": {
+        "n_molecules": 40,
+        "p_activity_range": 3.778,
+        "tier_counts": {
+          "strong_lt_100nM": 13,
+          "moderate_100nM_10uM": 14,
+          "weak_gt_10uM": 13
+        },
+        "issues": [
+          "Activity range is 3.78 log units (recommended >= 4.0). Narrow range limits discriminative power of Spearman correlation."
+        ]
+      },
+      "recommendation": "Expand panel with fetch_bindingdb_5ht1a_panel.py --limit 40 --affinity-cutoff-nm 1000000",
+      "evidence": null
+    },
+    {
+      "check_name": "software_versions",
+      "status": "pass",
+      "severity": "info",
+      "message": "All critical software packages are available.",
+      "details": {
+        "versions": {
+          "rdkit": "2025.09.6",
+          "meeko": "0.7.1",
+          "numpy": "2.4.4"
+        }
+      },
+      "recommendation": null,
+      "evidence": "Version tracking is essential for reproducibility. If any version changes, recalibration should be considered."
+    },
+    {
+      "check_name": "better_pdb_structure",
+      "status": "skipped",
+      "severity": "info",
+      "message": "Check requires network access. Use run_all_checks() for full evaluation.",
+      "details": {},
+      "recommendation": null,
+      "evidence": null
+    }
+  ]
+}

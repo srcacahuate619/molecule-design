@@ -1,0 +1,35 @@
+# railway.toml
+# Configuración de deploy para Railway.
+#
+# Railway lee este archivo desde la raíz del repositorio.
+# Cada [service.*] corresponde a un contenedor distinto en Railway.
+#
+# Documentación: https://docs.railway.app/reference/config-as-code
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "backend/Dockerfile"
+
+# ── Servicios ──────────────────────────────────────────────────────────────
+# Railway puede leer un docker-compose.yml directamente,
+# pero railway.toml da más control sobre healthchecks y restart policies.
+
+[deploy]
+startCommand = "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+# Railway inyecta $PORT automáticamente — no hardcodees 8000 aquí.
+# El valor real en producción suele ser 8080, pero Railway lo gestiona.
+
+healthcheckPath = "/health"
+healthcheckTimeout = 30       # segundos antes de marcar el deploy como fallido
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[deploy.envVars]
+# Variables que Railway provee automáticamente al conectar servicios:
+#   DATABASE_URL  → al conectar el plugin PostgreSQL
+#   REDIS_URL     → al conectar el plugin Redis
+# Las demás se configuran manualmente en el dashboard de Railway
+# o en el archivo .env de Railway (railway variables set KEY=VALUE)
+
+ENVIRONMENT = "production"
+LOG_LEVEL = "INFO"

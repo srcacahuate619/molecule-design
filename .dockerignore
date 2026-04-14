@@ -1,0 +1,47 @@
+# =============================================================================
+# .dockerignore — Reduce build context for Docker images
+# =============================================================================
+
+# Version control
+.git
+.gitignore
+
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+
+# Frontend (not needed for backend or rescoring images)
+frontend/node_modules
+frontend/.next
+frontend/out
+
+# Local data volumes
+minio-data/
+minio-data-fresh/
+minio-data-old/
+data/
+
+# Tools (local binaries)
+tools/
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Documentation (not needed in images)
+docs/
+*.md
+!artifacts/rescoring/README.md
+
+# Test caches
+.pytest_cache
+.coverage
+htmlcov
+
+# Environment
+.env
+.env.*

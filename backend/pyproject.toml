@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+# asyncio_mode = "strict": todos los tests async deben marcarse explícitamente
+# con @pytest.mark.asyncio. Evita marcar accidentalmente tests como async.
+asyncio_mode = "strict"
+
+# Loop scope de session para que todos los fixtures async compartan
+# el mismo event loop. Necesario porque test_engine (scope="session")
+# crea conexiones de DB que deben ser accesibles en db_session (scope="function").
+# Sin esto, Python 3.14+ crea loops distintos por fixture scope y las
+# conexiones asyncpg fallan con "Task got Future attached to a different loop".
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"

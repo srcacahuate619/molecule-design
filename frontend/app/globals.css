@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* ── Custom Theme ───────────────────────────────────────────────── */
+
+:root {
+  color-scheme: dark;
+}
+
+@theme {
+  --color-brand-50:  #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  --color-surface-950: #0b1220;
+  --color-surface-900: #111827;
+  --color-surface-800: #1e293b;
+  --color-surface-700: #334155;
+  --color-surface-600: #475569;
+  --color-surface-500: #64748b;
+  --color-surface-400: #94a3b8;
+  --color-surface-300: #cbd5e1;
+}
+
+/* ── Base Styles ────────────────────────────────────────────────── */
+
+body {
+  @apply bg-surface-950 text-gray-200 antialiased;
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+/* ── Ketcher iframe container ───────────────────────────────────── */
+
+.ketcher-container iframe {
+  border: 1px solid var(--color-surface-700);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+/* ── 3D Viewer ──────────────────────────────────────────────────── */
+
+.viewer-3d canvas {
+  border-radius: 12px;
+}
+
+/* ── Score bar animation ────────────────────────────────────────── */
+
+@keyframes score-fill {
+  from { width: 0%; }
+}
+
+.score-bar-fill {
+  animation: score-fill 0.6s ease-out;
+}
+
+/* ── Spinner ────────────────────────────────────────────────────── */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border: 2px solid var(--color-surface-700);
+  border-top-color: var(--color-brand-500);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Pulse animation for progress ───────────────────────────────── */
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

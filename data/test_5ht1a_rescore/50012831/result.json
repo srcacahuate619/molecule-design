@@ -1,0 +1,22 @@
+{
+  "molecule_id": 50012831,
+  "smiles": "Clc1ccc(NC(=O)C2C(=O)N3c4c2cccc4CCc2ccccc32)cc1",
+  "experimental_pactivity": 6.698970004336019,
+  "original_vina_kcal": -8.354,
+  "success": true,
+  "new_vina_kcal": -8.499,
+  "all_vina_scores": [
+    -8.499,
+    -8.035,
+    -7.247,
+    -7.2,
+    -7.172,
+    -6.922,
+    -6.907,
+    -6.8,
+    -6.766
+  ],
+  "ml_score_a": 8.438488960266113,
+  "ml_score_null": 8.66358757019043,
+  "ml_delta": -0.2250986099243164
+}

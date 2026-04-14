@@ -1,0 +1,263 @@
+# docker-compose.yml
+# Solo para desarrollo local.
+# Railway usa su propia infraestructura en producción —
+# este archivo no se despliega en Railway.
+#
+# Estructura del repo:
+#   molecular-design/
+#   ├── backend/      ← contexto de build de Docker
+#   ├── frontend/     ← Next.js, deployado en Vercel
+#   └── docker-compose.yml
+
+services:
+
+  # ─────────────────────────────────────────────
+  # BASE DE DATOS — PostgreSQL con extensión RDKit
+  # ─────────────────────────────────────────────
+  db:
+    image: informaticsmatters/rdkit-cartridge-debian:Release_2024_09_6
+    # Esta imagen incluye PostgreSQL + la extensión RDKit preinstalada.
+    # Alternativa más simple para dev: postgres:16-alpine (sin RDKit extension)
+    container_name: moldesign_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Migrations SQL — se ejecutan en orden al arrancar por primera vez
+      - ./backend/db/migrations/001_initial.sql:/docker-entrypoint-initdb.d/001_initial.sql:ro
+      - ./backend/db/migrations/002_docking_reproducibility_metadata.sql:/docker-entrypoint-initdb.d/002_docking_reproducibility_metadata.sql:ro
+      - ./backend/db/migrations/003_add_qed_column.sql:/docker-entrypoint-initdb.d/003_add_qed_column.sql:ro
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-moldesign}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?La variable POSTGRES_PASSWORD es requerida}
+      POSTGRES_DB: ${POSTGRES_DB:-moldesign_db}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-moldesign} -d ${POSTGRES_DB:-moldesign_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - moldesign_net
+
+  # ─────────────────────────────────────────────
+  # CACHE Y COLA DE TAREAS — Redis
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: moldesign_redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    # maxmemory-policy allkeys-lru: cuando Redis se llena, elimina las
+    # entradas menos usadas. Ideal para cache de poses de docking.
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - moldesign_net
+
+  # ─────────────────────────────────────────────
+  # ALMACENAMIENTO DE ARCHIVOS — MinIO (S3-compatible)
+  # Para archivos .sdf y .pdb de poses de docking
+  # ─────────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: moldesign_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?La variable MINIO_ROOT_PASSWORD es requerida}
+    ports:
+      - "9000:9000"   # API S3
+      - "9001:9001"   # Consola web (útil en dev)
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - moldesign_net
+
+  # ─────────────────────────────────────────────
+  # ML RESCORING — Microservicio Python 3.12
+  # ─────────────────────────────────────────────
+  # Contenedor separado del backend principal (Python 3.14).
+  # Motivo: ODDT y dependencias científicas requieren Python 3.12.
+  # Comunicación: HTTP en puerto 8001.
+  # El backend llama a rescoring:8001/rescore después de Vina.
+  # ─────────────────────────────────────────────
+  rescoring:
+    build:
+      context: .
+      dockerfile: Dockerfile.rescoring
+    container_name: moldesign_rescoring
+    restart: unless-stopped
+    environment:
+      RESCORING_LOG_LEVEL: INFO
+      VINA_EXECUTABLE_PATH: /usr/local/bin/vina
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./rescoring:/app
+      - ./artifacts/rescoring:/app/artifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; import sys;\ntry:\n r = httpx.get('http://localhost:8001/health');\n if r.status_code == 200: sys.exit(0)\n except Exception: pass\nsys.exit(1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - moldesign_net
+
+  # ─────────────────────────────────────────────
+  # BACKEND PRINCIPAL — FastAPI
+  # ─────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: moldesign_api
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-moldesign}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-moldesign_db}
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - vina_temp:/tmp/vina
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - moldesign_net
+
+  # ─────────────────────────────────────────────
+  # WORKER CELERY — Jobs pesados (docking, generación 3D)
+  # Corre en el mismo contenedor que la API pero como proceso separado.
+  # Esto es importante: Celery necesita importar el mismo código que FastAPI.
+  # ─────────────────────────────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: moldesign_worker
+    restart: unless-stopped
+    # --pool=solo --concurrency=1: obligatorio por el patrón de event loop
+    # persistente que comparte conexiones asyncpg/aioredis entre tasks.
+    command: celery -A api.celery_app worker --loglevel=info --pool=solo --concurrency=1
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-moldesign}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-moldesign_db}
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      VINA_EXECUTABLE_PATH: /usr/local/bin/vina
+    volumes:
+      - ./backend:/app
+      - vina_temp:/tmp/vina
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - moldesign_net
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: moldesign_flower
+    restart: unless-stopped
+    command: celery -A api.celery_app flower --port=5555
+    ports:
+      - "5555:5555"
+    env_file:
+      - ./backend/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+      - worker
+    profiles:
+      - dev
+    networks:
+      - moldesign_net
+
+  # ─────────────────────────────────────────────
+  # FRONTEND — Next.js
+  # Solo para desarrollo local.
+  # En producción corre en Vercel — no se despliega en Railway.
+  # ─────────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: moldesign_frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules        # evita que el volumen sobreescriba node_modules del contenedor
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      # En Vercel este valor se configura en el dashboard como variable de entorno:
+      # NEXT_PUBLIC_API_URL=https://tu-app.railway.app
+    profiles:
+      - dev                      # arranca solo con: docker compose --profile dev up
+    networks:
+      - moldesign_net
+
+# ─────────────────────────────────────────────
+# VOLÚMENES — Datos persistentes entre reinicios
+# ─────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  vina_temp:
+    driver: local
+
+# ─────────────────────────────────────────────
+# RED INTERNA
+# Aísla los servicios del tráfico externo.
+# Los servicios se comunican por nombre: "db", "redis", "minio"
+# ─────────────────────────────────────────────
+networks:
+  moldesign_net:
+    driver: bridge

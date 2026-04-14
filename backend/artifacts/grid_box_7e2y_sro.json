@@ -1,0 +1,23 @@
+{
+  "pdb_id": "7E2Y",
+  "ligand_id": "SRO",
+  "chain": "R",
+  "num_ligand_atoms": 13,
+  "margin_angstrom": 5.0,
+  "grid_center": {
+    "x": 103.03,
+    "y": 114.79,
+    "z": 108.36
+  },
+  "grid_size": {
+    "x": 15.9,
+    "y": 15.9,
+    "z": 13.5
+  },
+  "ligand_span": {
+    "x": 5.93,
+    "y": 5.87,
+    "z": 3.46
+  },
+  "methodology": "Centroide geom\u00e9trico de todos los \u00e1tomos HETATM del ligando co-cristalizado (SRO) + margen de 5.0 \u00c5. Est\u00e1ndar: Morris et al. (2009), Forli et al. (2016)."
+}

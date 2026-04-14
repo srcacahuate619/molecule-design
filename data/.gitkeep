@@ -1,0 +1,2 @@
+# Directorio para datos de PDBbind (excluido de git)
+# Ejecutar: python scripts/setup_pdbbind.py

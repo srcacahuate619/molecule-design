@@ -1,0 +1,22 @@
+{
+  "molecule_id": 50472610,
+  "smiles": "CN1CC\\C(=C/c2cc(c(O)c(c2)C(C)(C)C)C(C)(C)C)S1(=O)=O",
+  "experimental_pactivity": 8.040958607678906,
+  "original_vina_kcal": -8.249,
+  "success": true,
+  "new_vina_kcal": -8.113,
+  "all_vina_scores": [
+    -8.113,
+    -8.084,
+    -8.059,
+    -7.966,
+    -7.746,
+    -7.681,
+    -7.675,
+    -7.627,
+    -7.488
+  ],
+  "ml_score_a": 8.106099128723145,
+  "ml_score_null": 7.192668914794922,
+  "ml_delta": 0.9134302139282227
+}

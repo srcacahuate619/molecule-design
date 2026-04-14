@@ -1,0 +1,98 @@
+# =============================================================================
+# Dockerfile.rescoring — Microservicio de ML Rescoring (Python 3.12)
+# =============================================================================
+#
+# Este contenedor corre SEPARADO del backend principal (Python 3.14).
+# Motivo: ODDT y varias dependencias científicas no soportan Python 3.14.
+#
+# Responsabilidades de este microservicio:
+#   - Filtro geométrico de poses (pose_filter)
+#   - Extracción de features 3D (feature_extractor, ODDT)
+#   - Predicción ML (Modelo A + Modelo NULL, XGBoost rank:pairwise)
+#   - Delta de Especificidad 3D
+#   - Applicability Domain check (Mahalanobis)
+#   - Varianza de 9 poses como feature de incertidumbre
+#
+# Comunicación: HTTP (FastAPI) en puerto 8001
+# El backend principal (Python 3.14) llama a este servicio post-Vina.
+#
+# Dependencias clave:
+#   - RDKit (pip: rdkit>=2024): cheminformatics, mol parsing, fingerprints
+#   - ODDT 0.7 (pip, --no-build-isolation): 3D interaction fingerprints,
+#     PDBbind loader. Última versión disponible en PyPI y conda-forge.
+#     Requiere setuptools+six pre-instalados por bug en su setup.py.
+#   - libxrender1, libxext6, libexpat1: shared libs que RDKit Draw necesita
+# =============================================================================
+
+# ── Stage 1: builder ─────────────────────────────────────────────
+FROM python:3.12-slim AS builder
+
+# System deps para compilación + RDKit shared libs
+RUN apt-get update -qq && \
+    apt-get install -yqq --no-install-recommends \
+        libxrender1 libxext6 libexpat1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Pre-instalar build deps que ODDT 0.7 necesita en setup.py
+RUN pip install --no-cache-dir setuptools six wheel
+
+# Instalar RDKit y numpy/scipy primero (ODDT los requiere)
+RUN pip install --no-cache-dir rdkit numpy scipy
+
+# Instalar ODDT 0.7 con --no-build-isolation (su setup.py importa six)
+RUN pip install --no-cache-dir oddt==0.7 --no-build-isolation
+
+# Instalar el resto de dependencias pip
+COPY rescoring/requirements-pip.txt /tmp/requirements-pip.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-pip.txt
+
+# ── Stage 2: runtime ─────────────────────────────────────────────
+FROM python:3.12-slim AS runtime
+
+# Shared libs requeridas por RDKit en runtime
+RUN apt-get update -qq && \
+    apt-get install -yqq --no-install-recommends \
+        libxrender1 libxext6 libexpat1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copiar site-packages del builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# --- Install AutoDock Vina 1.2.5 Linux binary ---
+ENV VINA_VERSION=1.2.5
+ENV VINA_URL=https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v${VINA_VERSION}/vina_${VINA_VERSION}_linux_x86_64
+ENV VINA_INSTALL_DIR=/usr/local/bin
+ENV VINA_EXECUTABLE_PATH=${VINA_INSTALL_DIR}/vina
+
+RUN apt-get update -qq && apt-get install -yqq wget && rm -rf /var/lib/apt/lists/* \
+    && wget -O ${VINA_INSTALL_DIR}/vina "$VINA_URL" \
+    && chmod +x ${VINA_INSTALL_DIR}/vina
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+# Copiar código del microservicio
+COPY rescoring/ /app/
+
+# Directorio para datos PDBbind (montado como volumen en entrenamiento)
+RUN mkdir -p /data/pdbbind /app/artifacts
+
+# Copiar artefactos del modelo (si existen; vacío en primera iteración)
+COPY artifacts/rescoring/ /app/artifacts/
+
+# Set VINA_EXECUTABLE_PATH for runtime
+ENV VINA_EXECUTABLE_PATH=/usr/local/bin/vina
+
+# Health check
+
+# Robust healthcheck: degrade gracefully if model artifacts are missing
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 --start-period=10s \
+    CMD python -c "import httpx; import sys;\ntry:\n r = httpx.get('http://localhost:8001/health');\n if r.status_code == 200: sys.exit(0)\n except Exception: pass\nsys.exit(1)"
+
+EXPOSE 8001
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]

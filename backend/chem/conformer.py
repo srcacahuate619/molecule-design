@@ -1,0 +1,326 @@
+"""
+chem/conformer.py
+
+Generación de estructuras 3D (conformers) desde SMILES usando RDKit.
+
+El proceso SMILES → 3D tiene tres pasos:
+
+1. SMILES → mol 2D (grafo molecular con hidrógenos implícitos)
+2. mol 2D → mol 3D (ETKDG asigna coordenadas xyz a cada átomo)
+3. mol 3D → optimización de geometría (MMFF94 minimiza la energía)
+
+Por qué ETKDG y no otros métodos:
+    ETKDG (Experimental Torsion Knowledge Distance Geometry) usa
+    distribuciones de ángulos diedros de estructuras cristalográficas
+    reales (Cambridge Structural Database) para generar conformers
+    más realistas que los métodos puramente geométricos.
+    Es el método por defecto de RDKit desde 2016 y el más usado
+    en pipelines de virtual screening.
+
+Limitaciones conocidas:
+    - Macrociclos (anillos > 8 átomos): ETKDG falla frecuentemente.
+      Requiere métodos alternativos (RDKit MacroModel, OMEGA).
+    - Quiralidad no especificada: RDKit elige arbitrariamente.
+      El usuario debe especificar @/@@  en el SMILES si importa.
+    - Moléculas muy rígidas (muchos anillos fusionados): puede
+      requerir más intentos para encontrar una geometría válida.
+
+El output es un archivo .sdf que se guarda en MinIO y se pasa
+a AutoDock Vina para el docking.
+"""
+
+import os
+import tempfile
+from pathlib import Path
+
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem.rdchem import Mol
+from rdkit.Chem.rdForceFieldHelpers import MMFFGetMoleculeProperties, MMFFOptimizeMolecule
+
+from chem.validator import validate_smiles_or_raise
+from core.config import get_settings
+from core.exceptions import ConformerGenerationError
+from core.models import ValidationResult
+from utils.file_handlers import StoragePath, upload_text
+from utils.logger import get_logger
+
+log = get_logger(__name__)
+settings = get_settings()
+
+
+# ── Parámetros de ETKDG ───────────────────────────────────────────────────────
+
+def _get_etkdg_params(random_seed: int = 42) -> AllChem.EmbedParameters:
+    """
+    Configura los parámetros del algoritmo ETKDG.
+
+    random_seed: semilla para reproducibilidad. Cambiamos la semilla
+    en cada reintento para explorar distintas soluciones geométricas.
+
+    ETKDGv3 es la versión más reciente (RDKit >= 2020.09) e incluye
+    mejoras para macrociclos y moléculas con múltiples centros quirales.
+    """
+    params = AllChem.ETKDGv3()
+    params.randomSeed = random_seed
+    params.numThreads = 0           # 0 = usar todos los cores disponibles
+    params.maxIterations = 1000     # intentos de embedding antes de fallar
+    params.pruneRmsThresh = 0.1     # descarta conformers muy similares entre sí
+    params.enforceChirality = True  # respeta los centros quirales del SMILES
+    params.useSmallRingTorsions = True   # mejor geometría para anillos pequeños
+    params.useMacrocycleTorsions = True  # mejor para macrociclos (si aplica)
+    return params
+
+
+# ── Optimización de geometría ─────────────────────────────────────────────────
+
+def _optimize_with_mmff(mol: Mol) -> tuple[Mol, bool]:
+    """
+    Optimiza la geometría del conformer con el campo de fuerza MMFF94.
+
+    MMFF94 (Merck Molecular Force Field) minimiza la energía potencial
+    del conformer ajustando las coordenadas xyz. Produce geometrías más
+    realistas que el embedding puro de ETKDG.
+
+    Retorna (mol_optimizado, convergio):
+        convergio=True  → minimización exitosa
+        convergio=False → minimización parcial (mol aún usable pero
+                          la geometría puede ser subóptima)
+
+    Si MMFF94 no tiene parámetros para algún átomo (raro pero posible
+    con elementos exóticos), cae a UFF (Universal Force Field) como backup.
+    """
+    # Intentar MMFF94 primero
+    try:
+        ff_props = MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")
+        if ff_props is not None:
+            result = MMFFOptimizeMolecule(mol, mmffVariant="MMFF94", maxIters=2000)
+            converged = (result == 0)   # 0 = convergió, 1 = no convergió, -1 = error
+            if result != -1:
+                return mol, converged
+    except Exception as e:
+        log.debug("MMFF94 falló, intentando UFF", error=str(e))
+
+    # Fallback a UFF
+    try:
+        result = AllChem.UFFOptimizeMolecule(mol, maxIters=2000)
+        converged = (result == 0)
+        return mol, converged
+    except Exception as e:
+        log.warning("UFF también falló — usando geometría sin optimizar", error=str(e))
+        return mol, False
+
+
+# ── Detección de macrociclos ──────────────────────────────────────────────────
+
+def _has_macrocycle(mol: Mol) -> bool:
+    """
+    Detecta si la molécula contiene macrociclos (anillos > 8 átomos).
+
+    ETKDG tiene más dificultades con macrociclos — aumentamos los
+    intentos automáticamente si se detecta uno.
+    """
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
+        if len(ring) > 8:
+            return True
+    return False
+
+
+def _get_ring_size_info(mol: Mol) -> str:
+    """Resumen de tamaños de anillos para logging."""
+    ring_info = mol.GetRingInfo()
+    sizes = sorted({len(r) for r in ring_info.AtomRings()})
+    return str(sizes) if sizes else "sin anillos"
+
+
+# ── Función principal ─────────────────────────────────────────────────────────
+
+async def generate_conformer(smiles: str) -> dict:
+    """
+    Genera una estructura 3D para la molécula y la guarda en MinIO.
+
+    Args:
+        smiles: SMILES de la molécula. Se valida internamente.
+
+    Retorna dict con:
+        canonical_smiles:  SMILES canónico usado
+        smiles_hash:       hash SHA-256 del canónico
+        conformer_path:    ruta del .sdf en MinIO
+        num_atoms_3d:      número de átomos en la estructura 3D
+        optimization_converged: si la minimización MMFF convergió
+        had_macrocycle:    si se detectó macrociclo (info para el usuario)
+
+    Lanza:
+        InvalidSMILES           → SMILES no válido
+        ConformerGenerationError → no se pudo generar estructura 3D
+    """
+    # Paso 1: validar SMILES
+    validation: ValidationResult = validate_smiles_or_raise(smiles)
+    canonical = validation.canonical_smiles
+    smiles_hash = validation.smiles_hash
+
+    log.info(
+        "generando conformer 3D",
+        formula=validation.molecular_formula,
+        heavy_atoms=validation.heavy_atom_count,
+        hash_prefix=smiles_hash[:8],
+    )
+
+    # Paso 2: construir mol con hidrógenos explícitos
+    # Los H explícitos son necesarios para que ETKDG coloque
+    # correctamente los átomos de hidrógeno en 3D
+    mol = Chem.MolFromSmiles(canonical)
+    mol = Chem.AddHs(mol)
+
+    # Detectar macrociclos para ajustar número de intentos
+    has_macro = _has_macrocycle(mol)
+    ring_info = _get_ring_size_info(mol)
+
+    if has_macro:
+        log.info(
+            "macrociclo detectado — aumentando intentos de embedding",
+            ring_sizes=ring_info,
+        )
+
+    # Número de intentos según complejidad
+    max_attempts = settings.conformer_max_attempts
+    if has_macro:
+        max_attempts = max_attempts * 2   # doble de intentos para macrociclos
+
+    # Paso 3: intentar generar conformer con distintas semillas
+    mol_3d = None
+    last_error = None
+
+    for attempt in range(max_attempts):
+        seed = 42 + (attempt * 137)   # semillas distintas en cada intento
+        params = _get_etkdg_params(random_seed=seed)
+
+        try:
+            mol_copy = Chem.RWMol(mol)  # copia para no modificar el original
+            result = AllChem.EmbedMolecule(mol_copy, params)
+
+            if result == 0:
+                # Embedding exitoso
+                mol_3d = mol_copy.GetMol()
+                log.debug(
+                    "embedding exitoso",
+                    attempt=attempt + 1,
+                    seed=seed,
+                )
+                break
+            elif result == -1:
+                last_error = f"EmbedMolecule retornó -1 en intento {attempt + 1} (seed={seed})"
+                log.debug("embedding falló", attempt=attempt + 1, seed=seed)
+
+        except Exception as e:
+            last_error = str(e)
+            log.debug(
+                "excepción en embedding",
+                attempt=attempt + 1,
+                error=str(e),
+            )
+
+    if mol_3d is None:
+        raise ConformerGenerationError(
+            smiles=smiles,
+            attempts=max_attempts,
+            detail=(
+                f"ETKDG no pudo generar una estructura 3D válida después de "
+                f"{max_attempts} intentos. "
+                f"Anillos detectados: {ring_info}. "
+                f"Último error: {last_error}. "
+                f"{'La molécula contiene macrociclos que ETKDG maneja con dificultad.' if has_macro else ''}"
+            ),
+        )
+
+    # Paso 4: optimizar geometría con MMFF94
+    mol_3d, converged = _optimize_with_mmff(mol_3d)
+
+    if not converged:
+        log.warning(
+            "optimización MMFF no convergió — geometría subóptima",
+            formula=validation.molecular_formula,
+        )
+
+    # Paso 5: conservar H explícitos antes de guardar
+    # mk_prepare_ligand de Meeko requiere hidrógenos explícitos en la molécula
+    # de entrada para parametrizar correctamente el ligando.
+    mol_final = mol_3d
+
+    # Paso 6: convertir a SDF y guardar en MinIO
+    sdf_content = _mol_to_sdf_string(mol_final, canonical)
+
+    object_path = StoragePath.ligand_conformer(smiles_hash)
+    await upload_text(
+        text=sdf_content,
+        object_name=object_path,
+    )
+
+    num_atoms_3d = mol_final.GetNumAtoms()
+
+    log.info(
+        "conformer generado y guardado",
+        formula=validation.molecular_formula,
+        num_atoms_3d=num_atoms_3d,
+        converged=converged,
+        had_macrocycle=has_macro,
+        path=object_path,
+    )
+
+    return {
+        "canonical_smiles":        canonical,
+        "smiles_hash":             smiles_hash,
+        "conformer_path":          object_path,
+        "num_atoms_3d":            num_atoms_3d,
+        "optimization_converged":  converged,
+        "had_macrocycle":          has_macro,
+        "molecular_formula":       validation.molecular_formula,
+    }
+
+
+# ── Serialización SDF ─────────────────────────────────────────────────────────
+
+def _mol_to_sdf_string(mol: Mol, canonical_smiles: str) -> str:
+    """
+    Convierte un mol 3D a formato SDF como string.
+
+    Incluye el SMILES canónico como propiedad del SDF para que
+    el archivo sea trazable — si alguien abre el .sdf directamente
+    puede ver de qué molécula proviene.
+
+    El writer de RDKit produce SDF v2000 por defecto, compatible
+    con AutoDock Vina y prácticamente cualquier software químico.
+    """
+    import io as _io
+    buffer = _io.StringIO()
+    writer = Chem.SDWriter(buffer)
+
+    # Añadir SMILES canónico como propiedad del SDF
+    mol.SetProp("SMILES", canonical_smiles)
+
+    writer.write(mol)
+    writer.close()
+
+    return buffer.getvalue()
+
+
+# ── Utilidad para lectura ─────────────────────────────────────────────────────
+
+def sdf_string_to_mol(sdf_content: str) -> Mol | None:
+    """
+    Parsea un string SDF y retorna el primer mol encontrado.
+
+    Útil en services/docking/vina_service.py para leer el conformer
+    descargado de MinIO antes de prepararlo para Vina.
+
+    Retorna None si el SDF está vacío o malformado.
+    """
+    supplier = Chem.SDMolSupplier()
+    supplier.SetData(sdf_content, sanitize=True, removeHs=False)
+
+    for mol in supplier:
+        if mol is not None:
+            return mol
+
+    return None
