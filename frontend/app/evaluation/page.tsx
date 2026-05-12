@@ -93,7 +93,7 @@ export default function EvaluationPage() {
     } finally {
       setBusy(false);
     }
-  }, [status]);
+  }, [status, showWalletInput, customWallet]);
 
   const handleDownloadCertificate = useCallback(async () => {
     if (!status?.result?.molecule_id) return;
