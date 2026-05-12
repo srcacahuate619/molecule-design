@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { KetcherEditor } from "@/components/KetcherEditor";
-import { MethodDisclaimer } from "@/components/MethodDisclaimer";
-import { MoleculeViewer3D } from "@/components/MoleculeViewer3D";
-import { ProgressBar } from "@/components/ProgressBar";
-import { PropertiesPanel } from "@/components/PropertiesPanel";
-import { ReproducibilityInfo } from "@/components/ReproducibilityInfo";
-import { ScoreCard } from "@/components/ScoreCard";
-import { ScientificWarnings } from "@/components/ScientificWarnings";
+import { KetcherEditor } from "../../components/KetcherEditor";
+import { MethodDisclaimer } from "../../components/MethodDisclaimer";
+import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
+import { ProgressBar } from "../../components/ProgressBar";
+import { PropertiesPanel } from "../../components/PropertiesPanel";
+import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
+import { ScoreCard } from "../../components/ScoreCard";
+import { ScientificWarnings } from "../../components/ScientificWarnings";
 import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule } from "@/lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "@/lib/types";
 
