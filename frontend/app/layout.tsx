@@ -1,8 +1,8 @@
 import "./globals.css";
 import type { ReactNode } from "react";
 import Script from "next/script";
-import { AuthProvider } from "@/lib/auth";
-import { Navigation } from "@/components/Navigation";
+import { AuthProvider } from "../lib/auth";
+import { Navigation } from "../components/Navigation";
 
 export const metadata = {
   title: "MolDesign — Diseño Molecular Asistido por IA",

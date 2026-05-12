@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { useAuth } from "@/lib/auth";
-import { getEvaluationHistory, getUserStats, downloadCertificate } from "@/lib/api";
-import type { EvaluationSummary, HistoryResponse, UserStats } from "@/lib/types";
+import { useAuth } from "../../lib/auth";
+import { getEvaluationHistory, getUserStats, downloadCertificate } from "../../lib/api";
+import type { EvaluationSummary, HistoryResponse, UserStats } from "../../lib/types";
 
 export default function HistoryPage() {
   const { user, isLoading: authLoading } = useAuth();

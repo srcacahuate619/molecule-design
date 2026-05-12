@@ -10,8 +10,8 @@ import { PropertiesPanel } from "../../components/PropertiesPanel";
 import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
 import { ScoreCard } from "../../components/ScoreCard";
 import { ScientificWarnings } from "../../components/ScientificWarnings";
-import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule } from "@/lib/api";
-import type { JobStatus, MolecularSuggestion, ValidationResult } from "@/lib/types";
+import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule } from "../../lib/api";
+import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../lib/types";
 
 const POLL_INTERVAL_MS = 2000;
 

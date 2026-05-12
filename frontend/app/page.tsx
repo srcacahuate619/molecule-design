@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getGlobalStats } from "@/lib/api";
-import { GlobalStats } from "@/lib/types";
+import { getGlobalStats } from "../lib/api";
+import { GlobalStats } from "../lib/types";
 
 const PIPELINE_STEPS = [
   { step: 1, icon: "🧪", title: "Validación química", desc: "RDKit valida estructura SMILES, fórmula molecular y restricciones estricta." },
