@@ -1,7 +1,7 @@
 """
 services/ai/interpreter.py
 
-Interpretación narrativa opcional del EvaluationResult.
+Interpretación narrativa opcional del EvaluationResult usando Google Gemini 1.5 Flash.
 
 Regla central:
 la IA no calcula química ni altera números. Solo transforma resultados ya
@@ -11,126 +11,82 @@ calculados en una explicación farmacológica prudente.
 from __future__ import annotations
 
 from typing import Any
-
-try:
-    import anthropic  # type: ignore
-except Exception:  # pragma: no cover - depende del entorno
-    anthropic = None
+import httpx
 
 from core.config import get_settings
 from core.exceptions import AIServiceError
-from core.models import AIReportRequest, MutationType, PhysicochemicalProperties, ScoreBreakdown
+from core.models import AIReportRequest
 from utils.logger import get_logger
 
 settings = get_settings()
 log = get_logger(__name__)
 
-# Singleton del cliente Anthropic. Se crea una sola vez para reutilizar
-# el pool de conexiones HTTP entre llamadas al servicio de IA.
-_anthropic_client = None
-
-
-def _get_anthropic_client():
-    """Lazy initialization del cliente Anthropic."""
-    global _anthropic_client
-    if _anthropic_client is None and anthropic is not None and settings.anthropic_api_key:
-        _anthropic_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return _anthropic_client
-
-
 def build_ai_prompt(request: AIReportRequest) -> str:
-    mutation_context = (
-        f"Mutación aplicada: {request.mutation_type.value}."
-        if request.mutation_type is not None
-        else "Mutación aplicada: no especificada."
-    )
-    parent_context = (
-        f"SMILES padre: {request.parent_smiles}."
-        if request.parent_smiles
-        else "No hay molécula padre para comparación."
-    )
+    data_json = request.model_dump_json(indent=2)
 
-    return f"""
-Eres un intérprete científico farmacológico de MolDesign.
+    return f"""Escribe un reporte científico BREVE y DIRECTO para la molécula {request.molecule_smiles}. 
+Tu análisis debe ser conciso, enfocándose únicamente en la información más útil para un investigador que busca optimizar este compuesto.
 
-REGLAS OBLIGATORIAS:
-- No alteres ningún valor numérico.
-- No inventes propiedades no calculadas.
-- No presentes docking como validación experimental.
-- Distingue observación, interpretación e hipótesis.
-- Usa lenguaje prudente: 'sugiere', 'podría indicar', 'merece evaluación adicional'.
-- No uses lenguaje como 'demuestra', 'confirma eficacia' o 'garantiza actividad'.
+DATOS DEL MOTOR DE EVALUACIÓN (JSON):
+```json
+{data_json}
+```
 
-DATOS DE ENTRADA:
-- Molécula (SMILES): {request.molecule_smiles}
-- Target: {request.target_name}
-- Afinidad de docking: {request.affinity_kcal} kcal/mol
-- Score de afinidad: {request.affinity_score}/100
-- Score ADME: {request.score_breakdown.adme_score}/100
-- Score drug-likeness: {request.score_breakdown.druglikeness_score}/100
-- Score total: {request.score_breakdown.total_score}/100
-- Propiedades: MW={request.properties.molecular_weight} Da, logP={request.properties.log_p}, TPSA={request.properties.tpsa} Å², HBD={request.properties.hbd}, HBA={request.properties.hba}, RotBonds={request.properties.rotatable_bonds}
-- Lipinski pass: {request.properties.lipinski_pass}
-- Veber pass: {request.properties.veber_pass}
-- Dimensión más fuerte: {request.score_breakdown.strongest_dimension}
-- Dimensión más débil: {request.score_breakdown.weakest_dimension}
-- Hint de mejora: {request.score_breakdown.improvement_hint}
-- {mutation_context}
-- {parent_context}
+GUÍA DE REDACCIÓN:
+- Redacta máximo 2 párrafos concisos (no más de 150 palabras en total).
+- Analiza brevemente la información del JSON proporcionado.
+- CONTRASTA Y CONTEXTUALIZA estos resultados con información general y literatura científica ("lo que se sabe al respecto" sobre la interacción entre compuestos similares y el target {request.target_name}).
+- Proporciona una justificación química directa para la optimización sugerida.
+- NO uses introducciones ni presentaciones. Sé directo y profesional.
 
-FORMATO DE SALIDA:
-1. Observación breve del resultado computacional.
-2. Interpretación fisicoquímica/ADME.
-3. Limitaciones y cautelas metodológicas.
-4. Hipótesis de siguiente paso.
-""".strip()
+EMPIEZA TU ANÁLISIS DIRECTAMENTE CON ESTAS PALABRAS:
+"El análisis del complejo ligando-receptor revela que..."
 
+REPORTE DETALLADO:""".strip()
+
+import anthropic
 
 async def generate_ai_report(request: AIReportRequest) -> str | None:
     """
-    Genera reporte IA si el entorno lo soporta; si no, retorna None.
-
-    Este comportamiento es deliberado: la capa IA no debe bloquear el pipeline.
+    Genera reporte IA usando Anthropic (Claude).
     """
     if not settings.anthropic_api_key:
-        log.info("IA no configurada: ANTHROPIC_API_KEY ausente")
-        return None
-
-    if anthropic is None:
-        log.warning("anthropic SDK no disponible; degradando ai_report=None")
+        log.error("Clave de API de Anthropic no configurada.")
         return None
 
     prompt = build_ai_prompt(request)
-
+    
     try:
-        client = _get_anthropic_client()
-        if client is None:
-            log.warning("no se pudo crear cliente Anthropic; degradando ai_report=None")
-            return None
-
-        message = await client.messages.create(
+        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        
+        response = await client.messages.create(
             model=settings.anthropic_model,
-            max_tokens=settings.anthropic_max_tokens,
+            max_tokens=1500,
+            temperature=0.5,
             messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
+                {"role": "user", "content": prompt}
+            ]
         )
-
-        parts = getattr(message, "content", [])
-        text_parts = [getattr(part, "text", "") for part in parts if getattr(part, "text", "")]
-        report = "\n".join(text_parts).strip()
-        return report or None
+        
+        report = response.content[0].text.strip()
+        
+        log.info(
+            "Reporte IA generado vía Anthropic", 
+            chars=len(report),
+            model=settings.anthropic_model
+        )
+        return report
 
     except Exception as e:
-        raise AIServiceError(detail=str(e)) from e
-
+        log.error("Excepción al llamar a Anthropic", error=str(e), error_type=type(e).__name__)
+        return None
 
 async def safe_generate_ai_report(request: AIReportRequest) -> str | None:
+    """
+    Wrapper seguro para evitar que fallos en la IA bloqueen el pipeline de evaluación.
+    """
     try:
         return await generate_ai_report(request)
-    except AIServiceError as e:
-        log.warning("falló generación de reporte IA; degradando", detail=e.detail)
+    except Exception as e:
+        log.warning("Fallo silencioso en generación de reporte IA", error=str(e))
         return None

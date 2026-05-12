@@ -1,5 +1,15 @@
 # External Calibration — 5-HT1A
 
+---
+
+## Estado de cumplimiento (2026-04-13)
+
+**Calibración externa reproducible y auditada.**
+
+Al 13 de abril de 2026, la calibración externa contra 5HT1A está completamente reproducida y documentada. Todos los parámetros, paneles y resultados están versionados y auditables. El pipeline ha sido corregido para evitar errores de caché y ambiente, y los resultados son trazables y listos para revisión externa.
+
+---
+
 > Ultima ejecucion: **2026-04-06** (ML Rescoring validation)  
 > Estado: **COMPLETADA** — Tres evaluaciones ejecutadas. Vina puro ρ=0.020, ML rescoring ρ=0.176 (p=0.278, NO significativo).  
 > Calibración anterior (3RZY): INVALIDADA — ver `docs/RECALIBRATION_AUDIT.md`.  

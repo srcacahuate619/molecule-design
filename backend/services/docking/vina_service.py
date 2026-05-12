@@ -403,19 +403,18 @@ async def run_vina_docking(
                 # Fallback: if still no poses, try parsing PDBQT for affinity only
                 if not poses:
                     pdbqt_content = output_pdbqt.read_text(encoding="utf-8", errors="replace")
-                    # --- Logging y guardado para depuración ---
-                    import logging
-                    import datetime
-                    log = logging.getLogger("vina_debug")
-                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    artifact_dir = Path("artifacts/pdbqt_debug")
-                    artifact_dir.mkdir(parents=True, exist_ok=True)
-                    artifact_path = artifact_dir / f"{smiles_hash}_{target_pdb_id}_{timestamp}.pdbqt"
-                    with open(artifact_path, "w", encoding="utf-8") as f:
-                        f.write(pdbqt_content)
-                    log.warning(f"[MolDesign DEBUG] PDBQT crudo guardado en {artifact_path}")
-                    log.warning(f"[MolDesign DEBUG] scientific_warnings: {scientific_warnings}")
-                    # --- Fin logging ---
+                    # --- Debug: guardar PDBQT crudo en /tmp (nunca bloquea el pipeline) ---
+                    try:
+                        import datetime
+                        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                        artifact_dir = Path(settings.vina_temp_dir) / "pdbqt_debug"
+                        artifact_dir.mkdir(parents=True, exist_ok=True)
+                        artifact_path = artifact_dir / f"{smiles_hash}_{target_pdb_id}_{timestamp}.pdbqt"
+                        artifact_path.write_text(pdbqt_content, encoding="utf-8")
+                        log.warning("[DEBUG] PDBQT crudo guardado", path=str(artifact_path), warnings=scientific_warnings)
+                    except Exception as _debug_exc:
+                        log.warning("[DEBUG] No se pudo guardar PDBQT de debug", error=str(_debug_exc))
+                    # --- Fin debug ---
                     parsed_poses_pdbqt = parse_vina_output_pdbqt(pdbqt_content)
                     poses = [DockingPose(**cast_pose_dict(pose)) for pose in parsed_poses_pdbqt]
                     if poses:

@@ -30,11 +30,11 @@ def _env_default(key: str, value: str) -> None:
 
 def _setup_env_defaults() -> None:
     _env_default("SECRET_KEY", "a" * 64)
-    _env_default("DATABASE_URL", "postgresql+asyncpg://moldesign@localhost:5432/moldesign_db")
-    _env_default("MINIO_ACCESS_KEY", "minioadmin")
-    _env_default("MINIO_SECRET_KEY", "minioadmin123")
-    _env_default("MINIO_ENDPOINT", "localhost:9000")
-    _env_default("REDIS_URL", "redis://localhost:6379/0")
+    _env_default("DATABASE_URL", "postgresql+asyncpg://admin:Johan619.@192.168.1.64:5432/moldesign_db")
+    _env_default("MINIO_ACCESS_KEY", "admin")
+    _env_default("MINIO_SECRET_KEY", "Johan619.")
+    _env_default("MINIO_ENDPOINT", "192.168.1.64:9005")
+    _env_default("REDIS_URL", "redis://192.168.1.64:6379/0")
     _env_default("VINA_EXECUTABLE_PATH", "vina")
     _env_default("MEEKO_PREPARE_RECEPTOR_PATH", "mk_prepare_receptor")
     _env_default("MEEKO_PREPARE_LIGAND_PATH", "mk_prepare_ligand")

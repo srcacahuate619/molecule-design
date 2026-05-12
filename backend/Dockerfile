@@ -16,7 +16,7 @@ ENV VINA_EXECUTABLE_PATH=${VINA_INSTALL_DIR}/vina
 
 # Install wget before downloading Vina (as root), then switch back to micromamba user
 USER root
-RUN apt-get update -qq && apt-get install -yqq wget && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update -qq && apt-get install -yqq wget openbabel && rm -rf /var/lib/apt/lists/* \
     && wget -O /usr/local/bin/vina "$VINA_URL" \
     && chmod +x /usr/local/bin/vina
 USER $MAMBA_USER

@@ -52,6 +52,7 @@ class EvaluationSummary(BaseModel):
     log_p: float | None
     lipinski_pass: bool | None
     qed: float | None
+    blockchain_tx_id: str | None
     evaluated_at: str | None
     created_at: str
 
@@ -108,6 +109,7 @@ async def list_evaluations(
             selectinload(MoleculeORM.evaluation_result),
         )
         .where(MoleculeORM.user_id == current_user.id)
+        .where(MoleculeORM.is_saved == True)
     )
 
     if status_filter is not None:
@@ -158,6 +160,7 @@ async def list_evaluations(
             log_p=ev.log_p if ev else None,
             lipinski_pass=ev.lipinski_pass if ev else None,
             qed=ev.qed if ev else None,
+            blockchain_tx_id=ev.blockchain_tx_id if ev else None,
             evaluated_at=ev.evaluated_at.isoformat() if ev and ev.evaluated_at else None,
             created_at=mol.created_at.isoformat() if mol.created_at else "",
         ))
@@ -183,13 +186,17 @@ async def get_stats(
     """Devuelve estadísticas agregadas de las evaluaciones del usuario."""
 
     # Total molecules
-    total_q = select(func.count()).where(MoleculeORM.user_id == current_user.id)
+    total_q = select(func.count()).where(
+        MoleculeORM.user_id == current_user.id,
+        MoleculeORM.is_saved == True
+    )
     total = (await db.execute(total_q)).scalar() or 0
 
     # Completed
     completed_q = select(func.count()).where(
         MoleculeORM.user_id == current_user.id,
         MoleculeORM.status == MoleculeStatus.EVALUATED,
+        MoleculeORM.is_saved == True
     )
     completed = (await db.execute(completed_q)).scalar() or 0
 
@@ -197,6 +204,7 @@ async def get_stats(
     failed_q = select(func.count()).where(
         MoleculeORM.user_id == current_user.id,
         MoleculeORM.status == MoleculeStatus.FAILED,
+        MoleculeORM.is_saved == True
     )
     failed = (await db.execute(failed_q)).scalar() or 0
 
@@ -208,6 +216,7 @@ async def get_stats(
         )
         .join(MoleculeORM, EvaluationResultORM.molecule_id == MoleculeORM.id)
         .where(MoleculeORM.user_id == current_user.id)
+        .where(MoleculeORM.is_saved == True)
         .where(EvaluationResultORM.total_score.isnot(None))
     )
     score_result = (await db.execute(score_q)).one()
@@ -218,6 +227,7 @@ async def get_stats(
     targets_q = (
         select(func.count(func.distinct(MoleculeORM.target_id)))
         .where(MoleculeORM.user_id == current_user.id)
+        .where(MoleculeORM.is_saved == True)
     )
     unique_targets = (await db.execute(targets_q)).scalar() or 0
 
@@ -229,3 +239,22 @@ async def get_stats(
         avg_score=avg_score,
         unique_targets=unique_targets,
     )
+
+
+@router.post(
+    "/save/{molecule_id}",
+    summary="Guardar molécula explícitamente en la cuenta",
+)
+async def save_molecule(
+    molecule_id: uuid.UUID,
+    current_user: UserORM = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Marca una molécula como 'guardada' para que aparezca en el listado de Guardado."""
+    mol = await db.get(MoleculeORM, molecule_id)
+    if not mol or mol.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Molécula no encontrada")
+    
+    mol.is_saved = True
+    await db.commit()
+    return {"status": "saved", "molecule_id": str(molecule_id)}

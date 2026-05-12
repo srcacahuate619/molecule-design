@@ -6,6 +6,7 @@ import type {
   SuggestionResponse,
   UserStats,
   ValidationResult,
+  GlobalStats,
 } from "@/lib/types";
 
 const API_URL =
@@ -36,6 +37,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const text = await response.text();
+    
+    // Intercept 401 Unauthorized (Expired token)
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("moldesign_auth");
+        window.location.href = "/login?expired=true";
+      }
+    }
+    
     throw new Error(`HTTP ${response.status}: ${text}`);
   }
   return (await response.json()) as T;
@@ -52,16 +62,29 @@ export async function validateSmiles(smiles: string): Promise<ValidationResult> 
 
 // ── Evaluation ───────────────────────────────────────────────────
 
-export async function submitEvaluation(smiles: string, targetPdbId = "7E2Y") {
+export async function submitEvaluation(smiles: string, targetPdbId = "7E2Y", isControl = false) {
   return request<EvaluationSubmitResponse>("/evaluation/submit", {
     method: "POST",
-    body: JSON.stringify({ smiles, target_pdb_id: targetPdbId }),
+    body: JSON.stringify({ smiles, target_pdb_id: targetPdbId, is_control: isControl }),
   });
 }
 
 export async function getJobStatus(taskId: string) {
   return request<JobStatus>(`/evaluation/status/${taskId}`);
 }
+
+export async function getAiReport(moleculeId: string): Promise<string | null> {
+  try {
+    const data = await request<{ ai_report: string | null }>(
+      `/evaluation/ai-report/${moleculeId}`,
+      { method: "POST" },
+    );
+    return data.ai_report ?? null;
+  } catch {
+    return null;
+  }
+}
+
 
 /**
  * Descarga el archivo SDF con las poses de docking desde MinIO.
@@ -97,6 +120,23 @@ export async function getProteinFile(moleculeId: string): Promise<string | null>
   }
 }
 
+/**
+ * Descarga el archivo PDB complejo (proteína + ligando HETATM).
+ * Retorna texto plano (PDB) o null si no está disponible.
+ */
+export async function getComplexFile(moleculeId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}/evaluation/files/complex/${moleculeId}`, {
+      headers: getAuthHeaders(),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
 // ── History ──────────────────────────────────────────────────────
 
 export async function getEvaluationHistory(
@@ -114,6 +154,10 @@ export async function getEvaluationHistory(
   });
   if (status) params.set("status", status);
   return request<HistoryResponse>(`/history/evaluations?${params}`);
+}
+
+export async function saveMolecule(moleculeId: string): Promise<void> {
+  await request(`/history/save/${moleculeId}`, { method: "POST" });
 }
 
 export async function getUserStats(): Promise<UserStats> {
@@ -137,4 +181,47 @@ export async function getSuggestions(
 
 export async function lookupAlphaFold(uniprotId: string): Promise<AlphaFoldEntry> {
   return request<AlphaFoldEntry>(`/targets/alphafold/lookup/${uniprotId}`);
+}
+
+// ── Blockchain ────────────────────────────────────────────────────
+
+export async function certifyMolecule(
+  moleculeId: string,
+  userWallet?: string
+): Promise<{ signature: string; message: string }> {
+  return request<{ signature: string; message: string }>("/blockchain/certify", {
+    method: "POST",
+    body: JSON.stringify({
+      molecule_id: moleculeId,
+      user_wallet: userWallet,
+    }),
+  });
+}
+
+export async function downloadCertificate(moleculeId: string): Promise<void> {
+  const headers = await getAuthHeaders();
+  const url = `${API_URL}/blockchain/certificate/${moleculeId}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo descargar el certificado");
+  }
+
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = `Certificado_${moleculeId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
+export async function getGlobalStats(): Promise<GlobalStats> {
+  return request<GlobalStats>("/stats/global");
 }

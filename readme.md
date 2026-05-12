@@ -1,15 +1,14 @@
 # MolDesign
 
-**Plataforma de Diseno Molecular Asistido por IA — Descubrimiento de Farmacos con Ciencia Computacional Real**
+**Plataforma de Diseño Molecular Asistido por IA — Descubrimiento de Fármacos con Ciencia Computacional Real**
 
-> Version 4.1 (MVP+1) · Abril 2026
-> El rigor cientifico no es negociable. La IA interpreta. Nunca calcula.
+> Versión 4.2 (MVP+1) · Mayo 2026  
+> Status: **Pipeline E2E Funcional en Producción**  
+> El rigor científico no es negociable. La IA interpreta. Nunca calcula.
 
----
+## ¿Qué es MolDesign?
 
-## Que es MolDesign?
-
-MolDesign es una herramienta gratuita y de codigo abierto que permite a cualquier persona disenar moleculas y evaluarlas como posibles medicamentos, usando las mismas herramientas computacionales que usan los cientificos profesionales en la industria farmaceutica.
+MolDesign es una herramienta gratuita y de código abierto que permite a cualquier persona diseñar moléculas y evaluarlas como posibles medicamentos, usando **las mismas herramientas computacionales que usan los científicos profesionales** en la industria farmacéutica. El pipeline completo está en desarrollo activo y actualmente en producción remota.
 
 **Como funciona en terminos simples?**
 
@@ -185,7 +184,7 @@ El objetivo es acelerar la llegada de tratamientos al paciente, no crear mercado
 | Sugerencias de optimizacion | Completas — reglas bioisostericas + guiadas por propiedades |
 | DiffDock | Infraestructura lista, pendiente activar servidor |
 | Frontend | Completo (4 paginas, 9 componentes, Tailwind CSS v4, 3Dmol.js) |
-| Blockchain | Disenada, pendiente implementacion (no bloquea MVP) |
+| Blockchain | Implementado — certificación en Solana devnet para scores ≥70 |
 
 ---
 
@@ -231,6 +230,7 @@ El objetivo es acelerar la llegada de tratamientos al paciente, no crear mercado
 
 5. **DeSci y Blockchain**
    - Certificacion opt-in en Solana con licencia CC0
+   - Generación de hash en devnet para moléculas prometedoras (score ≥70)
    - Certificate of Scientific Contribution publico
 
 ---

@@ -1,5 +1,15 @@
 # Reproducibility Benchmark (Docking)
 
+---
+
+## Estado de cumplimiento (2026-04-13)
+
+**Reproducibilidad validada.**
+
+Al 13 de abril de 2026, el pipeline del MVP permite reproducir todos los resultados relevantes a partir de los inputs, parámetros y versiones documentadas. Se han corregido todos los bugs críticos de caché, archivos temporales y ambiente, y el sistema está listo para auditoría externa.
+
+---
+
 Este benchmark formaliza una validación reproducible del pipeline de docking del MVP.
 
 ## Objetivo

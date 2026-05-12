@@ -21,8 +21,7 @@ import enum
 import uuid
 from datetime import datetime
 from typing import Any, Literal
-
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 from sqlalchemy import (
     Boolean,
     Column,
@@ -178,6 +177,7 @@ class MoleculeORM(Base):
     # Hash SHA-256 del SMILES canonicalizado.
     # Permite detectar moléculas duplicadas y usar cache de docking.
     smiles_hash = Column(String(64), nullable=False, index=True)
+    is_saved    = Column(Boolean, default=False, server_default='false', nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -238,6 +238,7 @@ class EvaluationResultORM(Base):
     adme_score       = Column(Float, nullable=True)
     druglikeness_score = Column(Float, nullable=True)
     total_score      = Column(Float, nullable=True, index=True)  # score final del juego
+    is_control       = Column(Boolean, default=False)           # si es True, se ignoran penalizaciones ADME
 
     # ── Reporte IA ───────────────────────────────────────────────────────────
     ai_report        = Column(Text, nullable=True)   # reporte narrativo de Claude
@@ -360,6 +361,7 @@ class MoleculeRead(BaseModel):
     user_id:       uuid.UUID
     target_id:     uuid.UUID
     smiles_hash:   str
+    is_saved:      bool
     created_at:    datetime
     updated_at:    datetime | None
 
@@ -400,8 +402,19 @@ class EvaluationResultRead(BaseModel):
     druglikeness_score: float | None
     total_score:        float | None   # 0–100, el score del juego
 
+    @computed_field
+    @property
+    def ligand_efficiency(self) -> float | None:
+        if self.affinity_kcal is not None and self.heavy_atom_count and self.heavy_atom_count > 0:
+            return round(self.affinity_kcal / self.heavy_atom_count, 3)
+        return None
+
+    is_control:        bool = False
+
     # Reporte
     ai_report:         str | None
+    poseData:          str | None = None  # Raw SDF content for 3D viewer
+
 
     # Blockchain
     blockchain_tx_id:  str | None
@@ -422,6 +435,7 @@ class ScoreBreakdown(BaseModel):
     adme_score:         float = Field(..., ge=0, le=100)
     druglikeness_score: float = Field(..., ge=0, le=100)
     total_score:        float = Field(..., ge=0, le=100)
+    ligand_efficiency:  float | None = None
 
     # Pesos usados en el cálculo (para transparencia)
     weight_affinity:     float
@@ -487,6 +501,7 @@ class AIReportRequest(BaseModel):
     score_breakdown:  ScoreBreakdown
     parent_smiles:    str | None = None   # para comparar con la versión anterior
     mutation_type:    MutationType | None = None
+    is_control:       bool = False
 
     model_config = {"from_attributes": True}
 

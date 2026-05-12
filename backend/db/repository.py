@@ -204,6 +204,7 @@ class Repository:
         docking: DockingResult | None = None,
         scores: dict[str, Any] | None = None,
         ai_report: str | None = None,
+        is_control: bool = False,
         error_message: str | None = None,
         celery_task_id: str | None = None,
     ) -> EvaluationResultORM:
@@ -211,6 +212,8 @@ class Repository:
         if result is None:
             result = EvaluationResultORM(molecule_id=molecule_id)
             self.db.add(result)
+        
+        result.is_control = is_control
 
         if properties is not None:
             # Cast all numerics to native Python types

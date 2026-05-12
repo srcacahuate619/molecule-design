@@ -4,11 +4,10 @@ scoring/engine.py
 Motor de score compuesto del MVP.
 
 Combina:
-- afinidad de docking (Vina),
-- score ADME explícito,
-- drug-likeness explícito.
+- Ligand Efficiency (LE) o Afinidad absoluta
+- QED (Quantitative Estimate of Drug-likeness) para propiedades fisicoquímicas
 
-El resultado es una heurística de priorización, no una afirmación de eficacia.
+El resultado es una métrica de priorización basada en estándares de la industria.
 """
 
 from __future__ import annotations
@@ -16,7 +15,6 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from chem.properties import get_lipinski_violations, get_veber_violations
 from core.config import get_settings
 from core.exceptions import ScoringError
 from core.models import DockingResult, PhysicochemicalProperties, ScoreBreakdown
@@ -38,10 +36,10 @@ def _pick_dimensions(
     adme_score: float,
     druglikeness_score: float,
 ) -> tuple[str, str]:
+    # Como adme_score y druglikeness_score son iguales (QED), agrupamos
     dimensions = {
-        "affinity": affinity_score,
-        "ADME": adme_score,
-        "drug-likeness": druglikeness_score,
+        "afinidad (LE)": affinity_score,
+        "propiedades (QED)": adme_score,
     }
     strongest = max(dimensions, key=dimensions.get)
     weakest = min(dimensions, key=dimensions.get)
@@ -52,48 +50,56 @@ def _build_improvement_hint(
     properties: PhysicochemicalProperties,
     weakest_dimension: str,
 ) -> str:
-    lipinski = get_lipinski_violations(properties)
-    veber = get_veber_violations(properties)
-
-    if weakest_dimension == "affinity":
+    if weakest_dimension == "afinidad (LE)":
         return (
-            "La afinidad de docking es la dimensión más débil; conviene explorar "
-            "modificaciones estructurales que mejoren complementariedad con el sitio activo."
+            "La Eficiencia de Ligando es baja. Considera optimizar los contactos "
+            "existentes antes de añadir más peso molecular."
         )
 
-    if weakest_dimension == "ADME":
+    # Si QED es la más débil
+    if properties.qed < 0.5:
+        if properties.molecular_weight > 500:
+            return "El QED es bajo. Intenta reducir el peso molecular para mejorar el perfil general."
         if properties.log_p > 5:
-            return "Reduce el logP para mejorar el balance entre permeabilidad y lipofilia."
+            return "El QED es bajo. Reduce la lipofilia (logP) para mejorar la viabilidad."
         if properties.tpsa > 140:
-            return "Reduce TPSA para favorecer absorción oral potencial."
-        if properties.rotatable_bonds > 10:
-            return "Reduce flexibilidad molecular para mejorar el perfil ADME heurístico."
-        return "Optimiza logP, TPSA y flexibilidad para reforzar el perfil ADME."
-
-    if lipinski or veber:
-        joined = "; ".join([*lipinski, *veber])
-        return f"Mejora las violaciones detectadas: {joined}."
+            return "El QED es bajo. La polaridad excesiva (TPSA) está reduciendo el score."
+        return "El QED es bajo. Revisa la complejidad estructural de la molécula."
 
     return (
-        "El perfil general es balanceado; cualquier mejora futura debería priorizar "
-        "afinidad o selectividad sin degradar el perfil fisicoquímico."
+        "El perfil general es muy bueno. Cualquier mejora futura debería priorizar "
+        "la optimización del ajuste estérico sin degradar el QED."
     )
 
 
 def calculate_score_breakdown(
     docking: DockingResult,
     properties: PhysicochemicalProperties,
+    is_control: bool = False,
 ) -> ScoreBreakdown:
     """Calcula el breakdown completo del score para una evaluación."""
-    affinity_score = normalize_affinity(docking.best_affinity)
+    
+    # Afinidad ahora evalúa Ligand Efficiency (LE)
+    affinity_score = normalize_affinity(docking.best_affinity, properties.heavy_atom_count)
+    
+    # Ambos scores usan QED internamente (Bickerton 2012)
     adme_score = calculate_adme_score(properties)
     druglikeness_score = calculate_druglikeness_score(properties)
 
-    total_score = clamp_score(
-        (affinity_score * settings.score_weight_affinity)
-        + (adme_score * settings.score_weight_adme)
-        + (druglikeness_score * settings.score_weight_druglikeness)
-    )
+    # El score físico es esencialmente el QED ponderado
+    physico_score = (adme_score * settings.score_weight_adme) + (druglikeness_score * settings.score_weight_druglikeness)
+    
+    # Penalizador suavizado: la afinidad aporta su peso, pero también modula la utilidad de las propiedades
+    # Si la afinidad es muy baja (no une), las propiedades perfectas no sirven de mucho.
+    affinity_multiplier = (affinity_score / 100.0) * 0.5 + 0.5 # Nunca penaliza al 0% para no frustrar
+    
+    if is_control:
+        # Si es ligando de control endógeno, ignorar propiedades fisicoquímicas
+        total_score = clamp_score(affinity_score)
+    else:
+        total_score = clamp_score(
+            (affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
+        )
 
     strongest, weakest = _pick_dimensions(
         affinity_score,
@@ -101,11 +107,15 @@ def calculate_score_breakdown(
         druglikeness_score,
     )
 
+    # Calcular LE bruta para pasarla al frontend si es posible
+    le_raw = round(docking.best_affinity / properties.heavy_atom_count, 3) if properties.heavy_atom_count else None
+
     return ScoreBreakdown(
         affinity_score=affinity_score,
         adme_score=adme_score,
         druglikeness_score=druglikeness_score,
         total_score=total_score,
+        ligand_efficiency=le_raw,
         weight_affinity=settings.score_weight_affinity,
         weight_adme=settings.score_weight_adme,
         weight_druglikeness=settings.score_weight_druglikeness,
@@ -125,6 +135,10 @@ async def score_and_persist(
     Calcula el score y persiste los resultados normalizados.
     """
     try:
+        # Aquí obtenemos la molécula para saber si es control
+        molecule = await repository.get_molecule(molecule_id)
+        # Por ahora asumimos que no es control a menos que se mande en una versión futura. 
+        # (El control flag se suele setear en un paso superior si es necesario)
         breakdown = calculate_score_breakdown(docking, properties)
         await repository.upsert_evaluation_result(
             molecule_id=molecule_id,
@@ -147,7 +161,9 @@ def breakdown_to_result_dict(breakdown: ScoreBreakdown) -> dict[str, Any]:
         "adme_score": float(breakdown.adme_score),
         "druglikeness_score": float(breakdown.druglikeness_score),
         "total_score": float(breakdown.total_score),
+        "ligand_efficiency": float(breakdown.ligand_efficiency) if breakdown.ligand_efficiency else None,
         "strongest_dimension": str(breakdown.strongest_dimension),
         "weakest_dimension": str(breakdown.weakest_dimension),
         "improvement_hint": str(breakdown.improvement_hint),
     }
+

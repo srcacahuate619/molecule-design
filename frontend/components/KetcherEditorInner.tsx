@@ -77,8 +77,8 @@ export default function KetcherEditorInner({
 
   return (
     <div
-      className="ketcher-wrapper overflow-hidden rounded-xl border border-surface-700"
-      style={{ height: 450, position: "relative" }}
+      className="ketcher-wrapper rounded-xl border border-surface-700"
+      style={{ height: 550, position: "relative" }}
     >
       <Editor
         staticResourcesUrl=""

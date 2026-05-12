@@ -25,8 +25,10 @@ from fastapi.responses import JSONResponse
 
 from api.middleware import register_middleware
 from api.routers.auth import router as auth_router
+from api.routers.blockchain import router as blockchain_router
 from api.routers.evaluation import router as evaluation_router
 from api.routers.history import router as history_router
+from api.routers.stats import router as stats_router
 from api.routers.suggestions import router as suggestions_router
 from api.routers.targets import router as targets_router
 from chem.router import router as chem_router
@@ -137,11 +139,13 @@ app = FastAPI(
 
 register_middleware(app)
 app.include_router(auth_router)
+app.include_router(blockchain_router)
 app.include_router(chem_router)
 app.include_router(evaluation_router)
 app.include_router(history_router)
 app.include_router(targets_router)
 app.include_router(suggestions_router)
+app.include_router(stats_router)
 
 
 @app.exception_handler(MolDesignError)

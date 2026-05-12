@@ -10,7 +10,7 @@ import { PropertiesPanel } from "@/components/PropertiesPanel";
 import { ReproducibilityInfo } from "@/components/ReproducibilityInfo";
 import { ScoreCard } from "@/components/ScoreCard";
 import { ScientificWarnings } from "@/components/ScientificWarnings";
-import { getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles } from "@/lib/api";
+import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule } from "@/lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "@/lib/types";
 
 const POLL_INTERVAL_MS = 2000;
@@ -26,18 +26,91 @@ export default function EvaluationPage() {
   const [status, setStatus] = useState<JobStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isControl, setIsControl] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
 
   // --- 3D viewer state ---
   const [proteinData, setProteinData] = useState<string | null>(null);
+  const [poseData, setPoseData] = useState<string | null>(null);
 
   // --- Suggestions state ---
   const [suggestions, setSuggestions] = useState<MolecularSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
-  const canEvaluate = useMemo(() => validation?.is_valid === true, [validation]);
+  // --- AI Report state (async, decoupled from main pipeline) ---
+  const [aiReport, setAiReport] = useState<string | null>(null);
+  const [displayedReport, setDisplayedReport] = useState("");
+  const [loadingAiReport, setLoadingAiReport] = useState(false);
+
+  // --- Derived State ---
   const isTerminal = status?.status === "SUCCESS" || status?.status === "FAILURE";
+  const canEvaluate = !!validation?.is_valid;
+
+  const handleSave = useCallback(async () => {
+    if (!status?.result?.molecule_id) return;
+    try {
+      setBusy(true);
+      await saveMolecule(status.result.molecule_id);
+      setIsSaved(true);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }, [status]);
+
+  const handleCertify = useCallback(async () => {
+    if (!status?.result?.molecule_id) return;
+
+    let wallet: string | undefined = undefined;
+    const hasWallet = window.confirm(
+      "¿Deseas registrar este descubrimiento a nombre de tu Wallet de Solana (Phantom/Solflare)?\n\n" +
+      "• Aceptar: Ingresar tu propia Wallet.\n" +
+      "• Cancelar: Certificar gratis bajo tu correo electrónico."
+    );
+    
+    if (hasWallet) {
+      const input = window.prompt("Pega la dirección pública de tu Wallet de Solana:");
+      if (input === null) return; // User cancelled the prompt
+      if (input.trim().length >= 32) {
+        wallet = input.trim();
+      } else {
+        alert("La dirección ingresada parece inválida. Procediendo con certificación por correo.");
+      }
+    }
+
+    try {
+      setBusy(true);
+      const res = await certifyMolecule(status.result.molecule_id, wallet);
+      // We update the local state to show the badge immediately
+      setStatus((prev) => {
+        if (!prev || !prev.result) return prev;
+        return {
+          ...prev,
+          result: { ...prev.result, blockchain_tx_id: res.signature },
+        };
+      });
+      // Backend now auto-saves on certify, so we update local UI state
+      setIsSaved(true);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }, [status]);
+
+  const handleDownloadCertificate = useCallback(async () => {
+    if (!status?.result?.molecule_id) return;
+    try {
+      setBusy(true);
+      await downloadCertificate(status.result.molecule_id);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }, [status]);
 
   // --- Polling ---
   const stopPolling = useCallback(() => {
@@ -54,6 +127,7 @@ export default function EvaluationPage() {
         try {
           const polled = await getJobStatus(tid);
           setStatus(polled);
+          console.log(polled);
           if (polled.status === "SUCCESS" || polled.status === "FAILURE") {
             stopPolling();
           }
@@ -68,15 +142,47 @@ export default function EvaluationPage() {
   useEffect(() => () => stopPolling(), [stopPolling]);
 
 
-  // --- Fetch protein file when we have results ---
-  // Now poseData comes directly from status.result.poseData
+  // --- Fetch 3D file when we have results ---
   useEffect(() => {
     if (!status?.result?.molecule_id) return;
     const moleculeId = status.result.molecule_id;
+    // Fetch protein PDB
     getProteinFile(moleculeId).then((protein) => {
       setProteinData(protein);
     });
+    // Fetch ligand pose SDF (with explicit bonds)
+    getPoseFile(moleculeId).then((pose) => {
+      setPoseData(pose);
+    });
   }, [status?.result?.molecule_id]);
+
+  // --- Fetch AI report separately after SUCCESS (decoupled from Celery pipeline) ---
+  useEffect(() => {
+    const moleculeId = status?.result?.molecule_id;
+    if (!moleculeId) return;
+    // Reset on new evaluation
+    setAiReport(null);
+    setLoadingAiReport(true);
+    getAiReport(moleculeId)
+      .then((report) => setAiReport(report))
+      .catch(() => setAiReport(null))
+      .finally(() => setLoadingAiReport(false));
+  }, [status?.result?.molecule_id]);
+
+  // --- Typewriter effect for AI report ---
+  useEffect(() => {
+    if (!aiReport) {
+      setDisplayedReport("");
+      return;
+    }
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedReport(aiReport.slice(0, i));
+      i += 3; // Escribir de a 3 caracteres para que sea fluido pero rápido
+      if (i > aiReport.length) clearInterval(interval);
+    }, 20);
+    return () => clearInterval(interval);
+  }, [aiReport]);
 
   // --- Fetch suggestions when we have results ---
   useEffect(() => {
@@ -128,7 +234,7 @@ export default function EvaluationPage() {
     setTaskId(null);
     setSuggestions([]);
     try {
-      const result = await submitEvaluation(smiles, target);
+      const result = await submitEvaluation(smiles, target, isControl);
       setTaskId(result.task_id);
       setStatus({
         task_id: result.task_id,
@@ -156,6 +262,7 @@ export default function EvaluationPage() {
     setSuggestions([]);
     setPoseData(null);
     setProteinData(null);
+    setIsSaved(false);
   };
 
   const handleUseSuggestion = (sug: MolecularSuggestion) => {
@@ -169,7 +276,7 @@ export default function EvaluationPage() {
       <section>
         <h1 className="text-2xl font-bold text-white">Evaluación molecular</h1>
         <p className="mt-1 text-sm text-surface-400">
-          Pipeline: validación (RDKit) → propiedades → conformer 3D → docking (Vina) → scoring → interpretación IA
+          Pipeline: validación (RDKit) → propiedades → conformer 3D → docking (Vina) → scoring → interpretación IA (en construcción)
         </p>
       </section>
 
@@ -203,6 +310,26 @@ export default function EvaluationPage() {
               <p className="mt-1 text-xs text-surface-500">
                 5-HT1A (7E2Y) · cryo-EM 3.0 Å · Xu et al. 2021
               </p>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-xl border border-surface-700 bg-surface-950/50 px-4 py-2">
+              <input
+                id="isControl"
+                type="checkbox"
+                checked={isControl}
+                onChange={(e) => setIsControl(e.target.checked)}
+                disabled={!!taskId && !isTerminal}
+                className="h-4 w-4 rounded border-surface-700 bg-surface-800 text-brand-600 focus:ring-brand-500"
+              />
+              <label htmlFor="isControl" className="text-xs font-medium text-surface-300">
+                Molécula de control / endógena
+              </label>
+              <div className="group relative">
+                <span className="cursor-help text-[10px] text-surface-500 underline decoration-dotted">?</span>
+                <div className="absolute bottom-full left-1/2 mb-2 hidden w-48 -translate-x-1/2 rounded-lg bg-surface-800 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block">
+                  Si se activa, el sistema ignorará las penalizaciones de fármacos orales (ADME) para no penalizar ligandos naturales.
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -297,13 +424,18 @@ export default function EvaluationPage() {
               affinityKcal={status.result.affinity_kcal}
               adme={status.result.adme_score}
               druglikeness={status.result.druglikeness_score}
+              ligandEfficiency={status.result.ligand_efficiency}
+              onCertify={handleCertify}
+              onSave={handleSave}
+              isSaved={isSaved}
+              solanaSignature={status.result.blockchain_tx_id}
+              onDownloadCertificate={handleDownloadCertificate}
             />
             <MoleculeViewer3D
-              poseData={status?.result?.poseData && status.result.poseData.trim().length > 0 ? status.result.poseData : undefined}
+              poseData={poseData ?? undefined}
               proteinData={proteinData ?? undefined}
               height={320}
-            />
-          </div>
+            />          </div>
 
           {/* Scientific warnings */}
           <ScientificWarnings warnings={status.result.scientific_warnings} />
@@ -311,17 +443,26 @@ export default function EvaluationPage() {
           {/* Properties */}
           <PropertiesPanel result={status.result} />
 
-          {/* AI Report */}
-          {status.result.ai_report && (
+          {/* AI Report - async, shown when ready */}
+          {(loadingAiReport || aiReport) && (
             <section className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
-              <h3 className="mb-1 text-sm font-bold text-white">Interpretación IA</h3>
+              <h3 className="mb-1 text-sm font-bold text-white">Interpretación IA (Próximamente)</h3>
               <p className="mb-3 text-xs text-surface-500">
-                Generada por modelo de lenguaje. No sustituye criterio científico experto.
-                La IA no genera ni modifica valores numéricos.
+                Generada por Claude (Anthropic). No sustituye criterio científico experto.
               </p>
-              <pre className="whitespace-pre-wrap text-sm leading-relaxed text-surface-300">
-                {status.result.ai_report}
-              </pre>
+              {loadingAiReport ? (
+                <div className="flex items-center gap-2 py-2 text-sm text-surface-400">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+                  Generando interpretación...
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed text-surface-300">
+                  {displayedReport}
+                  {displayedReport.length < (aiReport?.length || 0) && (
+                    <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-brand-500" />
+                  )}
+                </p>
+              )}
             </section>
           )}
 

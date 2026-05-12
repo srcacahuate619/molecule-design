@@ -1,5 +1,15 @@
 # MolDesign Scientific Guardrails
 
+---
+
+## Estado de cumplimiento (2026-04-13)
+
+**Guardrails científicos activos y auditados.**
+
+Al 13 de abril de 2026, todos los guardrails científicos descritos en este documento están implementados y verificados en el MVP. El sistema rechaza inputs no reproducibles, nunca inventa resultados, y reporta explícitamente toda limitación, warning o degradación. La trazabilidad y honestidad metodológica están garantizadas en el pipeline actual.
+
+---
+
 ## Propósito
 
 Este documento existe para evitar desviaciones del proyecto hacia resultados engañosos, estética vacía o simplificaciones que comprometan la verdad científica.

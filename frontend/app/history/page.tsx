@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/lib/auth";
-import { getEvaluationHistory, getUserStats } from "@/lib/api";
+import { getEvaluationHistory, getUserStats, downloadCertificate } from "@/lib/api";
 import type { EvaluationSummary, HistoryResponse, UserStats } from "@/lib/types";
 
 export default function HistoryPage() {
@@ -49,7 +49,7 @@ export default function HistoryPage() {
         <div className="text-4xl">🔐</div>
         <h1 className="text-xl font-bold text-white">Autenticación requerida</h1>
         <p className="text-sm text-surface-400">
-          Inicia sesión para ver tu historial de evaluaciones.
+          Inicia sesión para ver tus moléculas guardadas.
         </p>
         <Link
           href="/login"
@@ -65,9 +65,9 @@ export default function HistoryPage() {
     <main className="space-y-6 pb-12">
       {/* ── Header ── */}
       <section>
-        <h1 className="text-2xl font-bold text-white">Historial de evaluaciones</h1>
+        <h1 className="text-2xl font-bold text-white">Moléculas Guardadas</h1>
         <p className="mt-1 text-sm text-surface-400">
-          Todas tus evaluaciones moleculares con resultados trazables y reproducibles.
+          Evaluaciones moleculares que has decidido conservar.
         </p>
       </section>
 
@@ -154,6 +154,7 @@ export default function HistoryPage() {
                     <th className="px-3 py-3 text-center font-semibold text-surface-400">MW</th>
                     <th className="px-3 py-3 text-center font-semibold text-surface-400">Lipinski</th>
                     <th className="px-3 py-3 text-center font-semibold text-surface-400">QED</th>
+                    <th className="px-3 py-3 text-center font-semibold text-surface-400">Certificado</th>
                     <th className="px-3 py-3 text-right font-semibold text-surface-400">Fecha</th>
                   </tr>
                 </thead>
@@ -192,6 +193,19 @@ export default function HistoryPage() {
                       </td>
                       <td className="px-3 py-3 text-center text-surface-400">
                         {item.qed != null ? item.qed.toFixed(2) : "—"}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        {item.blockchain_tx_id ? (
+                          <button
+                            onClick={() => downloadCertificate(item.molecule_id)}
+                            className="inline-flex items-center gap-1.5 rounded-md bg-brand-500/10 px-2 py-1 text-[10px] font-bold text-brand-400 transition-colors hover:bg-brand-500/20"
+                            title="Descargar Certificado PDF"
+                          >
+                            📥 PDF
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-surface-600">No cert.</span>
+                        )}
                       </td>
                       <td className="px-3 py-3 text-right text-surface-500">
                         {item.created_at ? new Date(item.created_at).toLocaleDateString("es-MX", {

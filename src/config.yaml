@@ -1,0 +1,27 @@
+{
+  "models": [
+    {
+      "title": "Gemma 4 Chat",
+      "provider": "lmstudio",
+      "model": "gemma-4-26B-A4B-it-GGUF",
+      "apiBase": "http://localhost:1234/v1"
+    },
+    {
+      "title": "DeepSeek Coder (Autocomplete)",
+      "provider": "lmstudio",
+      "model": "DeepSeek-Coder-V2-Lite-Instruct-GGUF",
+      "apiBase": "http://localhost:1234/v1"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "DeepSeek Coder (Autocomplete)",
+    "provider": "lmstudio",
+    "model": "DeepSeek-Coder-V2-Lite-Instruct-GGUF",
+    "apiBase": "http://localhost:1234/v1"
+  },
+  "embeddingsProvider": {
+    "provider": "lmstudio",
+    "model": "Qwen3.6-35B-A3B-GGUF",
+    "apiBase": "http://localhost:1234/v1"
+  }
+}

@@ -25,6 +25,7 @@ export type DockingPose = {
 export type EvaluationResult = {
   id: string;
   molecule_id: string;
+  smiles_hash: string;
 
   // Docking
   affinity_kcal: number | null;
@@ -53,6 +54,7 @@ export type EvaluationResult = {
   adme_score: number | null;
   druglikeness_score: number | null;
   total_score: number | null;
+  ligand_efficiency: number | null;
 
   // Files
   poses_file_path: string | null;
@@ -94,6 +96,7 @@ export type EvaluationSummary = {
   log_p: number | null;
   lipinski_pass: boolean | null;
   qed: number | null;
+  blockchain_tx_id: string | null;
   evaluated_at: string | null;
   created_at: string;
 };
@@ -149,3 +152,10 @@ export type AlphaFoldEntry = {
   total_residues: number | null;
   warnings: string[];
 };
+
+export interface GlobalStats {
+  total_molecules: number;
+  total_certifications: number;
+  best_affinity: number | null;
+  community_status: string;
+}

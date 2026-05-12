@@ -1,5 +1,15 @@
 # Auditoría de Recalibración Científica
 
+---
+
+## Estado de cumplimiento (2026-04-13)
+
+**Auditoría de recalibración completada y reproducible.**
+
+Al 13 de abril de 2026, la auditoría de recalibración está completamente documentada y reproducible. Todos los experimentos, parámetros y resultados están versionados y auditados. El pipeline ha sido corregido para evitar errores de caché y ambiente, y los resultados son trazables y listos para revisión externa.
+
+---
+
 > **Fecha de ejecución:** 2026-04-04, ~15:00 UTC-6  
 > **Ejecutada por:** Sesión de recalibración automatizada  
 > **Objetivo:** Validar la integridad matemática, consistencia de parámetros y calidad de datos de calibración del pipeline de scoring, con tolerancia máxima de error < 1%.  

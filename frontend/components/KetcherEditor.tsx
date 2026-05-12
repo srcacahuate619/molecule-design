@@ -11,7 +11,7 @@ const KetcherEditorInner = dynamic(() => import("./KetcherEditorInner"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center rounded-xl border border-dashed border-surface-700 bg-surface-950"
-      style={{ height: 450 }}
+      style={{ height: 550 }}
     >
       <div className="flex items-center gap-2 text-sm text-surface-400">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
@@ -75,10 +75,10 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
             setKetcherError(null);
             setMode("ketcher");
           }}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
             mode === "ketcher"
               ? "bg-brand-600/20 text-brand-400"
-              : "text-surface-400 hover:bg-surface-800"
+              : "animate-pulse border border-yellow-500/60 bg-yellow-500/10 text-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.5)] hover:bg-yellow-500/20 hover:shadow-[0_0_16px_rgba(234,179,8,0.7)]"
           }`}
         >
           Editor visual
@@ -100,6 +100,11 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
               { label: "Cafeína", smiles: "Cn1c(=O)c2c(ncn2C)n(C)c1=O" },
               { label: "Ibuprofeno", smiles: "CC(C)Cc1ccc(cc1)C(C)C(=O)O" },
               { label: "Serotonina", smiles: "NCCc1c[nH]c2ccc(O)cc12" },
+              { label: "Dopamina", smiles: "NCCc1ccc(O)c(O)c1" },
+              { label: "Melatonina", smiles: "CC(=O)NCCCc1c[nH]c2ccc(OC)cc12" },
+              { label: "Paracetamol", smiles: "CC(=O)Nc1ccc(O)cc1" },
+              { label: "Fluoxetina", smiles: "CNCCC(c1ccccc1)Oc2ccc(cc2)C(F)(F)F" },
+              { label: "Diazepam", smiles: "CN1C(=O)CN=C(C2=C1C=CC(=C2)Cl)C3=CC=CC=C3" },
             ].map((ex) => (
               <button
                 key={ex.label}
@@ -110,6 +115,9 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
               </button>
             ))}
           </div>
+          <p className="mt-2 text-xs italic text-surface-500">
+            Moléculas prefabricadas a modo de ejemplo, no estás limitado a éstas opciones, usa el editor visual para crear las que quieras!
+          </p>
         </div>
       ) : (
         <div className="space-y-2">

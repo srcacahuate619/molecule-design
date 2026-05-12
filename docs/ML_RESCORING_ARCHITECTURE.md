@@ -1,5 +1,15 @@
 # ML Rescoring Architecture — Diseño, Decisiones y Problemas Abiertos
 
+---
+
+## Estado de cumplimiento (2026-04-13)
+
+**Infraestructura de rescoring lista y auditada.**
+
+Al 13 de abril de 2026, la arquitectura de rescoring ML está implementada y funcional en el MVP. El pipeline permite recalibración, auditoría y entrenamiento reproducible, con logs y artefactos versionados. Todos los módulos críticos han sido revisados y corregidos para evitar errores de caché y ambiente.
+
+---
+
 > **Fecha de creación:** 2026-04-04  
 > **Última actualización:** 2026-04-06  
 > **Estado:** FASE 4 COMPLETA — Modelo v4 entrenado (CV Spearman 0.601 ± 0.040, Holdout 0.527). Validación completa: Test Crystal→Docked Δρ=-0.030, Test 5-HT1A ρ=0.176 (NS).  

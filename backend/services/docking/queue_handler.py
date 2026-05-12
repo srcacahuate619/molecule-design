@@ -66,6 +66,8 @@ async def _run_full_evaluation_async(
     smiles: str,
     target_pdb_id: str,
     molecule_name: str | None = None,
+    is_control: bool = False,
+    user_id: str | None = None,
 ) -> dict[str, Any]:
     async with get_db_session() as db:
         repository = Repository(db)
@@ -77,6 +79,7 @@ async def _run_full_evaluation_async(
             smiles=smiles,
             target_pdb_id=target.pdb_id,
             name=molecule_name,
+            user_id=UUID(user_id) if user_id else None,
         )
 
         try:
@@ -105,25 +108,13 @@ async def _run_full_evaluation_async(
             )
 
             await cache.set_job_progress(task_id, 80, "scoring")
-            breakdown = calculate_score_breakdown(docking, properties)
-            ai_report = await safe_generate_ai_report(
-                AIReportRequest(
-                    molecule_smiles=molecule.smiles,
-                    target_name=target.name,
-                    affinity_kcal=docking.best_affinity,
-                    affinity_score=breakdown.affinity_score,
-                    properties=properties,
-                    score_breakdown=breakdown,
-                    parent_smiles=None,
-                    mutation_type=molecule.mutation_type,
-                )
-            )
+            breakdown = calculate_score_breakdown(docking, properties, is_control=is_control)
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,
                 properties=properties,
                 docking=docking,
                 scores=breakdown.model_dump(),
-                ai_report=ai_report,
+                is_control=is_control,
                 celery_task_id=task_id,
             )
             await repository.set_molecule_status(molecule.id, MoleculeStatus.EVALUATED)
@@ -189,6 +180,8 @@ def run_full_evaluation(
     smiles: str,
     target_pdb_id: str,
     molecule_name: str | None = None,
+    is_control: bool = False,
+    user_id: str | None = None,
 ) -> dict[str, Any]:
     """
     Celery task que ejecuta el pipeline completo de evaluación.
@@ -205,6 +198,8 @@ def run_full_evaluation(
             smiles=smiles,
             target_pdb_id=target_pdb_id,
             molecule_name=molecule_name,
+            is_control=is_control,
+            user_id=user_id,
         )
     )
 
@@ -213,8 +208,10 @@ def submit_evaluation_job(
     smiles: str,
     target_pdb_id: str,
     molecule_name: str | None = None,
+    is_control: bool = False,
+    user_id: str | None = None,
 ):
-    return run_full_evaluation.delay(smiles=smiles, target_pdb_id=target_pdb_id, molecule_name=molecule_name)
+    return run_full_evaluation.delay(smiles=smiles, target_pdb_id=target_pdb_id, molecule_name=molecule_name, is_control=is_control, user_id=user_id)
 
 
 async def get_job_status(task_id: str) -> JobStatus:

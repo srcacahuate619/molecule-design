@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 const NAV_ITEMS = [
   { href: "/", label: "Inicio" },
   { href: "/evaluation", label: "Evaluación" },
-  { href: "/history", label: "Historial" },
+  { href: "/history", label: "Guardado" },
 ];
 
 export function Navigation() {

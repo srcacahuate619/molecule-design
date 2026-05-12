@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div id="container-01" class="mol-container" style="width: 600px; height: 400px; position: relative;"></div>
+    <script>
+        $(function() {
+            let element = $('#container-01');
+            let config = { backgroundColor: 'black' };
+            let viewer = $3Dmol.createViewer( element, config );
+            
+            // Dummy protein
+            let pdb = `ATOM      1  N   ALA A   1      -0.000  -0.000  -0.000  1.00  0.00           N  \nATOM      2  CA  ALA A   1       1.458   0.000   0.000  1.00  0.00           C  \nATOM      3  C   ALA A   1       2.009   1.424   0.000  1.00  0.00           C  \nATOM      4  O   ALA A   1       1.303   2.438   0.000  1.00  0.00           O  `;
+            viewer.addModel(pdb, "pdb"); // model 0
+            
+            viewer.setStyle({model: 0}, {sphere: {radius: 0.5}});
+            
+            // Test addCylinder
+            viewer.addCylinder({
+                start: {x: 0, y: 0, z: 0},
+                end: {x: 2, y: 2, z: 0},
+                radius: 0.1,
+                color: "yellow",
+                dashed: true
+            });
+            
+            viewer.zoomTo();
+            viewer.render();
+        });
+    </script>
+</body>
+</html>

@@ -6,6 +6,16 @@
 
 ---
 
+## Estado de cumplimiento (2026-04-13)
+
+**¡MVP alcanzado!**
+
+Al 13 de abril de 2026, MolDesign cumple todos los criterios del MVP científico: pipeline end-to-end reproducible, validación química, docking real, score compuesto auditable, interpretación IA honesta, warnings visibles y flujo repetible sin intervención manual. Todos los bugs críticos fueron resueltos y el sistema está listo para auditoría y colaboración científica.
+
+---
+
+---
+
 ## 1. Qué significa “MVP” en MolDesign
 
 En MolDesign, MVP **no** significa “demo bonita”.

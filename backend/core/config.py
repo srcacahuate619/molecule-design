@@ -42,8 +42,8 @@ class Settings(BaseSettings):
 
     database_url: PostgresDsn = Field(
         ...,
-        description="URL de conexión a PostgreSQL. "
-                    "Ejemplo: postgresql+asyncpg://user:pass@localhost:5432/db",
+        description="URL de la base de datos PostgreSQL. "
+                    "Ejemplo: postgresql+asyncpg://user:pass@192.168.1.64:5432/db",
     )
     db_pool_size: int = Field(default=10, ge=1, le=50)
     db_max_overflow: int = Field(default=20, ge=0, le=100)
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     # ── Redis ────────────────────────────────────────────────────────────────
 
     redis_url: RedisDsn = Field(
-        default="redis://localhost:6379/0",
+        default="redis://192.168.1.64:6379/0",
         description="URL de conexión a Redis.",
     )
     # TTL del cache de docking: 24 horas.
@@ -65,7 +65,7 @@ class Settings(BaseSettings):
 
     # ── MinIO / S3 ───────────────────────────────────────────────────────────
 
-    minio_endpoint: str = "localhost:9000"
+    minio_endpoint: str = "192.168.1.64:9005"
     minio_access_key: str = Field(..., min_length=3)
     minio_secret_key: str = Field(..., min_length=8)
     minio_bucket_poses: str = "docking-poses"
@@ -184,15 +184,26 @@ class Settings(BaseSettings):
             )
         return druglikeness
 
-    # ── IA / Claude API ──────────────────────────────────────────────────────
-
-    anthropic_api_key: str | None = Field(
+    # ── IA / Gemini API ────────────────────────────────────────────────────────
+    
+    gemini_api_key: str | None = Field(
         default=None,
-        description="Requerida solo en Fase 3. "
+        description="Requerida para reportes científicos de IA. "
                     "Sin esta clave, el servicio de reportes no estará disponible.",
     )
-    anthropic_model: str = "claude-sonnet-4-20250514"
-    anthropic_max_tokens: int = Field(default=1500, ge=100, le=4096)
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_max_tokens: int = Field(default=2000, ge=100, le=4096)
+
+    # ── Anthropic API ──────────────────────────────────────────────────────────
+    anthropic_api_key: str | None = Field(
+        default=None,
+        description="Clave de Anthropic para generar reportes IA usando Claude.",
+    )
+    anthropic_model: str = "claude-haiku-4-5-20251001"
+
+    # ── Local AI (LM Studio) ────────────────────────────────────────────────
+    lmstudio_url: str = "http://192.168.1.71:1234"
+    lmstudio_model: str = "local-model"
 
     # ── Autenticación ────────────────────────────────────────────────────────
 
@@ -204,7 +215,18 @@ class Settings(BaseSettings):
 
     # En desarrollo, permite cualquier origen.
     # En producción, reemplaza con el dominio real de tu frontend.
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
+
+    # ── Solana Blockchain ────────────────────────────────────────────────────
+
+    solana_rpc_url: str = Field(
+        default="https://api.devnet.solana.com",
+        description="URL del RPC de Solana. Usa devnet para desarrollo.",
+    )
+    solana_private_key: str | None = Field(
+        default=None,
+        description="Private key hexadecimal de la wallet de Solana para firmar transacciones.",
+    )
 
     # ── Propiedades derivadas ────────────────────────────────────────────────
 

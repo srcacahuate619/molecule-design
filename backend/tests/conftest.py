@@ -40,11 +40,11 @@ import os
 # Without these env vars, Settings() raises ValidationError at import time.
 os.environ.setdefault("ENVIRONMENT", "testing")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-minimum-32-characters-for-jwt-signing")
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://moldesign@localhost:5432/moldesign_test")
-os.environ.setdefault("MINIO_ACCESS_KEY", "minioadmin")
-os.environ.setdefault("MINIO_SECRET_KEY", "minioadmin123")
-os.environ.setdefault("MINIO_ENDPOINT", "localhost:9000")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://admin:Johan619.@192.168.1.64:5432/moldesign_test")
+os.environ.setdefault("MINIO_ACCESS_KEY", "admin")
+os.environ.setdefault("MINIO_SECRET_KEY", "Johan619.")
+os.environ.setdefault("MINIO_ENDPOINT", "192.168.1.64:9005")
+os.environ.setdefault("REDIS_URL", "redis://192.168.1.64:6379/0")
 
 import asyncio
 import uuid

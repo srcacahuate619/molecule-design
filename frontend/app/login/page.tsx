@@ -81,7 +81,7 @@ export default function LoginPage() {
           </h1>
           <p className="mt-1 text-sm text-surface-400">
             {mode === "login"
-              ? "Accede a tu historial y evaluaciones guardadas."
+              ? "Accede a tus moléculas guardadas."
               : "Registra una cuenta para guardar tus evaluaciones."}
           </p>
         </div>

@@ -15,6 +15,7 @@
     "ketcher-react": "^3.12.0",
     "ketcher-standalone": "^3.12.0",
     "next": "14.2.25",
+    "next-auth": "^4.24.14",
     "postcss": "^8.5.8",
     "react": "18.3.1",
     "react-dom": "18.3.1",
