@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 import httpx
+import anthropic
 
 from core.config import get_settings
 from core.exceptions import AIServiceError
@@ -44,49 +45,76 @@ EMPIEZA TU ANÁLISIS DIRECTAMENTE CON ESTAS PALABRAS:
 
 REPORTE DETALLADO:""".strip()
 
-import anthropic
+async def generate_claude_report(request: AIReportRequest) -> str | None:
+    """Genera reporte usando Claude (Anthropic)."""
+    if not settings.anthropic_api_key:
+        return None
+    try:
+        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        response = await client.messages.create(
+            model=settings.anthropic_model,
+            max_tokens=800,
+            temperature=0.5,
+            messages=[{"role": "user", "content": build_ai_prompt(request)}]
+        )
+        return response.content[0].text.strip()
+    except Exception as e:
+        log.warning("Fallo en Anthropic (posible falta de saldo)", error=str(e))
+        return None
+
+async def generate_gemini_report(request: AIReportRequest) -> str | None:
+    """Genera reporte usando Google Gemini 1.5 Flash vía REST API."""
+    if not settings.gemini_api_key:
+        log.error("Clave de API de Gemini no configurada.")
+        return None
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.gemini_api_key}"
+    payload = {
+        "contents": [{
+            "parts": [{"text": build_ai_prompt(request)}]
+        }],
+        "generationConfig": {
+            "temperature": 0.5,
+            "maxOutputTokens": 800
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            res = await client.post(url, json=payload)
+            if res.status_code != 200:
+                log.error("Error en Gemini API", status=res.status_code, body=res.text)
+                return None
+            
+            data = res.json()
+            return data['candidates'][0]['content']['parts'][0]['text'].strip()
+    except Exception as e:
+        log.error("Excepción en Gemini API", error=str(e))
+        return None
 
 async def generate_ai_report(request: AIReportRequest) -> str | None:
     """
-    Genera reporte IA usando Anthropic (Claude).
+    Orquestador de reportes con fallback automático.
+    Prioridad: Claude -> Gemini.
     """
-    if not settings.anthropic_api_key:
-        log.error("Clave de API de Anthropic no configurada.")
-        return None
-
-    prompt = build_ai_prompt(request)
+    # Intentar con Claude primero
+    report = await generate_claude_report(request)
+    if report:
+        log.info("Reporte generado con Claude")
+        return report
     
-    try:
-        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-        
-        response = await client.messages.create(
-            model=settings.anthropic_model,
-            max_tokens=1500,
-            temperature=0.5,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        report = response.content[0].text.strip()
-        
-        log.info(
-            "Reporte IA generado vía Anthropic", 
-            chars=len(report),
-            model=settings.anthropic_model
-        )
+    # Si falla o no hay saldo, intentar con Gemini
+    log.info("Saltando a fallback de Gemini...")
+    report = await generate_gemini_report(request)
+    if report:
+        log.info("Reporte generado con Gemini")
         return report
 
-    except Exception as e:
-        log.error("Excepción al llamar a Anthropic", error=str(e), error_type=type(e).__name__)
-        return None
+    return "No se pudo generar el reporte IA en este momento. Por favor revisa los créditos de API."
 
 async def safe_generate_ai_report(request: AIReportRequest) -> str | None:
-    """
-    Wrapper seguro para evitar que fallos en la IA bloqueen el pipeline de evaluación.
-    """
     try:
         return await generate_ai_report(request)
     except Exception as e:
-        log.warning("Fallo silencioso en generación de reporte IA", error=str(e))
-        return None
+        log.warning("Fallo total en IA", error=str(e))
+        return "Error de conexión con el servicio de IA."

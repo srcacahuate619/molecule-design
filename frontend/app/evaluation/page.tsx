@@ -65,13 +65,14 @@ export default function EvaluationPage() {
   const handleCertify = useCallback(async (walletOverride?: string) => {
     if (!status?.result?.molecule_id) return;
 
-    // Si no se pasa una wallet y no se ha mostrado el input, lo mostramos
-    if (!walletOverride && !showWalletInput) {
+    // Si el input no está visible, lo mostramos y terminamos
+    if (!showWalletInput) {
       setShowWalletInput(true);
       return;
     }
 
-    const wallet = walletOverride || (customWallet.trim().length >= 32 ? customWallet.trim() : undefined);
+    // Si ya está visible, procedemos con el valor de customWallet
+    const wallet = customWallet.trim().length >= 32 ? customWallet.trim() : undefined;
 
     try {
       setBusy(true);
