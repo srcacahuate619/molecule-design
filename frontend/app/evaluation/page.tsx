@@ -28,6 +28,8 @@ export default function EvaluationPage() {
   const [error, setError] = useState<string | null>(null);
   const [isControl, setIsControl] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showWalletInput, setShowWalletInput] = useState(false);
+  const [customWallet, setCustomWallet] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // --- 3D viewer state ---
@@ -60,25 +62,16 @@ export default function EvaluationPage() {
     }
   }, [status]);
 
-  const handleCertify = useCallback(async () => {
+  const handleCertify = useCallback(async (walletOverride?: string) => {
     if (!status?.result?.molecule_id) return;
 
-    let wallet: string | undefined = undefined;
-    const hasWallet = window.confirm(
-      "¿Deseas registrar este descubrimiento a nombre de tu Wallet de Solana (Phantom/Solflare)?\n\n" +
-      "• Aceptar: Ingresar tu propia Wallet.\n" +
-      "• Cancelar: Certificar gratis bajo tu correo electrónico."
-    );
-    
-    if (hasWallet) {
-      const input = window.prompt("Pega la dirección pública de tu Wallet de Solana:");
-      if (input === null) return; // User cancelled the prompt
-      if (input.trim().length >= 32) {
-        wallet = input.trim();
-      } else {
-        alert("La dirección ingresada parece inválida. Procediendo con certificación por correo.");
-      }
+    // Si no se pasa una wallet y no se ha mostrado el input, lo mostramos
+    if (!walletOverride && !showWalletInput) {
+      setShowWalletInput(true);
+      return;
     }
+
+    const wallet = walletOverride || (customWallet.trim().length >= 32 ? customWallet.trim() : undefined);
 
     try {
       setBusy(true);
@@ -93,6 +86,7 @@ export default function EvaluationPage() {
       });
       // Backend now auto-saves on certify, so we update local UI state
       setIsSaved(true);
+      setShowWalletInput(false);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -425,17 +419,53 @@ export default function EvaluationPage() {
               adme={status.result.adme_score}
               druglikeness={status.result.druglikeness_score}
               ligandEfficiency={status.result.ligand_efficiency}
-              onCertify={handleCertify}
+              onCertify={() => handleCertify()}
               onSave={handleSave}
               isSaved={isSaved}
               solanaSignature={status.result.blockchain_tx_id}
               onDownloadCertificate={handleDownloadCertificate}
             />
-            <MoleculeViewer3D
-              poseData={poseData ?? undefined}
-              proteinData={proteinData ?? undefined}
-              height={320}
-            />          </div>
+            
+            <div className="flex flex-col gap-5">
+              {showWalletInput && !status.result.blockchain_tx_id && (
+                <div className="animate-in fade-in slide-in-from-top-2 rounded-2xl border border-brand-500/30 bg-brand-500/5 p-4 shadow-lg backdrop-blur-sm">
+                  <h4 className="mb-2 text-sm font-bold text-brand-400">Certificación en Solana</h4>
+                  <p className="mb-3 text-[11px] text-surface-400">
+                    Ingresa tu Wallet (Phantom/Solflare) para registrar la autoría. 
+                    Si lo dejas vacío, se certificará bajo tu correo.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Dirección de tu Wallet Solana..."
+                      value={customWallet}
+                      onChange={(e) => setCustomWallet(e.target.value)}
+                      className="flex-1 rounded-lg border border-surface-700 bg-surface-950 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={() => handleCertify()}
+                      disabled={busy}
+                      className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+                    >
+                      {busy ? "Procesando..." : "Confirmar"}
+                    </button>
+                    <button
+                      onClick={() => setShowWalletInput(false)}
+                      className="rounded-lg border border-surface-700 px-3 py-2 text-sm text-surface-400 hover:bg-surface-800"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <MoleculeViewer3D
+                poseData={poseData ?? undefined}
+                proteinData={proteinData ?? undefined}
+                height={320}
+              />
+            </div>
+          </div>
 
           {/* Scientific warnings */}
           <ScientificWarnings warnings={status.result.scientific_warnings} />
