@@ -54,6 +54,28 @@ graph LR
 
 ---
 
+## 🛠️ Guía para Desarrolladores
+
+### Requisitos Previos
+*   **Docker & Docker Compose** (Recomendado).
+*   **Python 3.12+** & **Node.js 18+**.
+*   **AutoDock Vina 1.2.x** (Si se corre fuera de Docker).
+
+### 🚀 Instalación Rápida (Docker)
+1.  **Clona y entra**:
+    ```bash
+    git clone https://github.com/srcacahuate619/molecule-design.git
+    cd molecule-design
+    ```
+2.  **Configura**: `cp .env.example .env` (Edita con tus API Keys).
+3.  **Lanza**: `docker compose up --build`.
+
+### 🔧 Instalación Manual
+*   **Backend**: `cd backend && pip install -r requirements.txt && uvicorn api.main:app`.
+*   **Frontend**: `cd frontend && npm install && npm run dev`.
+
+---
+
 ## 📡 Despliegue y Arquitectura
 
 El proyecto está diseñado para escalar de forma asíncrona mediante trabajadores de Celery:
