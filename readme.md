@@ -2,9 +2,9 @@
 
 **Plataforma de Diseño Molecular Asistido por IA — Descubrimiento de Fármacos con Ciencia Computacional Real**
 
-> Versión 4.2 (MVP+1) · Mayo 2026  
-> Status: **Pipeline E2E Funcional en Producción**  
-> El rigor científico no es negociable. La IA interpreta. Nunca calcula.
+> Versión 5.0 (Producción) · Mayo 2026  
+> Status: **Desplegado y Funcional**  
+> El rigor científico es el motor. La Blockchain es el notario. La IA es el intérprete.
 
 ## ¿Qué es MolDesign?
 
@@ -139,8 +139,8 @@ Esto asegura que el sistema no se degrade silenciosamente con el tiempo.
 | Targets avanzados | AlphaFold DB (EBI) — busqueda y analisis de confianza pLDDT |
 | Docking avanzado | DiffDock (infraestructura lista, pendiente deployment) |
 | De novo generation | Reglas bioisostericas con RDKit SMARTS (Fase 1) |
-| Blockchain (futuro) | Solana — certificacion CC0, completamente opcional |
-| Deploy | Railway (backend), Vercel (frontend) |
+| Blockchain | Solana — Certificación inmutable con licencia CC0 (Mainnet-ready) |
+| Deploy | Railway (Backend + Workers), Vercel (Frontend) |
 
 ---
 
@@ -183,8 +183,9 @@ El objetivo es acelerar la llegada de tratamientos al paciente, no crear mercado
 | Integracion AlphaFold DB | Completa — busqueda, descarga, analisis pLDDT |
 | Sugerencias de optimizacion | Completas — reglas bioisostericas + guiadas por propiedades |
 | DiffDock | Infraestructura lista, pendiente activar servidor |
-| Frontend | Completo (4 paginas, 9 componentes, Tailwind CSS v4, 3Dmol.js) |
-| Blockchain | Implementado — certificación en Solana devnet para scores ≥70 |
+| Frontend | Completo (Diseño premium, Tailwind v4, 3Dmol.js) |
+| Blockchain | **Implementado** — Certificación en Solana devnet con PDF automático |
+| Estadísticas | **Implementado** — Actividad comunitaria en tiempo real |
 
 ---
 
@@ -235,17 +236,21 @@ El objetivo es acelerar la llegada de tratamientos al paciente, no crear mercado
 
 ---
 
-## Variables de entorno requeridas
+## Despliegue en 5 minutos
 
-```
-SECRET_KEY=<openssl rand -hex 32>
-DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db
-REDIS_URL=redis://host:6379/0
-MINIO_ROOT_USER=<usuario>
-MINIO_ROOT_PASSWORD=<password>
-ANTHROPIC_API_KEY=sk-ant-...
-ENVIRONMENT=production
-```
+### 1. Frontend (Vercel)
+- Conecta este repositorio a Vercel.
+- Configura el **Root Directory** como `frontend/`.
+- Añade la variable de entorno `NEXT_PUBLIC_API_URL` apuntando a tu backend de Railway.
+
+### 2. Backend (Railway)
+- Conecta el repositorio a Railway.
+- Railway detectará automáticamente el archivo `railway.toml` y desplegará el **API**.
+- Crea un segundo servicio en Railway usando la misma imagen de Docker pero con el comando `celery -A services.docking.queue_handler worker` para procesar el docking.
+- Conecta los servicios de **PostgreSQL** y **Redis** de Railway.
+
+### 3. Variables de Entorno (Globales)
+Consulta el archivo [`.env.example`](./.env.example) para ver la lista completa de secretos necesarios.
 
 ---
 
