@@ -1,4 +1,4 @@
-import type { EvaluationResult } from "@/lib/types";
+import type { EvaluationResult } from "../lib/types";
 
 type Props = {
   result: EvaluationResult;
