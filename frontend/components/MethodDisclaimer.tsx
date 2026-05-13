@@ -7,19 +7,19 @@ export function MethodDisclaimer() {
       <ul className="list-disc space-y-1 pl-4 leading-relaxed text-surface-400">
         <li>
           El docking computacional (AutoDock Vina) <strong className="text-gray-300">no equivale</strong> a validación experimental
-          in vitro, in vivo o clínica.
+          in vitro o clínica.
         </li>
         <li>
-          Las propiedades ADME se estiman por descriptores moleculares (RDKit), no por ensayo de absorción/metabolismo real.
+          Se aplica un modelo de <strong className="text-gray-300">re-scoring ML v4.0</strong> (Spearman ρ=0.33) para reducir el ruido de Vina y rescatar la señal biológica del receptor 5-HT1A.
         </li>
         <li>
-          El score compuesto es una <strong className="text-gray-300">heurística de priorización</strong>, no una predicción de eficacia terapéutica.
+          Las propiedades ADME y de accesibilidad sintética (SA) son estimaciones teóricas; un SA {">"} 6.0 indica alta complejidad estructural.
         </li>
         <li>
           El reporte de IA interpreta resultados ya calculados; no genera ni modifica valores numéricos.
         </li>
         <li>
-          Un buen score no garantiza actividad biológica; un mal score no la descarta completamente.
+          Un buen score compuesto es una <strong className="text-gray-300">heurística de priorización</strong> basada en afinidad y drug-likeness.
         </li>
       </ul>
     </section>

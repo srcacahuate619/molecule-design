@@ -16,6 +16,9 @@ export function ReproducibilityInfo({ result }: Props) {
         Parámetros clave para reproducir este resultado.
       </p>
       <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+        <span className="text-surface-400">ML Rescore</span>
+        <span className="text-brand-400 font-semibold">v4.0 (Spearman 0.33)</span>
+        
         {result.vina_version && (
           <>
             <span className="text-surface-400">AutoDock Vina</span>
@@ -26,12 +29,6 @@ export function ReproducibilityInfo({ result }: Props) {
           <>
             <span className="text-surface-400">Random seed</span>
             <span className="text-gray-300">{result.vina_random_seed}</span>
-          </>
-        )}
-        {result.parsing_source && (
-          <>
-            <span className="text-surface-400">Parsing source</span>
-            <span className="text-gray-300">{result.parsing_source}</span>
           </>
         )}
         {result.evaluated_at && (
