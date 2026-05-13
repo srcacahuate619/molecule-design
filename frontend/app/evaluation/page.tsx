@@ -271,7 +271,7 @@ export default function EvaluationPage() {
       <section>
         <h1 className="text-2xl font-bold text-white">Evaluación molecular</h1>
         <p className="mt-1 text-sm text-surface-400">
-          Pipeline: validación (RDKit) → propiedades → conformer 3D → docking (Vina) → scoring → interpretación IA (en construcción)
+          Pipeline: validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.0) → interpretación IA
         </p>
       </section>
 
