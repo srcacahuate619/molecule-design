@@ -10,6 +10,7 @@ import { PropertiesPanel } from "../../components/PropertiesPanel";
 import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
 import { ScoreCard } from "../../components/ScoreCard";
 import { ScientificWarnings } from "../../components/ScientificWarnings";
+import { MolecularInsight } from "../../components/MolecularInsight";
 import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule } from "../../lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../lib/types";
 
@@ -474,13 +475,16 @@ export default function EvaluationPage() {
           {/* Scientific warnings */}
           <ScientificWarnings warnings={status.result.scientific_warnings} />
 
+          {/* New Dynamic Molecular Insight */}
+          <MolecularInsight result={status.result} />
+
           {/* Properties */}
           <PropertiesPanel result={status.result} />
 
           {/* AI Report - async, shown when ready */}
           {(loadingAiReport || aiReport) && (
-            <section className="rounded-2xl border border-surface-800 bg-surface-900 p-5">
-              <h3 className="mb-1 text-sm font-bold text-white">Interpretación IA (Próximamente)</h3>
+            <section className="rounded-2xl border border-brand-800/20 bg-surface-900 p-5">
+              <h3 className="mb-1 text-sm font-bold text-white">Interpretación Científica AI</h3>
               <p className="mb-3 text-xs text-surface-500">
                 Generada por Claude (Anthropic). No sustituye criterio científico experto.
               </p>
