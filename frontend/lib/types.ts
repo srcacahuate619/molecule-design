@@ -49,6 +49,8 @@ export type EvaluationResult = {
   lipinski_pass: boolean | null;
   veber_pass: boolean | null;
   qed: number | null;
+  sa_score: number | null;
+  sa_reasons: string[] | null;
 
   // Scores
   adme_score: number | null;
@@ -58,6 +60,7 @@ export type EvaluationResult = {
 
   // Files
   poses_file_path: string | null;
+  is_control: boolean;
 
   // Report
   ai_report: string | null;
@@ -96,6 +99,7 @@ export type EvaluationSummary = {
   log_p: number | null;
   lipinski_pass: boolean | null;
   qed: number | null;
+  sa_score: number | null;
   blockchain_tx_id: string | null;
   evaluated_at: string | null;
   created_at: string;

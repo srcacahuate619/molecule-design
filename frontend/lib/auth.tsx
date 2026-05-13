@@ -19,6 +19,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   token: string | null;
+  refreshToken: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
@@ -33,6 +34,7 @@ const API_URL =
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Restore from localStorage on mount
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const data = JSON.parse(stored);
         setToken(data.token);
+        setRefreshToken(data.refreshToken);
         setUser(data.user);
       } catch {
         localStorage.removeItem("moldesign_auth");
@@ -50,10 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const _persist = useCallback((tok: string, u: User) => {
+  const _persist = useCallback((tok: string, refTok: string, u: User) => {
     setToken(tok);
+    setRefreshToken(refTok);
     setUser(u);
-    localStorage.setItem("moldesign_auth", JSON.stringify({ token: tok, user: u }));
+    localStorage.setItem(
+      "moldesign_auth",
+      JSON.stringify({ token: tok, refreshToken: refTok, user: u })
+    );
   }, []);
 
   const login = useCallback(
@@ -68,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.detail || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      _persist(data.access_token, {
+      _persist(data.access_token, data.refresh_token, {
         user_id: data.user_id,
         username: data.username,
         email: data.email,
@@ -89,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.detail || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      _persist(data.access_token, {
+      _persist(data.access_token, data.refresh_token, {
         user_id: data.user_id,
         username: data.username,
         email: data.email,
@@ -100,13 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setToken(null);
+    setRefreshToken(null);
     setUser(null);
     localStorage.removeItem("moldesign_auth");
   }, []);
 
   const value = useMemo(
-    () => ({ user, token, isLoading, login, register, logout }),
-    [user, token, isLoading, login, register, logout]
+    () => ({ user, token, refreshToken, isLoading, login, register, logout }),
+    [user, token, refreshToken, isLoading, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

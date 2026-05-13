@@ -24,30 +24,91 @@ function getAuthHeaders(): Record<string, string> {
   return {};
 }
 
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function attemptRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const stored = localStorage.getItem("moldesign_auth");
+      if (!stored) return false;
+
+      const { refreshToken, user } = JSON.parse(stored);
+      if (!refreshToken) return false;
+
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!res.ok) throw new Error("Refresh failed");
+
+      const data = await res.json();
+      localStorage.setItem(
+        "moldesign_auth",
+        JSON.stringify({
+          token: data.access_token,
+          refreshToken: data.refresh_token,
+          user: {
+            user_id: data.user_id,
+            username: data.username,
+            email: data.email,
+          },
+        })
+      );
+      return true;
+    } catch (err) {
+      console.error("Token refresh failed:", err);
+      localStorage.removeItem("moldesign_auth");
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const fetchUrl = `${API_URL}${path}`;
+  const fetchInit = {
     ...init,
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
       ...(init?.headers || {}),
     },
-    cache: "no-store",
-  });
+    cache: "no-store" as RequestCache,
+  };
 
-  if (!response.ok) {
-    const text = await response.text();
-    
-    // Intercept 401 Unauthorized (Expired token)
-    if (response.status === 401) {
+  let response = await fetch(fetchUrl, fetchInit);
+
+  if (response.status === 401) {
+    const refreshed = await attemptRefresh();
+    if (refreshed) {
+      // Retry with new headers
+      response = await fetch(fetchUrl, {
+        ...fetchInit,
+        headers: {
+          ...fetchInit.headers,
+          ...getAuthHeaders(),
+        },
+      });
+    } else {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("moldesign_auth");
         window.location.href = "/login?expired=true";
       }
     }
-    
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
     throw new Error(`HTTP ${response.status}: ${text}`);
   }
+
   return (await response.json()) as T;
 }
 

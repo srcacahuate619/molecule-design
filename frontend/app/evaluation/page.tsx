@@ -425,6 +425,9 @@ export default function EvaluationPage() {
               isSaved={isSaved}
               solanaSignature={status.result.blockchain_tx_id}
               onDownloadCertificate={handleDownloadCertificate}
+              isControl={status.result.is_control}
+              saScore={status.result.sa_score}
+              saReasons={status.result.sa_reasons}
             />
             
             <div className="flex flex-col gap-5">

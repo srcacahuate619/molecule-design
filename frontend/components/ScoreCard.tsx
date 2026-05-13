@@ -40,6 +40,9 @@ type ScoreCardProps = {
   isSaved?: boolean;
   solanaSignature?: string | null;
   onDownloadCertificate?: () => void;
+  isControl?: boolean;
+  saScore?: number | null;
+  saReasons?: string[] | null;
 };
 
 export function ScoreCard({
@@ -54,6 +57,9 @@ export function ScoreCard({
   isSaved = false,
   solanaSignature,
   onDownloadCertificate,
+  isControl = false,
+  saScore,
+  saReasons,
 }: ScoreCardProps) {
   const totalDisplay =
     totalScore !== null && totalScore !== undefined
@@ -127,12 +133,24 @@ export function ScoreCard({
       </div>
 
       <ScoreBar label="Afinidad" value={affinity} weight="45%" color="#3b82f6" />
-      <ScoreBar label="ADME" value={adme} weight="30%" color="#8b5cf6" />
-      <ScoreBar label="Drug-likeness" value={druglikeness} weight="25%" color="#06b6d4" />
+      
+      {!isControl ? (
+        <>
+          <ScoreBar label="ADME" value={adme} weight="30%" color="#8b5cf6" />
+          <ScoreBar label="Drug-likeness" value={druglikeness} weight="25%" color="#06b6d4" />
+        </>
+      ) : (
+        <div className="rounded-lg border border-brand-500/30 bg-brand-500/10 p-3 text-center">
+          <div className="text-xs font-bold text-brand-400 uppercase tracking-wider mb-1">Modo Molécula de Control</div>
+          <p className="text-[10px] text-brand-300 leading-tight">
+            Penalizaciones ADME/Drug-likeness desactivadas. Puntaje basado 100% en afinidad molecular.
+          </p>
+        </div>
+      )}
 
       {affinityKcal !== null && affinityKcal !== undefined && (
         <div className="text-xs text-surface-400">
-          Afinidad Vina: <strong className="text-gray-300">{affinityKcal.toFixed(3)} kcal/mol</strong>
+          Afinidad (Vina + XGBoost): <strong className="text-gray-300">{affinityKcal.toFixed(3)} kcal/mol</strong>
         </div>
       )}
 
@@ -142,6 +160,29 @@ export function ScoreCard({
           <strong className="text-brand-400">
             {ligandEfficiency.toFixed(3)} kcal/mol/atom
           </strong>
+        </div>
+      )}
+      {saScore !== null && saScore !== undefined && (
+        <div className="space-y-2">
+          <div className="text-xs text-surface-400">
+            Accesibilidad Sintética (SA):{" "}
+            <strong className={saScore > 6.0 ? "text-red-400" : saScore > 4.5 ? "text-yellow-400" : "text-emerald-400"}>
+              {saScore.toFixed(2)} {saScore > 6.0 ? "(Inviable)" : saScore > 4.5 ? "(Difícil)" : "(Fácil)"}
+            </strong>
+          </div>
+          
+          {saScore > 6.0 && saReasons && saReasons.length > 0 && (
+            <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-2.5">
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-red-400 uppercase tracking-wider">
+                <span className="text-sm">🧪</span> Motivos de Inviabilidad
+              </div>
+              <ul className="space-y-1">
+                {saReasons.map((reason, idx) => (
+                  <li key={idx} className="text-[11px] text-red-300/80 leading-tight">• {reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </section>

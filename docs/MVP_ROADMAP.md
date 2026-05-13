@@ -1,7 +1,7 @@
 # MolDesign MVP Roadmap
 
 > Fecha base: 2026-04-04  
-> **Última actualización: 2026-04-06**  
+> **Última actualización: 2026-05-13**  
 > Objetivo: terminar un **MVP científico funcional** sin desviarnos hacia features secundarias.
 
 ---
@@ -162,13 +162,14 @@ Cuando haya duda entre varias tareas, seguir siempre esta jerarquía:
   - ✅ P3: Script de re-docking creado (`scripts/redock_pdbbind.py`, ejecución ~42h pendiente)
   - ✅ P4: ECIF-lite — 56 features atom-pair a 6Å cutoff
   - ✅ **Target superado**: Spearman CV = 0.601 ± 0.040 (target era ≥ 0.55)
-- Blockchain / DeSci (opt-in)
-- Gamificación avanzada
-- Multi-target
-- DiffDock activo (requiere deployment del servidor)
-- De novo con modelos ML (REINVENT/MolGPT, Fase 2)
-- Ketcher visual standalone
-- 3Dmol.js con datos reales de poses
+- [x] Blockchain / DeSci (Devnet) — Inmutabilidad de resultados en Solana.
+- [x] Reportes PDF — Generación de certificados científicos descargables.
+- [ ] Gamificación avanzada
+- [ ] Multi-target
+- [ ] DiffDock activo (requiere deployment del servidor)
+- [ ] De novo con modelos ML (REINVENT/MolGPT, Fase 2)
+- [ ] Ketcher visual standalone
+- [x] 3Dmol.js con interacciones 3D, mapas de carga y detección de bolsillo.
 
 ### ML Rescoring — FASE 3 COMPLETA → FASE 4 COMPLETADA (v4 entrenado)
 
@@ -610,5 +611,34 @@ Si solo hace que “se vea mejor” pero nos aleja de la verdad científica, se 
 4. **Mantener trazabilidad, reproducibilidad y honestidad en cada nueva función.**
 
 **Nota:** El MVP puede considerarse listo para presentación, auditoría externa o integración con capas secundarias (blockchain, gamificación) **solo si no se sacrifica la validez científica ni se ocultan limitaciones.**
+
+## 13. Fase de Endurecimiento Científico v4.0 (Mayo 2026) ✅
+
+Tras la validación del MVP, se inició una fase de refinamiento crítico para cerrar brechas de seguridad científica detectadas en producción.
+
+### Hitos Alcanzados (V4.0)
+- [x] **Detección de Inviabilidad Sintética (Fix del Cubano)**: Implementación de penalizaciones por tensión de anillo (anillos de 3 y 4 carbonos). El sistema ahora rechaza scaffolds físicamente imposibles antes del docking.
+- [x] **Corrección de Topología ProLIF**: Solución al problema de inferencia de enlaces en PDBQTs sin hidrógenos explícitos (`inferrer=None` fix). Esto garantiza que las interacciones 3D sean detectadas correctamente en todos los casos.
+- [x] **Sincronización de UI**: Integración visual del SA Score en el frontend y corrección de inconsistencias en el visor 3D.
+- [x] **Integridad de Datos**: Implementación de limpieza automática de "scores zombis" en la base de datos y política estricta de invalidación de caché (Redis) tras evaluaciones fallidas.
+- [x] **Blockchain e Inmutabilidad**: Despliegue de `SolanaCertifier` en Devnet para registro inmutable de evaluaciones científicas.
+- [x] **Certificación PDF**: Módulo de generación de reportes científicos en PDF integrado en el flujo de resultados.
+- [x] **Visualización Avanzada**: Implementación de mapas de carga electrostática, detección de bolsillo automática (<5Å) y visualización de puentes de hidrógeno en tiempo real en el visor 3D.
+- [x] **Arquitectura Híbrida**: Despliegue exitoso Vercel (Frontend) + Ubuntu Server (Backend) mediante túnel cifrado y sincronización automática de variables de entorno.
+- [x] **Validación Spearman Final (Panel 40)**: Completada con éxito. El re-scoring ML v4 rescató la señal científica (Spearman 0.33-0.36, p<0.05) frente al ruido total de Vina (Spearman -0.14).
+- [x] **Feedback Educativo (SA Reasons)**: Implementación de transparencia diagnóstica para rechazos sintéticos (tensión de anillo, complejidad).
+
+### Estado del Pipeline Multi-Target
+- [ ] Integración de DiffDock (Fase de Pruebas en Servidor Remoto)
+- [ ] Soporte para receptores alternativos (D1, D2, 5-HT2A)
+- [ ] Generación de novo mediante REINVENT/MolGPT
+
+---
+
+### Estado actual (Mayo 2026)
+
+- El MVP científico no solo está completo, sino **endurecido contra fallos de lógica química**.
+- El Spearman Rho v4 ha sido validado contra el panel de 40 moléculas: **ML Rescoring (0.33) vs Vina (-0.14)**.
+- La infraestructura es 100% estable en el servidor remoto (Ryzen 3).
 
 ---

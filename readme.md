@@ -20,6 +20,7 @@ MolDesign es una plataforma *Open Science* que permite a cualquier persona dise�
 *   🛡️ **Rigor de Ligand Efficiency**: Filtro industrial de -0.30 kcal/mol/at para eliminar falsos positivos inespecíficos.
 *   📈 **Actividad en Tiempo Real**: Estadísticas globales de la comunidad integradas directamente en el núcleo del sistema.
 *   🤖 **Interpretación IA Honesta**: Integración con Gemini y Claude para explicar resultados sin inventar ni modificar datos científicos.
+*   ⚖️ **Rigor Científico v4**: Filtro de accesibilidad sintética (SA) con detección de tensión de anillo y penalización de fragmentos pequeños.
 *   🔗 **Certificación Blockchain**: Registro inmutable de hallazgos en **Solana Devnet** con generación automática de certificados PDF.
 *   🌍 **Ciencia Abierta (CC0)**: Todo el conocimiento generado es de dominio público, protegiendo la autoría pero eliminando barreras de IP.
 
@@ -76,18 +77,42 @@ graph LR
 
 ---
 
-## 📡 Despliegue y Arquitectura
+## 📡 Despliegue y Arquitectura (Producción)
 
-El proyecto está diseñado para escalar de forma asíncrona mediante trabajadores de Celery:
+El proyecto utiliza una arquitectura híbrida para garantizar potencia de cálculo (Backend) y accesibilidad global (Frontend):
 
-*   **Frontend**: Next.js 14 desplegado en **Vercel**.
-*   **Backend**: FastAPI orquestado en **Railway**.
-*   **Workers**: Celery ejecutando procesos de docking pesados en paralelo.
-*   **Base de Datos**: PostgreSQL 17 + Redis para colas de mensajería.
-*   **Storage**: Compatible con S3 para almacenamiento de estructuras PDB y SDF.
+*   **Frontend**: Next.js 14 desplegado en **Vercel** (Dominio principal: [molecule-design.vercel.app](https://molecule-design.vercel.app)).
+*   **Backend (Ubuntu Remote)**: FastAPI orquestado en un servidor remoto Ubuntu dedicado para ejecutar tareas pesadas de docking sin restricciones de recursos de la nube.
+*   **Túnel Cloudflare**: El backend se expone de forma segura mediante un túnel dinámico de Cloudflare, eliminando la necesidad de IPs estáticas o apertura de puertos.
+*   **Sincronización Automática (`tunnel-sync`)**: Un servicio sidecar monitorea el túnel y actualiza automáticamente las variables de entorno en Vercel cada vez que el servidor se reinicia, garantizando que la conexión nunca se rompa.
+*   **Workers**: Celery con un patrón de **Persistent Event Loop** para manejar docking molecular concurrente de forma estable.
+*   **Almacenamiento**: **MinIO** (S3-compatible) para persistencia de estructuras 3D (PDB/SDF) y **PostgreSQL 15** para el historial molecular.
 
-### Despliegue Rápido
-Consulta el archivo [`.env.example`](./.env.example) para configurar las variables necesarias y sigue la guía de despliegue en la documentación interna.
+### 🛠️ Despliegue en Servidor Local/Remoto
+1.  **Clona y entra**:
+    ```bash
+    git clone https://github.com/srcacahuate619/molecule-design.git
+    cd molecule-design
+    ```
+2.  **Configura el entorno**: Crea un archivo `.env` en `backend/` con las claves de Gemini, Vercel Token y configuración de base de datos.
+3.  **Lanza la orquestación**:
+    ```bash
+    docker compose up -d --build
+    ```
+    *Este comando levantará la API, el Worker de Celery, el Túnel y el Sincronizador de Vercel.*
+
+---
+
+## 🛡️ Rigor Científico y Estabilidad
+
+MolDesign ha sido "endurecido" para evitar sesgos comunes en el diseño molecular computacional:
+
+*   **Detección de Tensión de Anillo**: Bloqueo automático de moléculas imposibles (como el Cubano) mediante penalizaciones SA personalizadas.
+*   **Calibración de Eficiencia (LE)**: Evitamos la inflación de scores en fragmentos pequeños para priorizar moléculas con potencial farmacológico real.
+*   **Integridad 3D**: Extracción robusta de características de interacción incluso ante fallas de topología en archivos PDBQT.
+*   **Async Isolation**: Aislamiento de loops de eventos en Celery para prevenir errores de "Event loop is closed" durante cálculos intensivos.
+
+Para más detalles sobre estas optimizaciones, consulta el [Reporte de Optimización v4](docs/OPTIMIZATION_REPORT_V4.md).
 
 ---
 

@@ -63,14 +63,16 @@ export default function KetcherEditorInner({
 
     const interval = setInterval(async () => {
       try {
-        const smiles = await ketcherRef.current!.getSmiles();
-        if (smiles) {
-          onSmilesChange(smiles);
+        if (ketcherRef.current) {
+          const smiles = await ketcherRef.current.getSmiles();
+          if (smiles && smiles !== initialSmiles) {
+            onSmilesChange(smiles);
+          }
         }
       } catch {
         // Ketcher may throw if canvas is empty
       }
-    }, 1500);
+    }, 300);
 
     return () => clearInterval(interval);
   }, [ready, onSmilesChange]);

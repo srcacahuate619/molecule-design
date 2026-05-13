@@ -58,7 +58,19 @@ export function PropertiesPanel({ result }: Props) {
         <Row label="Átomos pesados" value={result.heavy_atom_count} />
         <Row label="Anillos" value={result.ring_count} />
         <Row label="QED" value={result.qed} />
+        <Row label="SA Score" value={result.sa_score} />
       </div>
+
+      {result.sa_reasons && result.sa_reasons.length > 0 && (
+        <div className="mt-2 space-y-1 rounded-lg border border-yellow-900/30 bg-yellow-950/20 p-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-500/80">Alertas de Accesibilidad (SA)</p>
+          <ul className="list-inside list-disc space-y-0.5">
+            {result.sa_reasons.map((reason, idx) => (
+              <li key={idx} className="text-[11px] text-yellow-200/70">{reason}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 pt-1">
         <Pill ok={result.lipinski_pass} label="Lipinski" />
