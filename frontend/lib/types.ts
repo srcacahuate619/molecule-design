@@ -162,5 +162,8 @@ export interface GlobalStats {
   total_molecules: number;
   total_certifications: number;
   best_affinity: number | null;
+  best_molecule_name: string | null;
+  best_molecule_smiles: string | null;
+  best_user_name: string | null;
   community_status: string;
 }
