@@ -36,7 +36,7 @@ export default function HomePage() {
   const statsDisplay = [
     { label: "Moléculas Evaluadas", value: stats?.total_molecules.toLocaleString() ?? "...", icon: "🧬" },
     { label: "Certificaciones", value: stats?.total_certifications.toLocaleString() ?? "...", icon: "🔗" },
-    { label: "Mejor Afinidad", value: stats?.best_affinity?.toFixed(1) ?? "...", unit: "kcal/mol", icon: "🏆" },
+    { label: "Mejor Puntuación", value: stats?.best_score?.toFixed(1) ?? "...", unit: "pts", icon: "🏆" },
     { label: "Comunidad", value: stats?.community_status ?? "Global", icon: "🌍" },
   ];
 
@@ -98,8 +98,8 @@ export default function HomePage() {
             </div>
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-surface-500">{stat.label}</div>
             
-            {/* Tooltip for Best Affinity */}
-            {stat.label === "Mejor Afinidad" && stats?.best_molecule_name && (
+            {/* Tooltip for Best Score */}
+            {stat.label === "Mejor Puntuación" && stats?.best_molecule_name && (
               <div className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 w-max max-w-[280px] scale-95 opacity-0 transition-all group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100">
                 <div className="rounded-xl border border-brand-500/30 bg-surface-950 p-4 shadow-2xl shadow-brand-500/20">
                   <div className="mb-2 flex items-center justify-between border-b border-surface-800 pb-2">
