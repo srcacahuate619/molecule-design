@@ -111,7 +111,7 @@ export default function HomePage() {
                       <span className="text-[9px] font-bold uppercase tracking-widest text-surface-500">Diseñador</span>
                       <span className="font-bold text-white flex items-center gap-1.5">
                         <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-                        {stats.best_molecule_user ?? "Anónimo"}
+                        {stats.best_user_name ?? "Anónimo"}
                       </span>
                     </div>
                     <div className="flex flex-col gap-1">
