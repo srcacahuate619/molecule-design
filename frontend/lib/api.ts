@@ -9,10 +9,10 @@ import type {
   GlobalStats,
 } from "./types";
 
-const API_URL = "https://chatty-flowers-heal.loca.lt";
+const API_URL = "https://pipeline-coated-custom-tumor.trycloudflare.com";
 
 if (typeof window !== "undefined") {
-  console.log("🔌 MolDesign API URL (Localtunnel Hardcode):", API_URL);
+  console.log("🔌 MolDesign API URL (Cloudflare Restored):", API_URL);
 }
 
 function getAuthHeaders(): Record<string, string> {
