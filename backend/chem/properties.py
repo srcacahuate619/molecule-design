@@ -41,7 +41,27 @@ from core.exceptions import PropertyCalculationError
 from core.models import PhysicochemicalProperties, ValidationResult
 from utils.logger import get_logger
 
+import sys
+import os
+from pathlib import Path
+
 log = get_logger(__name__)
+
+# Intentar cargar sascorer de RDKit Contrib
+# En el entorno Docker suele estar en /opt/conda/share/RDKit/Contrib/SA_Score/
+_sa_scorer_path = "/opt/conda/share/RDKit/Contrib/SA_Score/"
+if os.path.exists(_sa_scorer_path):
+    if _sa_scorer_path not in sys.path:
+        sys.path.append(_sa_scorer_path)
+    try:
+        import sascorer
+        log.info("sascorer cargado exitosamente desde RDKit Contrib")
+    except ImportError:
+        sascorer = None
+        log.warning("no se pudo importar sascorer a pesar de existir el path")
+else:
+    sascorer = None
+    log.warning(f"no se encontró sascorer en {_sa_scorer_path}")
 
 
 # ── Reglas de drug-likeness ───────────────────────────────────────────────────
@@ -197,28 +217,48 @@ def _calc_ring_count(mol: Mol) -> int:
 
 
 def _calc_qed(mol: Mol) -> float:
-    """
-    Quantitative Estimate of Drug-likeness (QED).
-
-    Score compuesto validado ampliamente que combina 8 propiedades moleculares
-    usando funciones de deseabilidad derivadas de fármacos aprobados oralmente.
-
-    Componentes: MW, logP, HBA, HBD, PSA, ROTB, AROM (anillos aromáticos),
-    ALERTS (alertas estructurales).
-
-    Rango: 0.0 (menos drug-like) a 1.0 (más drug-like).
-    - >0.67: favorable
-    - 0.49–0.67: moderado
-    - <0.49: desfavorable
-
-    Referencia:
-        Bickerton GR, Paolini GV, Besnard J, Muresan S, Hopkins AL.
-        "Quantifying the chemical beauty of drugs."
-        Nature Chemistry. 2012;4:90-98. DOI: 10.1038/nchem.1243
-
-    Implementado directamente en RDKit desde la versión 2012.06.
-    """
+    """Quantitative Estimate of Drug-likeness (QED)."""
     return round(QED.qed(mol), 4)
+
+
+def _calc_sa_score(mol: Mol) -> tuple[float, list[str]]:
+    """
+    Synthetic Accessibility Score (SA Score) con desglose de motivos.
+
+    Retorna: (score_final, lista_de_motivos)
+    """
+    reasons = []
+    if sascorer is None:
+        return 5.0, ["sascorer no disponible (usando valor neutro)"]
+    
+    try:
+        raw_score = sascorer.calculateScore(mol)
+        if raw_score > 4.5:
+            reasons.append("Complejidad de fragmentos alta")
+        
+        # Penalización por tensión de anillo ( MVP Fix para Cubano )
+        strain_penalty = 0.0
+        ri = mol.GetRingInfo()
+        three_rings = 0
+        four_rings = 0
+        for ring in ri.AtomRings():
+            if len(ring) == 3:
+                three_rings += 1
+                strain_penalty += 1.5
+            elif len(ring) == 4:
+                four_rings += 1
+                strain_penalty += 1.0
+        
+        if three_rings > 0:
+            reasons.append(f"Tensión de anillo: {three_rings} ciclopropano(s) (+{three_rings * 1.5})")
+        if four_rings > 0:
+            reasons.append(f"Tensión de anillo: {four_rings} ciclobutano(s) (+{four_rings * 1.0})")
+        
+        final_score = round(min(10.0, raw_score + strain_penalty), 2)
+        return final_score, reasons
+    except Exception as e:
+        log.error("error calculando sa_score", error=str(e))
+        return 5.0, ["Error interno en cálculo de SA"]
 
 
 # ── Función principal ─────────────────────────────────────────────────────────
@@ -299,6 +339,14 @@ def calculate_properties(smiles: str) -> PhysicochemicalProperties:
     except Exception as e:
         raise PropertyCalculationError("qed", smiles, detail=str(e)) from e
 
+    try:
+        sa_score, sa_reasons = _calc_sa_score(mol)
+    except Exception as e:
+        # No abortamos por SA score aquí, solo registramos
+        log.warning("sa_score_calculation_failed", smiles=smiles, error=str(e))
+        sa_score = 5.0
+        sa_reasons = ["Error inesperado en cálculo"]
+
     # Paso 3: evaluar drug-likeness
     lipinski_pass, lipinski_violations = LipinskiRule.evaluate(mw, log_p, hbd, hba)
     veber_pass, veber_violations = VerberRule.evaluate(rot_bonds, tpsa)
@@ -323,6 +371,8 @@ def calculate_properties(smiles: str) -> PhysicochemicalProperties:
         heavy_atom_count=heavy_atoms,
         ring_count=ring_count,
         qed=qed_score,
+        sa_score=sa_score,
+        sa_reasons=sa_reasons,
         lipinski_pass=lipinski_pass,
         veber_pass=veber_pass,
     )

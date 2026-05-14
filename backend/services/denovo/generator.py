@@ -41,6 +41,7 @@ class MolecularSuggestion:
     modification_type: str  # bioisostere, substitution, addition, deletion, scaffold
     expected_effect: str  # "may_improve_affinity", "may_improve_adme", "may_improve_druglikeness"
     confidence: str  # "high", "medium", "low"
+    ml_score: float | None = None
     source: str = "rule_based"  # "rule_based", "reinvent", "molgpt"
     warnings: list[str] = field(default_factory=list)
 
@@ -227,27 +228,95 @@ def generate_suggestions(
                             ],
                         ))
 
-        # 3. Sugerencia general de fragmento si el score de afinidad es bajo
-        if scores and scores.get("affinity_score", 100) < 40:
-            suggestions.append(MolecularSuggestion(
-                smiles="",
-                name="Mejorar interacciones con el target",
-                description="El score de afinidad es bajo — considerar modificaciones del farmacóforo",
-                rationale=(
-                    "Un score de afinidad bajo sugiere interacciones débiles con el sitio activo. "
-                    "Considerar: (1) agregar grupos aromáticos para interacciones π-π, "
-                    "(2) agregar H-bond donors/acceptors para interacciones polares, "
-                    "(3) modificar la geometría para mejor complementariedad estérica."
-                ),
-                modification_type="scaffold",
-                expected_effect="may_improve_affinity",
-                confidence="low",
-                warnings=[
-                    "Esta es una sugerencia general de química medicinal. "
-                    "Se necesita análisis visual de la pose de docking para "
-                    "guiar modificaciones específicas."
-                ],
-            ))
+        # 3. Validar y Puntuar con ML (si hay SMILES)
+        from core.config import get_settings
+        import httpx
+        import asyncio
+        
+        settings = get_settings()
+        
+        async def score_suggestion(sug: MolecularSuggestion):
+            if not sug.smiles:
+                return
+            
+            try:
+                from rdkit import Chem
+                from rdkit.Chem import Descriptors, QED
+                m = Chem.MolFromSmiles(sug.smiles)
+                if not m: return
+                
+                # Calcular descriptores para el ML
+                mw = Descriptors.MolWt(m)
+                logp = Descriptors.MolLogP(m)
+                tpsa = Descriptors.TPSA(m)
+                hbd = Descriptors.NumHDonors(m)
+                hba = Descriptors.NumHAcceptors(m)
+                rb = Descriptors.NumRotatableBonds(m)
+                qed_val = QED.qed(m)
+                
+                payload = {
+                    "smiles": sug.smiles,
+                    "molecular_weight": mw,
+                    "logp": logp,
+                    "tpsa": tpsa,
+                    "hbd": hbd,
+                    "hba": hba,
+                    "rotatable_bonds": rb,
+                    "qed": qed_val
+                }
+                
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    resp = await client.post(f"{settings.rescoring_url}/pre-score", json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        sug.ml_score = data.get("score")
+            except Exception as e:
+                log.warning("ml_prescore_failed", error=str(e), smiles=sug.smiles)
+
+        # Ejecutar pre-scoring en paralelo para las sugerencias con SMILES
+        concrete_sugs = [s for s in suggestions if s.smiles]
+        if concrete_sugs:
+            try:
+                # Nota: Esto asume que generate_suggestions es llamada en un contexto async
+                # Como es llamada por FastAPI, podemos usar loop si es necesario o hacerla async
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # No podemos usar loop.run_until_complete si ya está corriendo
+                    # Pero el router es async, así que generate_suggestions DEBERÍA ser async
+                    pass 
+            except:
+                pass
+
+        # Nota: Voy a cambiar la firma de generate_suggestions a async en el siguiente paso si es necesario.
+        # Por ahora, lo haré síncrono pero con un cliente HTTP síncrono para no romper nada.
+        
+        def score_suggestion_sync(sug: MolecularSuggestion):
+            if not sug.smiles: return
+            try:
+                from rdkit import Chem
+                from rdkit.Chem import Descriptors, QED
+                m = Chem.MolFromSmiles(sug.smiles)
+                if not m: return
+                payload = {
+                    "smiles": sug.smiles,
+                    "molecular_weight": Descriptors.MolWt(m),
+                    "logp": Descriptors.MolLogP(m),
+                    "tpsa": Descriptors.TPSA(m),
+                    "hbd": Descriptors.NumHDonors(m),
+                    "hba": Descriptors.NumHAcceptors(m),
+                    "rotatable_bonds": Descriptors.NumRotatableBonds(m),
+                    "qed": QED.qed(m)
+                }
+                import requests
+                resp = requests.post(f"{settings.rescoring_url}/pre-score", json=payload, timeout=2.0)
+                if resp.status_code == 200:
+                    sug.ml_score = resp.json().get("score")
+            except:
+                pass
+
+        for s in suggestions:
+            if s.smiles:
+                score_suggestion_sync(s)
 
         # Limitar a max_suggestions
         suggestions = suggestions[:max_suggestions]

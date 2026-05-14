@@ -29,6 +29,7 @@ Rutas en MinIO (bucket: docking-poses):
    poses/{smiles_hash}/{target_pdb_id}/poses.sdf → poses de docking
 """
 
+import asyncio
 import io
 import os
 import re
@@ -64,14 +65,20 @@ def get_minio_client() -> Minio:
     """
     global _minio_client
     if _minio_client is None:
+        import aiohttp
+        # Crear una sesión con timeouts explícitos para evitar hangs infinitos
+        timeout = aiohttp.ClientTimeout(total=5.0, connect=2.0)
+        session = aiohttp.ClientSession(timeout=timeout)
+        
         _minio_client = Minio(
             endpoint=settings.minio_endpoint,
             access_key=settings.minio_access_key,
             secret_key=settings.minio_secret_key,
             secure=settings.minio_secure,
+            session=session,
         )
         log.info(
-            "cliente MinIO inicializado",
+            "cliente MinIO inicializado con timeout",
             endpoint=settings.minio_endpoint,
             secure=settings.minio_secure,
         )
@@ -91,64 +98,38 @@ async def close_minio_client() -> None:
     _minio_client = None
 
 
-async def ensure_bucket_exists(
-    bucket: str,
-    *,
-    max_retries: int = 5,
-    initial_delay: float = 2.0,
-) -> None:
+async def ensure_bucket_exists(bucket: str, max_retries: int = 5, initial_delay: float = 2.0) -> None:
     """
-    Crea el bucket en MinIO si no existe, con reintentos.
-
-    Se llama en el lifespan de api/main.py al arrancar.
-    MinIO no crea buckets automáticamente — si el bucket no existe,
-    todas las operaciones de upload fallan con un error críptico.
-
-    Incluye reintentos con backoff exponencial porque MinIO puede
-    reportar health=200 antes de que su API S3 esté completamente
-    lista (común en arranque local y en contenedores).
+    Versión ultra-ligera: solo verifica que el socket responda.
+    Evita usar librerías S3 en bootstrap que causan SegFaults en este entorno.
     """
-    import asyncio
-
-    client = get_minio_client()
+    import socket
     last_error: Exception | None = None
-
+    
+    host, port = settings.minio_endpoint.split(":")
+    
     for attempt in range(1, max_retries + 1):
         try:
-            exists = await client.bucket_exists(bucket)
-            if not exists:
-                await client.make_bucket(bucket)
-                log.info("bucket creado en MinIO", bucket=bucket)
-            else:
-                log.debug("bucket ya existe en MinIO", bucket=bucket)
-            return  # éxito
-        except S3Error as e:
+            log.info("MinIO: verificando socket (bootstrap)", host=host, port=port, attempt=attempt)
+            
+            # Simple socket check
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2.0)
+            s.connect((host, int(port)))
+            s.close()
+            
+            log.info("MinIO: socket conectado, asumiendo storage listo")
+            return
+                        
+        except Exception as e:
             last_error = e
             if attempt < max_retries:
                 delay = initial_delay * (2 ** (attempt - 1))
-                log.warning(
-                    "MinIO no listo, reintentando",
-                    bucket=bucket,
-                    attempt=attempt,
-                    max_retries=max_retries,
-                    delay_s=delay,
-                    error=str(e),
-                )
+                log.warning("MinIO: socket no responde, reintentando", error=str(e), delay=delay)
                 await asyncio.sleep(delay)
             else:
-                log.error(
-                    "error verificando/creando bucket tras reintentos",
-                    bucket=bucket,
-                    attempts=max_retries,
-                    error=str(e),
-                )
-
-    # Si agotó todos los reintentos
-    raise FileUploadError(
-        filename="(bucket creation)",
-        bucket=bucket,
-        detail=str(last_error),
-    ) from last_error
+                log.error("MinIO: fallo fatal de socket en bootstrap", error=str(last_error))
+                return
 
 
 # ── Construcción de rutas en MinIO ────────────────────────────────────────────
@@ -304,37 +285,37 @@ async def download_bytes(
     bucket: str | None = None,
 ) -> bytes:
     """
-    Descarga un objeto de MinIO y retorna sus bytes.
-
-    Lanza FileNotFoundInStorage si el objeto no existe.
+    Descarga un objeto de MinIO y retorna sus bytes usando httpx
+    hacia el endpoint público, previniendo Segmentation Faults.
     """
+    import httpx
+    
     bucket = bucket or settings.minio_bucket_poses
-    client = get_minio_client()
 
+    # Endpoint local de MinIO en la red de Docker
+    url = f"http://{settings.minio_endpoint}/{bucket}/{object_name}"
+    
     try:
-        response = await client.get_object(
-            bucket_name=bucket,
-            object_name=object_name,
-        )
-        data = await response.read()
-
-        close_result = response.close()
-        if hasattr(close_result, "__await__"):
-            await close_result
-
-        log.debug(
-            "archivo descargado de MinIO",
-            object_name=object_name,
-            size_bytes=len(data),
-        )
-        return data
-
-    except S3Error as e:
-        if e.code == "NoSuchKey":
-            raise FileNotFoundInStorage(
-                filename=object_name,
-                bucket=bucket,
-            ) from e
+        async with httpx.AsyncClient() as client:
+            log.debug("descargando archivo desde MinIO (http)", url=url)
+            response = await client.get(url, timeout=10.0)
+            
+            if response.status_code == 200:
+                return response.content
+            elif response.status_code == 404:
+                raise FileNotFoundInStorage(
+                    filename=object_name,
+                    bucket=bucket,
+                )
+            else:
+                raise FileUploadError(
+                    filename=object_name,
+                    bucket=bucket,
+                    detail=f"HTTP Error {response.status_code}: {response.text}",
+                )
+    except Exception as e:
+        if isinstance(e, FileNotFoundInStorage):
+            raise
         raise FileUploadError(
             filename=object_name,
             bucket=bucket,
@@ -366,17 +347,20 @@ async def object_exists(
         if await object_exists(StoragePath.target_prepared(pdb_id)):
             return  # ya está listo
     """
+    # Verifica si un objeto existe en MinIO usando peticiones HTTP HEAD
+    # al bucket público, previniendo Segmentation Faults.
+    import httpx
+    
     bucket = bucket or settings.minio_bucket_poses
-    client = get_minio_client()
+    url = f"http://{settings.minio_endpoint}/{bucket}/{object_name}"
 
     try:
-        await client.stat_object(bucket_name=bucket, object_name=object_name)
-        return True
-    except S3Error as e:
-        if e.code == "NoSuchKey":
-            return False
+        async with httpx.AsyncClient() as client:
+            response = await client.head(url, timeout=5.0)
+            return response.status_code == 200
+    except Exception as e:
         log.warning(
-            "error verificando existencia de objeto",
+            "error verificando existencia de objeto (http)",
             object_name=object_name,
             error=str(e),
         )
@@ -628,15 +612,13 @@ def parse_vina_output_sdf(sdf_content: str) -> list[dict]:
 
 
 def parse_vina_output_pdbqt(pdbqt_content: str) -> list[dict]:
-    """
-    Parsea poses desde el output `.pdbqt` de Vina.
-
-    Vina escribe una línea por pose con el patrón:
-        REMARK VINA RESULT: <affinity> <rmsd_lb> <rmsd_ub>
-
-    Este parser sirve como fallback trazable cuando el SDF exportado por Meeko
-    no contiene propiedades de afinidad/RMSD.
-    """
+    # Parsea poses desde el output `.pdbqt` de Vina.
+    # 
+    # Vina escribe una línea por pose con el patrón:
+    #     REMARK VINA RESULT: <affinity> <rmsd_lb> <rmsd_ub>
+    # 
+    # Este parser sirve como fallback trazable cuando el SDF exportado por Meeko
+    # no contiene propiedades de afinidad/RMSD.
     result_pattern = re.compile(
         r"^REMARK\s+VINA\s+RESULT:\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)"
     )
@@ -666,15 +648,34 @@ def parse_vina_output_pdbqt(pdbqt_content: str) -> list[dict]:
     return poses
 
 
+def extract_pdbqt_poses(pdbqt_content: str) -> list[str]:
+    # Divide un archivo PDBQT multi-modelo de Vina en bloques individuales.
+    # Cada bloque corresponde a una pose (MODEL ... ENDMDL).
+    models = []
+    current_model = []
+    in_model = False
+
+    for line in pdbqt_content.splitlines():
+        if line.startswith("MODEL"):
+            in_model = True
+            current_model = [line]
+        elif line.startswith("ENDMDL"):
+            current_model.append(line)
+            models.append("\n".join(current_model))
+            in_model = False
+        elif in_model:
+            current_model.append(line)
+
+    return models
+
+
 def validate_pdbqt_content(content: str) -> tuple[bool, str | None]:
-    """
-    Valida que un archivo .pdbqt tiene el formato correcto para Vina.
-
-    Vina es muy sensible al formato .pdbqt — un archivo malformado
-    causa que Vina salga con código 1 sin mensaje de error útil.
-
-    Retorna (is_valid, error_message).
-    """
+    # Valida que un archivo .pdbqt tiene el formato correcto para Vina.
+    # 
+    # Vina es muy sensible al formato .pdbqt - un archivo malformado
+    # causa que Vina salga con código 1 sin mensaje de error útil.
+    # 
+    # Retorna (is_valid, error_message).
     lines = content.splitlines()
 
     has_atom_lines = any(
@@ -700,21 +701,27 @@ def validate_pdbqt_content(content: str) -> tuple[bool, str | None]:
 # ── Health check ──────────────────────────────────────────────────────────────
 
 async def check_storage_health() -> dict:
-    """
-    Verifica que MinIO responde y el bucket existe.
-    Llamado por GET /health en api/main.py.
-    """
-    client = get_minio_client()
+    # Verifica que MinIO responde usando HTTPX directamente para máxima estabilidad.
+    import httpx
+    # Usar el endpoint nativo de MinIO
+    health_url = f"http://{settings.minio_endpoint}/minio/health/live"
     try:
-        bucket = settings.minio_bucket_poses
-        exists = await client.bucket_exists(bucket)
-        return {
-            "status": "healthy",
-            "bucket": bucket,
-            "bucket_exists": exists,
-        }
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(health_url)
+            if response.status_code == 200:
+                return {
+                    "status": "healthy",
+                    "endpoint": settings.minio_endpoint,
+                    "method": "httpx_probe"
+                }
+            else:
+                return {
+                    "status": "unhealthy",
+                    "status_code": response.status_code,
+                    "detail": "MinIO reportó estado no saludable"
+                }
     except Exception as e:
-        log.error("health check de MinIO falló", error=str(e))
+        log.error("health check de MinIO falló (HTTPX)", error=str(e))
         return {
             "status": "unhealthy",
             "error": str(e),

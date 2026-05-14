@@ -24,6 +24,7 @@ from chem.validator import smiles_to_hash
 from core.config import get_settings
 from core.exceptions import DatabaseQueryError, TargetNotFound
 from core.models import (
+    AnonymousLimitORM,
     DockingResult,
     EvaluationResultORM,
     MoleculeCreate,
@@ -154,7 +155,18 @@ class Repository:
 
         smiles_hash = smiles_to_hash(smiles)
         existing = await self.get_molecule_by_hash(smiles_hash, target.id)
+        
+        # Si ya existe, verificamos si podemos "reclamarla"
         if existing is not None:
+            # Si la molécula existe pero pertenece al usuario demo y ahora tenemos un usuario real,
+            # actualizamos el dueño para que aparezca en su historial y no le de 403.
+            if user_id is not None:
+                demo_user = await self.get_or_create_test_user()
+                if existing.user_id == demo_user.id and user_id != demo_user.id:
+                    existing.user_id = user_id
+                    existing.updated_at = datetime.now(UTC)
+                    await self.db.flush()
+                    log.info("molécula existente reclamada por usuario", molecule_id=str(existing.id), user_id=str(user_id))
             return existing
 
         if user_id is None:
@@ -228,6 +240,8 @@ class Repository:
             result.lipinski_pass = bool(properties.lipinski_pass)
             result.veber_pass = bool(properties.veber_pass)
             result.qed = float(properties.qed)
+            result.sa_score = float(properties.sa_score)
+            result.sa_reasons = list(properties.sa_reasons)
 
         if docking is not None:
             # Ensure all numerics in DockingResult are native types
@@ -268,6 +282,16 @@ class Repository:
 
         if error_message is not None:
             result.error_message = error_message
+            # Si hay error, limpiar scores y docking previos para evitar datos stale
+            result.total_score = None
+            result.affinity_score = None
+            result.adme_score = None
+            result.druglikeness_score = None
+            result.affinity_kcal = None
+            result.docking_poses = None
+            result.poses_file_path = None
+            result.scientific_warnings = []
+            result.ai_report = None
 
         if celery_task_id is not None:
             result.celery_task_id = celery_task_id
@@ -293,6 +317,22 @@ class Repository:
         )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_anonymous_limit(self, ip_address: str) -> AnonymousLimitORM | None:
+        stmt = select(AnonymousLimitORM).where(AnonymousLimitORM.ip_address == ip_address)
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def increment_anonymous_count(self, ip_address: str) -> int:
+        limit = await self.get_anonymous_limit(ip_address)
+        if limit is None:
+            limit = AnonymousLimitORM(ip_address=ip_address, request_count=1)
+            self.db.add(limit)
+        else:
+            limit.request_count += 1
+        
+        await self.db.flush()
+        return limit.request_count
 
 
 def get_repository(db: AsyncSession) -> Repository:

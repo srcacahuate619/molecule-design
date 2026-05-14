@@ -40,13 +40,23 @@ def normalize_affinity(affinity_kcal: float, heavy_atoms: int | None = None) -> 
         # Implementamos el estándar de la industria para "Hit identification": LE >= -0.30. 
         # Moléculas peores a -0.30 son consideradas "ruido" y obtienen 0%.
         best_le = -0.55
-        worst_le = -0.30
+        worst_le = -0.35 # Subimos de -0.30 a -0.35 para ser más estrictos
+        
         if le <= best_le:
-            return 100.0
-        if le >= worst_le:
-            return 0.0
-        normalized = ((worst_le - le) / (worst_le - best_le)) * 100.0
-        return clamp_score(normalized)
+            score = 100.0
+        elif le >= worst_le:
+            score = 0.0
+        else:
+            score = ((worst_le - le) / (worst_le - best_le)) * 100.0
+            
+        # Penalizador por tamaño: fragmentos < 12 átomos pesados son penalizados
+        # Un fragmento de 8 átomos (como el cubano) no puede sacar 100% de afinidad
+        # aunque su LE sea perfecta, porque su área de contacto es insuficiente para selectividad.
+        if heavy_atoms < 12:
+            size_penalty = (12 - heavy_atoms) * 10.0 # -10% por cada átomo faltante
+            score = max(0.0, score - size_penalty)
+            
+        return clamp_score(score)
     
     # Fallback to absolute affinity
     best_abs = -10.0

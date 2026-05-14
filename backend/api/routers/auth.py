@@ -27,7 +27,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth import create_access_token
+from api.auth import create_access_token, create_refresh_token, decode_token
 from api.dependencies import get_current_user
 from api.rate_limiter import login_limiter, register_limiter
 from core.config import get_settings
@@ -90,10 +90,15 @@ class LoginRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     user_id: str
     username: str
     email: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 class UserProfile(BaseModel):
@@ -153,15 +158,17 @@ async def register(
 
     log.info("usuario registrado", user_id=str(user.id), username=user.username)
 
-    # Generar token
+    # Generar tokens
     settings = get_settings()
-    token = create_access_token(
+    access_token = create_access_token(
         subject=str(user.id),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
+    refresh_token = create_refresh_token(subject=str(user.id))
 
     return AuthResponse(
-        access_token=token,
+        access_token=access_token,
+        refresh_token=refresh_token,
         user_id=str(user.id),
         username=user.username,
         email=user.email,
@@ -201,15 +208,82 @@ async def login(
         )
 
     settings = get_settings()
-    token = create_access_token(
+    access_token = create_access_token(
         subject=str(user.id),
         expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
     )
+    refresh_token = create_refresh_token(subject=str(user.id))
 
     log.info("usuario autenticado", user_id=str(user.id), username=user.username)
 
     return AuthResponse(
-        access_token=token,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_id=str(user.id),
+        username=user.username,
+        email=user.email,
+    )
+
+
+@router.post(
+    "/refresh",
+    response_model=AuthResponse,
+    summary="Refrescar access token",
+)
+async def refresh(
+    request: RefreshRequest,
+    db: AsyncSession = Depends(get_db),
+) -> AuthResponse:
+    """Valida un refresh token y devuelve un nuevo access token."""
+    try:
+        payload = decode_token(request.refresh_token)
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de refresco inválido",
+            )
+        subject = payload.get("sub")
+        if not subject:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de refresco inválido",
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de refresco inválido o expirado",
+        )
+
+    # Verificar que el usuario existe y está activo
+    try:
+        user_id = uuid.UUID(subject)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de refresco inválido",
+        )
+
+    stmt = select(UserORM).where(UserORM.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado o desactivado",
+        )
+
+    settings = get_settings()
+    access_token = create_access_token(
+        subject=str(user.id),
+        expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
+    )
+    # También rotamos el refresh token para mayor seguridad
+    new_refresh_token = create_refresh_token(subject=str(user.id))
+
+    return AuthResponse(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
         user_id=str(user.id),
         username=user.username,
         email=user.email,

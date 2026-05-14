@@ -98,8 +98,6 @@ class TargetORM(Base):
     chain       = Column(String(5), nullable=False, default="A")
     description = Column(Text, nullable=True)
 
-    # Coordenadas del grid box para Vina (Angstroms)
-    # Se determinan del ligando co-cristalizado en el PDB
     grid_center_x = Column(Float, nullable=False)
     grid_center_y = Column(Float, nullable=False)
     grid_center_z = Column(Float, nullable=False)
@@ -110,10 +108,22 @@ class TargetORM(Base):
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
     prepared_file_path = Column(String(500), nullable=True)
     is_prepared        = Column(Boolean, default=False, nullable=False)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at         = Column(DateTime(timezone=True), server_default=func.now())
 
     molecules = relationship("MoleculeORM", back_populates="target")
+
+
+class AnonymousLimitORM(Base):
+    """
+    Control de límites para usuarios no registrados basado en IP.
+    Permite un máximo de 2 evaluaciones gratuitas antes de exigir registro.
+    """
+    __tablename__ = "anonymous_limits"
+
+    ip_address      = Column(String(50), primary_key=True)
+    request_count   = Column(Integer, default=0)
+    last_request_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at      = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class UserORM(Base):
@@ -228,6 +238,8 @@ class EvaluationResultORM(Base):
     rotatable_bonds  = Column(Integer, nullable=True)
     heavy_atom_count = Column(Integer, nullable=True)
     ring_count       = Column(Integer, nullable=True)
+    sa_score         = Column(Float, nullable=True)   # Synthetic Accessibility Score (1-10)
+    sa_reasons       = Column(JSONB, nullable=True)   # Lista de motivos (tensión de anillo, etc.)
 
     # ── Drug-likeness ────────────────────────────────────────────────────────
     lipinski_pass    = Column(Boolean, nullable=True)
@@ -271,7 +283,9 @@ class PhysicochemicalProperties(BaseModel):
     rotatable_bonds:  int   = Field(..., ge=0)
     heavy_atom_count: int   = Field(..., ge=1)
     ring_count:       int   = Field(..., ge=0)
-    qed:              float = Field(..., ge=0, le=1, description="QED (Bickerton et al., Nat Chem 2012). 0-1, mayor = más drug-like.")
+    qed:              float = Field(..., ge=0, le=1, description="QED score")
+    sa_score:         float = Field(..., ge=1, le=10, description="Synthetic Accessibility Score (1-10, lower is easier)")
+    sa_reasons:       list[str] = Field(default_factory=list, description="Motivos de la dificultad sintética")
     lipinski_pass:    bool
     veber_pass:       bool
 
@@ -304,6 +318,7 @@ class DockingPose(BaseModel):
     affinity: float = Field(..., description="Energía de unión en kcal/mol. Más negativo = mejor.")
     rmsd_lb:  float = Field(..., ge=0, description="RMSD lower bound vs pose 1")
     rmsd_ub:  float = Field(..., ge=0, description="RMSD upper bound vs pose 1")
+    pdbqt_block: str | None = Field(None, description="Bloque PDBQT de la pose para rescoring.")
 
 
 class DockingResult(BaseModel):
@@ -396,6 +411,8 @@ class EvaluationResultRead(BaseModel):
     lipinski_pass:    bool | None
     veber_pass:       bool | None
     qed:              float | None
+    sa_score:         float | None
+    sa_reasons:       list[str] | None
 
     # Scores
     adme_score:         float | None

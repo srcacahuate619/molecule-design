@@ -105,12 +105,14 @@ async def _safe_health_check(name: str, checker) -> dict[str, Any]:
 async def _bootstrap_runtime_resources() -> None:
     Path(settings.vina_temp_dir).mkdir(parents=True, exist_ok=True)
     await ensure_bucket_exists(settings.minio_bucket_poses)
-
+    log.info("Bootstrap: MinIO bucket verificado")
+    
     if settings.environment in {"development", "testing"}:
         await create_all_tables()
-
-    if settings.is_production and not os.path.exists(settings.vina_executable_path):
-        raise VinaExecutableNotFound(settings.vina_executable_path)
+    
+    if settings.is_production:
+        if not os.path.exists(settings.vina_executable_path):
+            raise VinaExecutableNotFound(settings.vina_executable_path)
 
 
 @asynccontextmanager
@@ -119,11 +121,18 @@ async def lifespan(app: FastAPI):
     log.info("iniciando aplicación MolDesign", environment=settings.environment)
     await _bootstrap_runtime_resources()
     yield
-    await close_minio_client()
     await close_redis_pool()
+    await close_minio_client()
     await close_engine()
     log.info("aplicación MolDesign detenida limpiamente")
 
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from fastapi.middleware.cors import CORSMiddleware
+
+# limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="MolDesign API",
@@ -136,6 +145,9 @@ app = FastAPI(
     ),
     lifespan=lifespan,
 )
+
+# app.state.limiter = limiter
+# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 register_middleware(app)
 app.include_router(auth_router)

@@ -13,12 +13,13 @@ from celery.result import AsyncResult
 from api.celery_app import celery_app
 from chem.conformer import generate_conformer
 from chem.properties import calculate_properties
-from core.database import get_db_session
+from core.database import get_db_session, close_engine
 from core.models import AIReportRequest, EvaluationResultRead, JobStatus, MoleculeStatus
 from db.repository import Repository
 from scoring.engine import calculate_score_breakdown
 from services.ai.interpreter import safe_generate_ai_report
 from services.docking.vina_service import run_vina_docking
+from services.docking.rescoring_client import get_ml_rescore
 from utils.cache import cache
 from utils.logger import bind_context, get_logger
 
@@ -55,9 +56,12 @@ def _get_celery_loop() -> asyncio.AbstractEventLoop:
     global _celery_loop
     with _celery_loop_lock:
         if _celery_loop is None or _celery_loop.is_closed():
-            _celery_loop = asyncio.new_event_loop()
+            try:
+                _celery_loop = asyncio.get_event_loop()
+            except RuntimeError:
+                _celery_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(_celery_loop)
-            log.info({"event": "event loop persistente creado para Celery worker"})
+            log.info({"event": "event loop persistente inicializado para Celery worker"})
         return _celery_loop
 
 
@@ -82,13 +86,44 @@ async def _run_full_evaluation_async(
             user_id=UUID(user_id) if user_id else None,
         )
 
+        # [CACHE FIX] Invalidar cache previo para forzar recalculo con nueva logica v4
+        from utils.cache import CacheKey
+        await cache.delete(CacheKey.properties(molecule.smiles_hash))
+        await cache.delete(CacheKey.docking(molecule.smiles_hash, target.pdb_id))
+
         try:
             properties = calculate_properties(smiles)
             await repository.set_molecule_status(molecule.id, MoleculeStatus.VALIDATED)
 
+            # --- [NUEVO] Filtro SA Score (Accesibilidad Sintética) ---
+            # Si la molécula es imposible de fabricar, abortamos para evitar
+            # falsos positivos científicos.
+            if properties.sa_score > 6.0:
+                log.warning({
+                    "event": "synthetic_infeasibility_abort",
+                    "smiles": smiles,
+                    "sa_score": properties.sa_score
+                })
+                await repository.upsert_evaluation_result(
+                    molecule_id=molecule.id,
+                    properties=properties,
+                    error_message=f"Inviabilidad Sintetica: SA Score {properties.sa_score} > 6.0. Esta molecula es probablemente imposible de sintetizar en laboratorio.",
+                    is_control=is_control,
+                    celery_task_id=task_id,
+                )
+                await repository.set_molecule_status(molecule.id, MoleculeStatus.FAILED)
+                await cache.set_job_progress(task_id, 100, "failed")
+                return {
+                    "task_id": task_id,
+                    "molecule_id": str(molecule.id),
+                    "error": "Synthetic Infeasibility",
+                    "sa_score": properties.sa_score
+                }
+
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,
                 properties=properties,
+                is_control=is_control,
                 celery_task_id=task_id,
             )
 
@@ -108,6 +143,42 @@ async def _run_full_evaluation_async(
             )
 
             await cache.set_job_progress(task_id, 80, "scoring")
+            
+            # --- [NUEVO PASO] ML Rescoring Correction ---
+            # Intentamos corregir el score de Vina con el "Cerebro Espacial" (XGBoost)
+            try:
+                # El microservicio necesita los bloques PDBQT de las poses
+                # docking.poses ya contiene los datos necesarios
+                ml_result = await get_ml_rescore(
+                    smiles=smiles,
+                    target_pdb_path=f"/data/targets/{target.pdb_id}.pdb",
+                    poses=[p.model_dump() for p in docking.poses],
+                    properties=properties,
+                    grid_center=[target.grid_center_x, target.grid_center_y, target.grid_center_z],
+                    grid_size=[target.grid_size_x, target.grid_size_y, target.grid_size_z]
+                )
+                
+                if not ml_result.get("fallback"):
+                    # El modelo devuelve pKi (score_a). 
+                    # Convertimos pKi a kcal/mol para inyectarlo en el normalizador.
+                    # DeltaG = -1.36 * pKi (aprox a 300K)
+                    pki_a = ml_result.get("score_a", 0.0)
+                    if pki_a > 0:
+                        corrected_kcal = -1.36 * pki_a
+                        log.info({
+                            "event": "ml_rescoring_applied",
+                            "vina_kcal": docking.best_affinity,
+                            "ml_pki": pki_a,
+                            "ml_kcal_equivalent": corrected_kcal
+                        })
+                        # Inyectamos la afinidad corregida
+                        docking.best_affinity = corrected_kcal
+                        # También guardamos warnings científicos del modelo si los hay
+                        if ml_result.get("warnings"):
+                            docking.scientific_warnings.extend(ml_result["warnings"])
+            except Exception as ml_err:
+                log.warning({"event": "ml_rescoring_skipped", "error": str(ml_err)})
+
             breakdown = calculate_score_breakdown(docking, properties, is_control=is_control)
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,
@@ -186,22 +257,18 @@ def run_full_evaluation(
     """
     Celery task que ejecuta el pipeline completo de evaluación.
 
-    Usa un event loop persistente compartido entre todas las tasks del worker.
-    Esto mantiene las conexiones async (asyncpg, redis, MinIO) vivas entre tasks,
-    evitando el error "Event loop is closed" que ocurre al crear/destruir loops.
+    Cada tarea corre en su propio loop de asyncio aislado.
     """
     bind_context(task_id=self.request.id, target=target_pdb_id)
     loop = _get_celery_loop()
-    return loop.run_until_complete(
-        _run_full_evaluation_async(
-            task_id=self.request.id,
-            smiles=smiles,
-            target_pdb_id=target_pdb_id,
-            molecule_name=molecule_name,
-            is_control=is_control,
-            user_id=user_id,
-        )
-    )
+    return loop.run_until_complete(_run_full_evaluation_async(
+        task_id=self.request.id,
+        smiles=smiles,
+        target_pdb_id=target_pdb_id,
+        molecule_name=molecule_name,
+        is_control=is_control,
+        user_id=user_id,
+    ))
 
 
 def submit_evaluation_job(

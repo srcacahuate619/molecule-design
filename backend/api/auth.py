@@ -23,7 +23,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from core.config import get_settings
-from core.exceptions import InvalidCredentials, TokenExpired
+from core.exceptions import AuthError, InvalidCredentials, TokenExpired
 
 settings = get_settings()
 
@@ -76,6 +76,7 @@ def create_access_token(
         "sub": subject,
         "iat": int(now.timestamp()),
         "exp": int(expires.timestamp()),
+        "type": "access",
     }
 
     if additional_claims:
@@ -88,7 +89,37 @@ def create_access_token(
     return f"{encoded_header}.{encoded_payload}.{signature}"
 
 
-def decode_access_token(token: str) -> dict[str, Any]:
+def create_refresh_token(
+    subject: str,
+    expires_delta: timedelta | None = None,
+) -> str:
+    """
+    Crea un JWT de refresco de larga duración.
+    """
+    now = datetime.now(UTC)
+    expires = now + (
+        expires_delta or timedelta(days=settings.jwt_refresh_token_expire_days)
+    )
+
+    header = {
+        "alg": settings.jwt_algorithm,
+        "typ": "JWT",
+    }
+    payload: dict[str, Any] = {
+        "sub": subject,
+        "iat": int(now.timestamp()),
+        "exp": int(expires.timestamp()),
+        "type": "refresh",
+    }
+
+    encoded_header = _b64url_encode(_json_dumps(header).encode("utf-8"))
+    encoded_payload = _b64url_encode(_json_dumps(payload).encode("utf-8"))
+    signing_input = f"{encoded_header}.{encoded_payload}".encode("utf-8")
+    signature = _sign(signing_input)
+    return f"{encoded_header}.{encoded_payload}.{signature}"
+
+
+def decode_token(token: str) -> dict[str, Any]:
     """
     Valida firma y expiración del token.
 
@@ -124,7 +155,13 @@ def decode_access_token(token: str) -> dict[str, Any]:
 
 
 def get_subject_from_token(token: str) -> str:
-    payload = decode_access_token(token)
+    payload = decode_token(token)
+    # Para endpoints generales, solo permitimos tokens de tipo 'access'
+    if payload.get("type") != "access":
+        raise AuthError(
+            message="Token de acceso requerido",
+            detail="Se proporcionó un token de un tipo diferente",
+        )
     subject = payload.get("sub")
     if not isinstance(subject, str) or not subject:
         raise InvalidCredentials()

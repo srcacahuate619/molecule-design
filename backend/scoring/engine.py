@@ -91,7 +91,13 @@ def calculate_score_breakdown(
     
     # Penalizador suavizado: la afinidad aporta su peso, pero también modula la utilidad de las propiedades
     # Si la afinidad es muy baja (no une), las propiedades perfectas no sirven de mucho.
-    affinity_multiplier = (affinity_score / 100.0) * 0.5 + 0.5 # Nunca penaliza al 0% para no frustrar
+    # v4: Más estricto. Si affinity_score < 20, el multiplicador cae drásticamente.
+    if affinity_score < 20:
+        # Rango [0.1, 0.5]. Si es 0, las propiedades solo valen un 10%.
+        affinity_multiplier = (affinity_score / 20.0) * 0.4 + 0.1
+    else:
+        # Rango [0.5, 1.0].
+        affinity_multiplier = ((affinity_score - 20) / 80.0) * 0.5 + 0.5
     
     if is_control:
         # Si es ligando de control endógeno, ignorar propiedades fisicoquímicas
@@ -135,16 +141,17 @@ async def score_and_persist(
     Calcula el score y persiste los resultados normalizados.
     """
     try:
-        # Aquí obtenemos la molécula para saber si es control
-        molecule = await repository.get_molecule(molecule_id)
-        # Por ahora asumimos que no es control a menos que se mande en una versión futura. 
-        # (El control flag se suele setear en un paso superior si es necesario)
-        breakdown = calculate_score_breakdown(docking, properties)
+        # Obtenemos el resultado previo para saber si es control
+        result = await repository.get_evaluation_result(molecule_id)
+        is_control = bool(result.is_control) if result else False
+
+        breakdown = calculate_score_breakdown(docking, properties, is_control=is_control)
         await repository.upsert_evaluation_result(
             molecule_id=molecule_id,
             properties=properties,
             docking=docking,
             scores=breakdown.model_dump(),
+            is_control=is_control,
         )
         return breakdown
     except Exception as e:

@@ -52,12 +52,19 @@ class SuggestionResponse(BaseModel):
     )
 
 
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from fastapi import APIRouter, HTTPException, status, Request
+
+limiter = Limiter(key_func=get_remote_address)
+
 @router.post(
     "/generate",
     response_model=SuggestionResponse,
     summary="Generar sugerencias de modificación molecular",
 )
-async def generate_suggestions(request: SuggestionRequest) -> SuggestionResponse:
+@limiter.limit("10/minute")
+async def generate_suggestions(data: SuggestionRequest, request: Request) -> SuggestionResponse:
     """
     Genera sugerencias de modificación molecular usando reglas de química medicinal.
 
@@ -72,10 +79,10 @@ async def generate_suggestions(request: SuggestionRequest) -> SuggestionResponse
     from services.denovo.generator import generate_suggestions as gen_suggestions
 
     result = gen_suggestions(
-        smiles=request.smiles,
-        properties=request.properties,
-        scores=request.scores,
-        max_suggestions=request.max_suggestions,
+        smiles=data.smiles,
+        properties=data.properties,
+        scores=data.scores,
+        max_suggestions=data.max_suggestions,
     )
 
     suggestions = [

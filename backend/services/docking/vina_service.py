@@ -34,6 +34,7 @@ from utils.file_handlers import (
     object_exists,
     parse_vina_output_sdf,
     parse_vina_output_pdbqt,
+    extract_pdbqt_poses,
     temp_file_from_minio,
     upload_file_from_path,
     upload_text,
@@ -360,8 +361,16 @@ async def run_vina_docking(
                         "rmsd_ub": float(p["rmsd_ub"]),
                     }
 
+                pdbqt_content = output_pdbqt.read_text(encoding="utf-8", errors="replace")
+                pdbqt_pose_blocks = extract_pdbqt_poses(pdbqt_content)
+
                 parsed_poses = parse_vina_output_sdf(sdf_content) if is_valid_sdf(sdf_content) else []
-                poses = [DockingPose(**cast_pose_dict(pose)) for pose in parsed_poses]
+                poses: list[DockingPose] = []
+                for i, pose_dict in enumerate(parsed_poses):
+                    # Asignamos el bloque PDBQT correspondiente si existe
+                    block = pdbqt_pose_blocks[i] if i < len(pdbqt_pose_blocks) else None
+                    poses.append(DockingPose(**cast_pose_dict(pose_dict), pdbqt_block=block))
+                
                 parsing_source = "sdf" if poses else None
 
                 # Fallback: if SDF is zombie, try OpenBabel to convert PDBQT to SDF
@@ -384,7 +393,10 @@ async def run_vina_docking(
                                 sdf_content_babel = f.read()
                             if is_valid_sdf(sdf_content_babel):
                                 parsed_poses = parse_vina_output_sdf(sdf_content_babel)
-                                poses = [DockingPose(**cast_pose_dict(pose)) for pose in parsed_poses]
+                                poses = []
+                                for i, pose_dict in enumerate(parsed_poses):
+                                    block = pdbqt_pose_blocks[i] if i < len(pdbqt_pose_blocks) else None
+                                    poses.append(DockingPose(**cast_pose_dict(pose_dict), pdbqt_block=block))
                                 parsing_source = "openbabel"
                                 scientific_warnings.append("El SDF fue generado por OpenBabel como fallback porque Meeko exportó un archivo inválido.")
                         else:
@@ -415,8 +427,12 @@ async def run_vina_docking(
                     except Exception as _debug_exc:
                         log.warning("[DEBUG] No se pudo guardar PDBQT de debug", error=str(_debug_exc))
                     # --- Fin debug ---
+                    pdbqt_pose_blocks = extract_pdbqt_poses(pdbqt_content)
                     parsed_poses_pdbqt = parse_vina_output_pdbqt(pdbqt_content)
-                    poses = [DockingPose(**cast_pose_dict(pose)) for pose in parsed_poses_pdbqt]
+                    poses = []
+                    for i, pose in enumerate(parsed_poses_pdbqt):
+                        block = pdbqt_pose_blocks[i] if i < len(pdbqt_pose_blocks) else None
+                        poses.append(DockingPose(**cast_pose_dict(pose), pdbqt_block=block))
                     if poses:
                         parsing_source = "pdbqt"
                         scientific_warnings.append(
@@ -435,7 +451,11 @@ async def run_vina_docking(
                         )
 
                     poses_stdout = _parse_vina_stdout(stdout)
-                    poses = [DockingPose(**cast_pose_dict(pose.model_dump())) for pose in poses_stdout]
+                    pdbqt_pose_blocks = extract_pdbqt_poses(pdbqt_content)
+                    poses = []
+                    for i, pose in enumerate(poses_stdout):
+                        block = pdbqt_pose_blocks[i] if i < len(pdbqt_pose_blocks) else None
+                        poses.append(DockingPose(**cast_pose_dict(pose.model_dump()), pdbqt_block=block))
                     if poses:
                         parsing_source = "vina_stdout"
                         scientific_warnings.append(

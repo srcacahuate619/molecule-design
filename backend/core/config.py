@@ -160,6 +160,11 @@ class Settings(BaseSettings):
     conformer_max_attempts: int = Field(default=3, ge=1, le=10)
 
     # ── Scoring ──────────────────────────────────────────────────────────────
+    
+    rescoring_url: str = Field(
+        default="http://rescoring:8001",
+        description="URL del microservicio de ML Rescoring."
+    )
 
     # Pesos del score compuesto. Deben sumar 1.0.
     # Justificación: afinidad es la métrica más directamente relevante
@@ -215,7 +220,14 @@ class Settings(BaseSettings):
 
     # En desarrollo, permite cualquier origen.
     # En producción, reemplaza con el dominio real de tu frontend.
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://192.168.1.64:3000",
+        "http://192.168.1.64:3001",
+        "https://molecule-design.vercel.app"
+    ]
 
     # ── Solana Blockchain ────────────────────────────────────────────────────
 

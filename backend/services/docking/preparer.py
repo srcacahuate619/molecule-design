@@ -193,6 +193,23 @@ async def prepare_target(
     prepared_path = StoragePath.target_prepared(pdb_id)
     raw_path = StoragePath.target_raw(pdb_id)
 
+    # --- [NUEVO] Asegurar PDB en volumen compartido para Rescoring ---
+    shared_pdb_path = Path("/data/targets") / f"{pdb_id}.pdb"
+    if not shared_pdb_path.exists():
+        log.info("asegurando_pdb_para_rescoring", pdb_id=pdb_id)
+        if not await object_exists(raw_path):
+            pdb_content = await download_pdb_from_rcsb(pdb_id)
+            await upload_text(pdb_content, raw_path)
+        
+        # Descargar y filtrar para el volumen compartido
+        raw_content = await download_text(raw_path)
+        filtered_content = _filter_pdb_content(raw_content, chain_id, keep_hetatm=False)
+        
+        # Guardar en volumen compartido
+        shared_pdb_path.parent.mkdir(parents=True, exist_ok=True)
+        shared_pdb_path.write_text(filtered_content, encoding="utf-8")
+        log.info("pdb_persisted_for_rescoring", path=str(shared_pdb_path))
+
     if not force_reprepare and await object_exists(prepared_path):
         return prepared_path
 
@@ -208,10 +225,7 @@ async def prepare_target(
             ),
         )
 
-    if not await object_exists(raw_path):
-        pdb_content = await download_pdb_from_rcsb(pdb_id)
-        await upload_text(pdb_content, raw_path)
-
+    # El contenido ya fue descargado arriba si no existía el PDB compartido
     raw_content = await download_text(raw_path)
 
     try:

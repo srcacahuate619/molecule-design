@@ -19,7 +19,7 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth import decode_access_token, get_subject_from_token
+from api.auth import get_subject_from_token
 from core.database import get_db
 from core.exceptions import InvalidCredentials, TokenExpired
 from core.models import UserORM
