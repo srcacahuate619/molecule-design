@@ -1,37 +1,36 @@
 # Mejoras del Frontend v4.0 — Transparencia y Dinamismo Científico
 
-Este documento detalla las mejoras planificadas e implementadas para elevar la calidad científica y la interactividad del frontend de MolDesign.
+Este documento detalla las mejoras implementadas para elevar la calidad científica, la interactividad y la lógica de negocio del frontend de MolDesign.
 
-## 1. Módulo de Insight Molecular (Dinámico) 🧠
-En lugar de mostrar solo números, el sistema proporcionará consejos químicos basados en los resultados específicos de la molécula.
+## 1. Módulo de Insight Molecular (Mentor Químico) 🧠 [IMPLEMENTADO]
+Se ha integrado un componente reactivo (`MolecularInsight.tsx`) que analiza los resultados en tiempo real y ofrece consejos específicos.
 
-### Lógica Reactiva:
-- **Alerta "Grease Ball"**: Si `logP > 5` y `afinidad` es alta.
-  - *Mensaje*: "Afinidad prometedora pero lipofilicidad excesiva. Riesgo de baja solubilidad y toxicidad inespecífica."
-- **Alerta de Tensión de Anillo**: Si `SA Score > 6.0`.
-  - *Mensaje*: "Dificultad sintética crítica detectada. Los anillos tensionados pueden comprometer la viabilidad del scaffold."
-- **Insight de Consistencia**: Comparación Vina vs ML v4.0.
-  - *Mensaje*: "Señal biológica validada por modelo ML (ρ=0.33)."
+### Lógica de Análisis:
+- **Riesgo de 'Grease Ball'**: Detecta alta afinidad pero lipofilicidad excesiva (`logP > 5`). Sugiere añadir grupos polares.
+- **Dificultad Sintética (SA Score)**: Alerta si el score es superior a 6.0, desglosando los motivos estructurales (e.g., anillos tensionados, puentes).
+- **Validación Científica v4.0**: Solo se otorga si la molécula tiene un `total_score > 35`, confirmando la señal biológica mediante descriptores de interacción (ProLIF).
+- **Aprovechamiento de Fragmento/LE**: Analiza la Eficiencia de Ligando. Si el score es bajo pero la eficiencia es alta, lo marca como un punto de partida para optimización (Fragment-based design).
 
-## 2. Refuerzo de Reproducibilidad (Transparencia) 📉
-Actualización del panel de parámetros técnicos para incluir el linaje del modelo de re-scoring.
+## 2. Refuerzo de Transparencia (Línea de Vida v4.0) 📉 [IMPLEMENTADO]
+Se han actualizado los módulos de metadatos para reflejar el estado actual del proyecto:
+- **ML Model Version**: Identificación explícita de `v4.0 (Spearman ρ=0.33)`.
+- **Reproducibilidad**: Inyección de la versión del modelo en el panel de metadatos para auditoría científica.
 
-### Elementos:
-- **ML Model Version**: Identificación clara de `v4.0 (Spearman 0.33)`.
-- **Target Context**: Confirmación del receptor (5-HT1A) y el PDB de referencia (7E2Y).
+## 3. Pipeline End-to-End con Solana ⛓️🛡️ [IMPLEMENTADO]
+El flujo visual del pipeline ahora refleja la realidad del sistema completo:
+`validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.0) → interpretación IA → certificación On-Chain (Solana)`
 
-## 3. Disclaimer de Método v4.0 ℹ️
-Evolución de las advertencias estáticas a un formato que refleje las capacidades actuales.
+## 4. Modelo Freemium (Límites Anónimos) 🌐🛑 [IMPLEMENTADO]
+Para proteger los recursos computacionales y fomentar el registro, se ha implementado un sistema de límites basado en IP:
+- **Usuarios Anónimos**: Límite de 2 evaluaciones moleculares por IP.
+- **Bloqueo Inteligente**: Al alcanzar la 3ra solicitud, el sistema devuelve un error 403 y el frontend muestra una invitación clara al registro.
 
-- Eliminación de placeholders "en construcción".
-- Clarificación sobre la IA como herramienta de interpretación y no de generación de datos primarios.
-
-## 4. Visualización de "Señal Científica" 🚦
-Implementación de un indicador visual de confianza basado en la convergencia de los scores de Vina y el re-scoring ML.
-- **Verde**: Vina y ML coinciden en alta afinidad.
-- **Amarillo**: ML rescata una molécula que Vina subestima.
-- **Rojo**: Desajuste significativo o propiedades ADME críticas.
+## 5. Infraestructura de IA Local (Local MedGemma) 🧬🤖 [FUTURO]
+Se ha verificado la operatividad de `medgemma1.5` en el servidor local (Ryzen 3). 
+- **Estado**: Operativo en contenedor `ollama-engine`.
+- **Plan**: Integrar como fallback local para la generación de reportes científicos (Modo Soberano/Offline).
 
 ---
-*Fecha de inicio: 2026-05-13*
-*Estado: En implementación*
+*Fecha de actualización: 2026-05-13*
+*Versión: v4.0 (Spearman Active)*
+*Estado: Producción / Sincronizado*
