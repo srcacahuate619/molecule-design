@@ -9,11 +9,10 @@ import type {
   GlobalStats,
 } from "./types";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
+const API_URL = "https://road-adware-kde-forums.trycloudflare.com";
 
 if (typeof window !== "undefined") {
-  console.log("🔌 MolDesign API URL:", API_URL);
+  console.log("🔌 MolDesign API URL (Hardcoded):", API_URL);
 }
 
 function getAuthHeaders(): Record<string, string> {
