@@ -12,6 +12,10 @@ import type {
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
 
+if (typeof window !== "undefined") {
+  console.log("🔌 MolDesign API URL:", API_URL);
+}
+
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
   try {
