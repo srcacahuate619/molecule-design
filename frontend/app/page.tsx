@@ -47,7 +47,7 @@ export default function HomePage() {
         {/* Animated Background Orbs */}
         <div className="absolute -right-20 -top-20 h-80 w-80 animate-pulse rounded-full bg-brand-500/10 blur-[100px]" />
         <div className="absolute -left-20 -bottom-20 h-80 w-80 animate-pulse rounded-full bg-emerald-500/5 blur-[100px]" />
-        
+
         <div className="relative z-10 flex flex-col items-center text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-400 shadow-lg shadow-brand-500/5">
             <span className="relative flex h-2 w-2">
@@ -60,7 +60,7 @@ export default function HomePage() {
             Mol<span className="bg-gradient-to-r from-brand-400 to-emerald-400 bg-clip-text text-transparent">Design</span> AI
           </h1>
           <p className="mb-10 max-w-2xl text-lg font-medium leading-relaxed text-surface-400">
-            Descubrimiento de fármacos con rigor industrial. Combinamos <span className="text-white">docking físico</span>, 
+            Descubrimiento de fármacos con rigor industrial. Combinamos <span className="text-white">docking físico</span>,
             <span className="text-white"> machine learning</span> y <span className="text-white">blockchain</span> para acelerar la quimioinformática.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
@@ -97,7 +97,7 @@ export default function HomePage() {
               {stat.unit && <span className="ml-1 text-sm font-bold text-surface-500">{stat.unit}</span>}
             </div>
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-surface-500">{stat.label}</div>
-            
+
             {/* Tooltip for Best Score */}
             {stat.label === "Mejor Puntuación" && stats?.best_molecule_name && (
               <div className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 w-max max-w-[280px] scale-95 opacity-0 transition-all group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100">
@@ -144,7 +144,7 @@ export default function HomePage() {
           </div>
           <div className="hidden h-px flex-1 bg-surface-800 mx-8 md:block" />
         </div>
-        
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {PIPELINE_STEPS.map((s) => (
             <div
@@ -159,7 +159,7 @@ export default function HomePage() {
               </div>
               <h3 className="mb-2 text-base font-bold text-white">{s.title}</h3>
               <p className="text-xs leading-relaxed text-surface-400 group-hover:text-surface-300 transition-colors">{s.desc}</p>
-              
+
               {/* Detailed Tooltip on Hover */}
               <div className="mt-4 overflow-hidden max-h-0 opacity-0 transition-all duration-300 group-hover:max-h-20 group-hover:opacity-100">
                 <div className="pt-4 border-t border-surface-800 text-[10px] text-surface-500 italic">
@@ -181,54 +181,54 @@ export default function HomePage() {
               </div>
               <h2 className="text-4xl font-black text-white tracking-tighter">Receptor 5-HT1A</h2>
               <p className="text-base leading-relaxed text-surface-400">
-                Nuestro motor principal está calibrado para el receptor de serotonina 1A, el pilar fundamental 
-                en el diseño de fármacos para trastornos del SNC. 
+                Nuestro motor principal está calibrado para el receptor de serotonina 1A, el pilar fundamental
+                en el diseño de fármacos para trastornos del SNC.
               </p>
               <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest">
                 <span className="flex items-center gap-2 text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> ESTRUCTURA CRYO-EM
                 </span>
                 <span className="flex items-center gap-2 text-emerald-400">
-                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> RESOLUCIÓN 3.0 Å
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> RESOLUCIÓN 3.0 Å
                 </span>
               </div>
             </div>
           </div>
           {/* Subtle decoration */}
           <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-             <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-                <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
-                <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="1" />
-             </svg>
+            <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+              <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
+              <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="1" />
+            </svg>
           </div>
         </section>
 
         <section className="rounded-3xl border border-surface-800 bg-surface-950 p-8 font-mono">
-           <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-surface-500">System Monitor</h3>
-              <div className="flex gap-1">
-                 <div className="h-2 w-2 rounded-full bg-red-500" />
-                 <div className="h-2 w-2 rounded-full bg-yellow-500/20" />
-                 <div className="h-2 w-2 rounded-full bg-emerald-500/20" />
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-surface-500">System Monitor</h3>
+            <div className="flex gap-1">
+              <div className="h-2 w-2 rounded-full bg-red-500" />
+              <div className="h-2 w-2 rounded-full bg-yellow-500/20" />
+              <div className="h-2 w-2 rounded-full bg-emerald-500/20" />
+            </div>
+          </div>
+          <div className="space-y-4">
+            {[
+              { name: "Vina Physics", status: "ONLINE", color: "text-emerald-400" },
+              { name: "XGBoost Machine Learning", status: "ONLINE", color: "text-emerald-400" },
+              { name: "RDKit Engine", status: "ONLINE", color: "text-emerald-400" },
+              { name: "Solana Node (Devnet)", status: "SYNCED", color: "text-brand-400" },
+              { name: "Claude-3-OPUS/Gemini (sin tokens actualmente)", status: "OFFLINE", color: "text-red-500" },
+            ].map((sys) => (
+              <div key={sys.name} className="flex items-center justify-between border-b border-surface-900 pb-2 last:border-0">
+                <span className="text-[10px] text-surface-500 leading-tight">{sys.name}</span>
+                <span className={`text-[10px] font-bold ${sys.color}`}>{sys.status}</span>
               </div>
-           </div>
-           <div className="space-y-4">
-              {[
-                { name: "Vina Physics", status: "ONLINE", color: "text-emerald-400" },
-                { name: "XGBoost Machine Learning", status: "ONLINE", color: "text-emerald-400" },
-                { name: "RDKit Engine", status: "ONLINE", color: "text-emerald-400" },
-                { name: "Solana Node (Devnet)", status: "SYNCED", color: "text-brand-400" },
-                { name: "Claude-3-OPUS/Gemini (sin tokens actualmente)", status: "OFFLINE", color: "text-red-500" },
-              ].map((sys) => (
-                <div key={sys.name} className="flex items-center justify-between border-b border-surface-900 pb-2 last:border-0">
-                  <span className="text-[10px] text-surface-500 leading-tight">{sys.name}</span>
-                  <span className={`text-[10px] font-bold ${sys.color}`}>{sys.status}</span>
-                </div>
-              ))}
-           </div>
-           <div className="mt-8 text-[9px] text-surface-600 animate-pulse">
-              {">"} SYSTEM ALERT: AI INFERENCE SUSPENDED
-           </div>
+            ))}
+          </div>
+          <div className="mt-8 text-[9px] text-surface-600 animate-pulse">
+            {">"} SYSTEM ALERT: AI INFERENCE SUSPENDED
+          </div>
         </section>
       </div>
 
@@ -244,7 +244,7 @@ export default function HomePage() {
             >
               <div className="mb-1 text-sm font-black">{t.name}</div>
               <div className="text-[10px] opacity-60 font-medium">{t.desc}</div>
-              
+
               {/* Invisible expandable area for the "pop" effect */}
               <div className="mt-2 h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all text-[9px] leading-tight text-white/80 pt-2 border-t border-white/10">
                 {t.tooltip}
@@ -261,9 +261,9 @@ export default function HomePage() {
           <div>
             <h2 className="mb-3 text-2xl font-black text-emerald-400 tracking-tight">Ciencia Abierta (Licencia CC0)</h2>
             <p className="max-w-3xl text-sm leading-relaxed text-emerald-100/60 font-medium">
-              MolDesign no es una "caja negra". Promovemos la democratización del descubrimiento de fármacos. 
-              Todos los hallazgos certificados se registran bajo licencia de **Dominio Público**, 
-              garantizando que el conocimiento sea libre mientras tu autoría queda grabada de forma inmutable 
+              MolDesign no es una "caja negra". Promovemos la democratización del descubrimiento de fármacos.
+              Todos los hallazgos certificados se registran bajo licencia de **Dominio Público**,
+              garantizando que el conocimiento sea libre mientras tu autoría queda grabada de forma inmutable
               en la red de Solana.
             </p>
           </div>
@@ -278,9 +278,9 @@ export default function HomePage() {
             <div className="text-xs font-bold text-surface-500 uppercase tracking-widest">Molecular Design Founder</div>
           </div>
           <div className="flex gap-4">
-             <a href="mailto:26000885@es.uveg.edu.mx" className="rounded-xl border border-surface-800 p-3 text-surface-400 hover:text-brand-400 hover:border-brand-500/30 transition-all">
-                📧 26000885@es.uveg.edu.mx
-             </a>
+            <a href="mailto:26000885@es.uveg.edu.mx" className="rounded-xl border border-surface-800 p-3 text-surface-400 hover:text-brand-400 hover:border-brand-500/30 transition-all">
+              📧 26000885@es.uveg.edu.mx
+            </a>
           </div>
           <div className="text-[10px] font-black uppercase tracking-[0.4em] text-surface-700">
             UVEG • SOFTWARE ENGINEERING
