@@ -9,10 +9,10 @@ import type {
   GlobalStats,
 } from "./types";
 
-const API_URL = "https://township-card-records-hammer.trycloudflare.com";
+const API_URL = "https://chatty-flowers-heal.loca.lt";
 
 if (typeof window !== "undefined") {
-  console.log("🔌 MolDesign API URL (Emergency Hardcode):", API_URL);
+  console.log("🔌 MolDesign API URL (Localtunnel Hardcode):", API_URL);
 }
 
 function getAuthHeaders(): Record<string, string> {
