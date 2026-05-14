@@ -28,11 +28,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const API_URL = "https://pipeline-coated-custom-tumor.trycloudflare.com";
-
-if (typeof window !== "undefined") {
-  console.log("🔌 MolDesign Auth URL (Cloudflare Restored):", API_URL);
-}
+import { API_URL } from "./config";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

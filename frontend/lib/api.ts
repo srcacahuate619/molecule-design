@@ -9,11 +9,7 @@ import type {
   GlobalStats,
 } from "./types";
 
-const API_URL = "https://pipeline-coated-custom-tumor.trycloudflare.com";
-
-if (typeof window !== "undefined") {
-  console.log("🔌 MolDesign API URL (Cloudflare Restored):", API_URL);
-}
+import { API_URL } from "./config";
 
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
