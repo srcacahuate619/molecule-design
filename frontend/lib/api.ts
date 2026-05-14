@@ -9,11 +9,10 @@ import type {
   GlobalStats,
 } from "./types";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
+const API_URL = "https://township-card-records-hammer.trycloudflare.com";
 
 if (typeof window !== "undefined") {
-  console.log("🔌 MolDesign API URL (Dynamic):", API_URL);
+  console.log("🔌 MolDesign API URL (Emergency Hardcode):", API_URL);
 }
 
 function getAuthHeaders(): Record<string, string> {
