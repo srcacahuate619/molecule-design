@@ -1,4 +1,10 @@
 // Centralized configuration for the MolDesign Frontend
-export const API_URL = "https://pipeline-coated-custom-tumor.trycloudflare.com";
+const IS_PRODUCTION = typeof window !== "undefined" && !window.location.hostname.includes("localhost") && !window.location.hostname.includes("192.168.1");
 
-console.log("🚀 MolDesign Config Loaded. Target API:", API_URL);
+export const API_URL = IS_PRODUCTION 
+  ? "https://pipeline-coated-custom-tumor.trycloudflare.com"
+  : "http://localhost:8000";
+
+if (typeof window !== "undefined") {
+  console.log(`🚀 MolDesign [${IS_PRODUCTION ? "PROD" : "LOCAL"}] API:`, API_URL);
+}
