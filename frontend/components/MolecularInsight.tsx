@@ -5,7 +5,7 @@ type Props = {
 };
 
 export function MolecularInsight({ result }: Props) {
-  const insights: { type: "warning" | "success" | "info"; message: string; title: string } = [];
+  const insights: { type: "warning" | "success" | "info"; message: string; title: string }[] = [];
 
   // 1. Lógica de "Grease Ball" (Lipofilicidad vs Afinidad)
   if (result.log_p !== null && result.log_p > 5 && result.affinity_kcal !== null && result.affinity_kcal < -7.5) {
@@ -25,25 +25,38 @@ export function MolecularInsight({ result }: Props) {
     });
   }
 
-  // 3. Consistencia Vina vs ML v4.0
+  // 3. Consistencia Vina vs ML v4.0 (Ajustado por honestidad científica)
   if (result.affinity_kcal !== null) {
-    // Estimación rápida de si el ML está "rescatando" o "validando"
-    // Nota: El backend ya devuelve el best_affinity como el valor de rescoring si está disponible.
-    // Aquí podemos dar un mensaje de confianza.
-    insights.push({
-      type: "success",
-      title: "Validación Científica v4.0",
-      message: "Los descriptores de interacción (ProLIF) y el modelo ML confirman la señal biológica para el receptor 5-HT1A (Spearman ρ=0.33)."
-    });
+    if (result.total_score !== null && result.total_score > 35) {
+      insights.push({
+        type: "success",
+        title: "Validación Científica v4.0",
+        message: "Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el receptor 5-HT1A (Spearman ρ=0.33)."
+      });
+    } else {
+      insights.push({
+        type: "info",
+        title: "Señal Biológica Débil",
+        message: "El modelo ML v4.0 no detecta suficientes interacciones clave. La molécula podría no tener la orientación adecuada en el bolsillo Asp114."
+      });
+    }
   }
 
-  // 4. Eficiencia de Ligando
+  // 4. Eficiencia de Ligando (Ajustado para evitar falsos positivos en moléculas junk)
   if (result.ligand_efficiency !== null && result.ligand_efficiency < -0.3) {
-    insights.push({
-      type: "success",
-      title: "Alta Eficiencia de Ligando",
-      message: `Con un LE de ${result.ligand_efficiency.toFixed(3)}, cada átomo pesado está contribuyendo significativamente a la unión. Es un excelente punto de partida para optimización.`
-    });
+    if (result.total_score !== null && result.total_score > 30) {
+      insights.push({
+        type: "success",
+        title: "Alta Eficiencia de Ligando",
+        message: `Con un LE de ${result.ligand_efficiency.toFixed(3)}, cada átomo pesado está contribuyendo significativamente a la unión. Es un excelente punto de partida para optimización.`
+      });
+    } else {
+      insights.push({
+        type: "info",
+        title: "Aprovechamiento de Fragmento",
+        message: `Aunque la molécula es pequeña y eficiente (LE: ${result.ligand_efficiency.toFixed(3)}), su tamaño actual no es suficiente para generar una afinidad competitiva.`
+      });
+    }
   }
 
   if (insights.length === 0) return null;

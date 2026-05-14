@@ -11,8 +11,10 @@ import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
 import { ScoreCard } from "../../components/ScoreCard";
 import { ScientificWarnings } from "../../components/ScientificWarnings";
 import { MolecularInsight } from "../../components/MolecularInsight";
-import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule } from "../../lib/api";
+import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus } from "../../lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../lib/types";
+import { useAuth } from "../../lib/auth";
+import { useRouter } from "next/navigation";
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -49,6 +51,9 @@ export default function EvaluationPage() {
   // --- Derived State ---
   const isTerminal = status?.status === "SUCCESS" || status?.status === "FAILURE";
   const canEvaluate = !!validation?.is_valid;
+
+  const { user } = useAuth();
+  const router = useRouter();
 
   const handleSave = useCallback(async () => {
     if (!status?.result?.molecule_id) return;
@@ -230,6 +235,14 @@ export default function EvaluationPage() {
     setTaskId(null);
     setSuggestions([]);
     try {
+      // Chequeo preventivo de límites para anónimos
+      const limitInfo = await getLimitStatus();
+      if (limitInfo.is_limited && limitInfo.remaining <= 0) {
+        setError(`Has alcanzado el límite de ${limitInfo.max} evaluaciones gratuitas. Regístrate para continuar diseñando.`);
+        setBusy(false);
+        return;
+      }
+
       const result = await submitEvaluation(smiles, target, isControl);
       setTaskId(result.task_id);
       setStatus({
@@ -243,7 +256,18 @@ export default function EvaluationPage() {
       });
       startPolling(result.task_id);
     } catch (e) {
-      setError((e as Error).message);
+      const msg = (e as Error).message;
+      if (msg.includes("403")) {
+        // Extraer mensaje amigable si viene de FastAPI
+        try {
+          const jsonError = JSON.parse(msg.split(": ")[1]);
+          setError(jsonError.detail);
+        } catch {
+          setError("Límite de prueba alcanzado. Regístrate gratis para continuar.");
+        }
+      } else {
+        setError(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -261,9 +285,25 @@ export default function EvaluationPage() {
     setIsSaved(false);
   };
 
-  const handleUseSuggestion = (sug: MolecularSuggestion) => {
+  const handleUseSuggestion = async (sug: MolecularSuggestion) => {
+    if (!sug.smiles) {
+      setError("La sugerencia no contiene una estructura SMILES válida.");
+      return;
+    }
+    
     setSmiles(sug.smiles);
     handleReset();
+    
+    // Disparamos validación automática
+    setBusy(true);
+    try {
+      const result = await validateSmiles(sug.smiles);
+      setValidation(result);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -272,7 +312,7 @@ export default function EvaluationPage() {
       <section>
         <h1 className="text-2xl font-bold text-white">Evaluación molecular</h1>
         <p className="mt-1 text-sm text-surface-400">
-          Pipeline: validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.0) → interpretación IA
+          Pipeline: validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.0) → interpretación IA (sin tokens disponibles:c) → certificación On-Chain (Solana)
         </p>
       </section>
 
@@ -336,13 +376,22 @@ export default function EvaluationPage() {
               >
                 1. Validar estructura
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={busy || !canEvaluate || (!!taskId && !isTerminal)}
-                className="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                2. Evaluar molécula
-              </button>
+              
+              <div className="space-y-1">
+                <button
+                  onClick={handleSubmit}
+                  disabled={busy || !canEvaluate || (!!taskId && !isTerminal)}
+                  className="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  2. Evaluar molécula
+                </button>
+                {!user && (
+                   <p className="text-center text-[10px] text-surface-500">
+                     Límite para anónimos: 10 evaluaciones (propietario) / 2 (público)
+                   </p>
+                )}
+              </div>
+
               {isTerminal && (
                 <button
                   onClick={handleReset}
@@ -429,6 +478,12 @@ export default function EvaluationPage() {
               isControl={status.result.is_control}
               saScore={status.result.sa_score}
               saReasons={status.result.sa_reasons}
+              rawVinaKcal={(status.result.docking_poses?.[0] as any)?.affinity ?? status.result.docking_poses?.[0]?.affinity_kcal ?? null}
+              rawXgboostKcal={
+                ((status.result.docking_poses?.[0] as any)?.affinity ?? status.result.docking_poses?.[0]?.affinity_kcal) !== status.result.affinity_kcal
+                  ? status.result.affinity_kcal
+                  : null
+              }
             />
             
             <div className="flex flex-col gap-5">
@@ -525,14 +580,27 @@ export default function EvaluationPage() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-xs font-semibold text-brand-400">{sug.name}</span>
-                        <span className="rounded bg-surface-800 px-1.5 py-0.5 text-[10px] font-medium text-surface-400">
-                          {sug.confidence}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="rounded bg-surface-800 px-1.5 py-0.5 text-[10px] font-medium text-surface-400">
+                            {sug.confidence}
+                          </span>
+                          {sug.ml_score !== undefined && sug.ml_score !== null && (
+                            <div className="flex items-center gap-1.5 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/20">
+                                <span className="relative flex h-1 w-1">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1 w-1 bg-emerald-500"></span>
+                                </span>
+                                PROMETEDOR: {sug.ml_score.toFixed(2)}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <p className="text-xs leading-relaxed text-surface-400">{sug.description}</p>
-                      <code className="block truncate rounded bg-surface-800 px-2 py-1 font-mono text-[10px] text-surface-300">
-                        {sug.smiles}
-                      </code>
+                      {sug.smiles && (
+                        <code className="block truncate rounded bg-surface-800 px-2 py-1 font-mono text-[10px] text-surface-300">
+                          {sug.smiles}
+                        </code>
+                      )}
                       {sug.warnings.length > 0 && (
                         <div className="text-[10px] text-yellow-400">
                           {sug.warnings.map((w, wi) => (
@@ -540,12 +608,14 @@ export default function EvaluationPage() {
                           ))}
                         </div>
                       )}
-                      <button
-                        onClick={() => handleUseSuggestion(sug)}
-                        className="w-full rounded-lg border border-brand-600/30 bg-brand-600/10 py-1.5 text-xs font-medium text-brand-400 transition-colors hover:bg-brand-600/20"
-                      >
-                        Usar esta molécula
-                      </button>
+                      {sug.smiles && (
+                        <button
+                          onClick={() => handleUseSuggestion(sug)}
+                          className="w-full rounded-lg border border-brand-600/30 bg-brand-600/10 py-1.5 text-xs font-medium text-brand-400 transition-colors hover:bg-brand-600/20"
+                        >
+                          Usar esta molécula
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 
 /**
  * Dynamically imported Ketcher editor (no SSR).
@@ -39,6 +39,14 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
   const [mode, setMode] = useState<"text" | "ketcher">("text");
   const [textSmiles, setTextSmiles] = useState(initialSmiles || "");
   const [ketcherError, setKetcherError] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync state ONLY if it's an external change and we are NOT typing
+  useEffect(() => {
+    if (initialSmiles !== undefined && !isFocused && initialSmiles !== textSmiles) {
+      setTextSmiles(initialSmiles);
+    }
+  }, [initialSmiles, isFocused, textSmiles]);
 
   const handleTextChange = useCallback(
     (value: string) => {
@@ -50,10 +58,13 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
 
   const handleKetcherSmiles = useCallback(
     (smiles: string) => {
-      setTextSmiles(smiles);
-      onSmilesChange?.(smiles);
+      // Only update if it's different and we aren't manually typing
+      if (smiles !== textSmiles && !isFocused) {
+        setTextSmiles(smiles);
+        onSmilesChange?.(smiles);
+      }
     },
-    [onSmilesChange],
+    [onSmilesChange, textSmiles, isFocused],
   );
 
   return (
@@ -90,6 +101,8 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
           <textarea
             rows={3}
             value={textSmiles}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             onChange={(e) => handleTextChange(e.target.value)}
             placeholder="Introduce SMILES, ej: CC(=O)Oc1ccccc1C(=O)O (Aspirina)"
             className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-gray-200 placeholder-surface-500 transition-colors focus:border-brand-500 focus:outline-none"
@@ -149,7 +162,9 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
             <input
               type="text"
               value={textSmiles}
-              readOnly
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onChange={(e) => handleTextChange(e.target.value)}
               className="flex-1 rounded-lg border border-surface-700 bg-surface-950 px-3 py-1.5 font-mono text-xs text-gray-300 focus:border-brand-500 focus:outline-none"
             />
           </div>

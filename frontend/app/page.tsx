@@ -6,22 +6,22 @@ import { getGlobalStats } from "../lib/api";
 import { GlobalStats } from "../lib/types";
 
 const PIPELINE_STEPS = [
-  { step: 1, icon: "🧪", title: "Validación química", desc: "RDKit valida estructura SMILES, fórmula molecular y restricciones estricta." },
-  { step: 2, icon: "📊", title: "Propiedades fisicoquímicas", desc: "MW, LogP, TPSA, HBD, HBA, QED — todo calculado con RDKit." },
-  { step: 3, icon: "🔬", title: "Conformer 3D", desc: "Generación de estructura tridimensional con ETKDG." },
-  { step: 4, icon: "🎯", title: "Docking molecular", desc: "AutoDock Vina contra target real (7E2Y) + DiffDock (deep learning)." },
-  { step: 5, icon: "📈", title: "Score compuesto", desc: "Afinidad (45%) + ADME (30%) + Drug-likeness (25%) con umbral LE industrial." },
-  { step: 6, icon: "🤖", title: "Interpretación IA", desc: "Claude y Gemini interpretan resultados sin inventar ni modificar cifras." },
-  { step: 7, icon: "🔗", title: "Certificación Blockchain", desc: "Registro inmutable en Solana devnet para el reconocimiento permanente del creador in silico." },
+  { step: 1, icon: "🧪", title: "Validación Química", desc: "RDKit valida estructura SMILES y restricciones medicinales.", detail: "Verificación de valencias, quiralidad y filtros de reactividad sub-segundo." },
+  { step: 2, icon: "📊", title: "Propiedades", desc: "MW, LogP, TPSA, QED y Accesibilidad Sintética (SA).", detail: "Cálculo de descriptores físico-químicos basados en fragmentos moleculares." },
+  { step: 3, icon: "🧬", title: "Conformer 3D", desc: "Generación de estructuras tridimensionales de baja energía.", detail: "Uso del algoritmo ETKDG para obtener la geometría más probable del ligando." },
+  { step: 4, icon: "🎯", title: "Docking Físico", desc: "AutoDock Vina contra el receptor 5-HT1A (PDB: 7E2Y).", detail: "Simulación de fuerzas electrostáticas y de van der Waals en el sitio activo." },
+  { step: 5, icon: "🧠", title: "Rescoring ML", desc: "Corrección de afinidad mediante XGBoost (Cerebro Espacial).", detail: "Modelo entrenado con 5,000 complejos de PDBbind para reducir falsos positivos." },
+  { step: 6, icon: "🤖", title: "Interpretación IA", desc: "Reporte científico narrativo generado por Claude.", detail: "Análisis cualitativo de interacciones clave y sugerencias de optimización." },
+  { step: 7, icon: "🔗", title: "Blockchain", desc: "Registro inmutable de autoría en la red Solana.", detail: "Certificación permanente del descubrimiento con hash SHA-256 único." },
 ];
 
 const TECHNOLOGIES = [
-  { name: "RDKit", desc: "Validación y propiedades", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
-  { name: "AutoDock Vina", desc: "Docking clásico", color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
-  { name: "Solana", desc: "Certificación inmutable", color: "bg-purple-500/10 text-purple-400 border-purple-500/30" },
-  { name: "Claude / Gemini", desc: "Interpretación científica", color: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30" },
-  { name: "3Dmol.js", desc: "Visualización 3D", color: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30" },
-  { name: "Ketcher", desc: "Editor molecular", color: "bg-rose-500/10 text-rose-400 border-rose-500/30" },
+  { name: "AutoDock Vina", desc: "Docking de precisión", color: "border-blue-500/30 text-blue-400 shadow-blue-500/10", tooltip: "Motor físico estándar de oro para simulación de acoplamiento molecular." },
+  { name: "XGBoost", desc: "Cerebro Espacial ML", color: "border-brand-500/30 text-brand-400 shadow-brand-500/10", tooltip: "Algoritmo de Gradient Boosting para corrección estadística de afinidad." },
+  { name: "RDKit", desc: "Quimioinformática", color: "border-emerald-500/30 text-emerald-400 shadow-emerald-500/10", tooltip: "Toolkit profesional para validación y descriptores moleculares." },
+  { name: "Solana", desc: "Blockchain Layer-1", color: "border-purple-500/30 text-purple-400 shadow-purple-500/10", tooltip: "Red descentralizada de alta velocidad para registro de propiedad intelectual." },
+  { name: "Claude / Gemini", desc: "IA Generativa", color: "border-indigo-500/30 text-indigo-400 shadow-indigo-500/10", tooltip: "Modelos de lenguaje avanzados para síntesis de resultados científicos." },
+  { name: "3Dmol.js", desc: "Renderizado 3D", color: "border-cyan-500/30 text-cyan-400 shadow-cyan-500/10", tooltip: "Librería de visualización acelerada por WebGL para estructuras PDB." },
 ];
 
 export default function HomePage() {
@@ -41,196 +41,253 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="space-y-12">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl border border-surface-800 bg-gradient-to-br from-surface-900 via-surface-900 to-brand-900/20 p-8 md:p-12">
-        <div className="relative z-10">
-          <div className="mb-2 inline-block rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-semibold text-brand-400">
-            Pipeline Científico Real
+    <div className="space-y-12 pb-20">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden rounded-3xl border border-surface-800 bg-surface-900 p-8 md:p-16">
+        {/* Animated Background Orbs */}
+        <div className="absolute -right-20 -top-20 h-80 w-80 animate-pulse rounded-full bg-brand-500/10 blur-[100px]" />
+        <div className="absolute -left-20 -bottom-20 h-80 w-80 animate-pulse rounded-full bg-emerald-500/5 blur-[100px]" />
+        
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-400 shadow-lg shadow-brand-500/5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75"></span>
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-500"></span>
+            </span>
+            Next-Gen Molecular Pipeline
           </div>
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
-            Mol<span className="text-brand-400">Design</span> AI
+          <h1 className="mb-6 text-5xl font-black tracking-tighter text-white md:text-7xl">
+            Mol<span className="bg-gradient-to-r from-brand-400 to-emerald-400 bg-clip-text text-transparent">Design</span> AI
           </h1>
-          <p className="mb-8 max-w-2xl text-lg leading-relaxed text-surface-400">
-            Diseño molecular con rigor industrial. Pipeline científico basado en
-            Ligand Efficiency y Docking de precisión, con reconocimiento permanente al 
-            creador in silico mediante Blockchain.
+          <p className="mb-10 max-w-2xl text-lg font-medium leading-relaxed text-surface-400">
+            Descubrimiento de fármacos con rigor industrial. Combinamos <span className="text-white">docking físico</span>, 
+            <span className="text-white"> machine learning</span> y <span className="text-white">blockchain</span> para acelerar la quimioinformática.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap justify-center gap-4">
             <Link
               href="/evaluation"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/20 transition-all hover:bg-brand-700 hover:shadow-brand-600/30"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-2xl bg-brand-600 px-8 py-4 text-base font-bold text-white transition-all hover:bg-brand-500 hover:shadow-[0_0_40px_rgba(var(--brand-500-rgb),0.3)] active:scale-95"
             >
-              Iniciar evaluación
-              <span aria-hidden="true">→</span>
+              <span className="relative z-10 flex items-center gap-2">
+                Diseñar Molécula
+                <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
             </Link>
-            <Link
-              href="/history"
-              className="inline-flex items-center gap-2 rounded-xl border border-surface-700 px-6 py-3 text-sm font-semibold text-surface-300 transition-all hover:border-surface-600 hover:bg-surface-800"
+            <a
+              href="https://github.com/srcacahuate619/molecule-design"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-2xl border border-surface-700 bg-surface-950/50 px-8 py-4 text-base font-bold text-surface-300 backdrop-blur-sm transition-all hover:border-surface-600 hover:bg-surface-800"
             >
-              Ver guardadas
-            </Link>
+              Explorar Repositorio
+            </a>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-brand-500/5 blur-3xl" />
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Dashboard */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statsDisplay.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-surface-800 bg-surface-900/50 p-4 text-center">
-            <div className="mb-1 text-2xl">{stat.icon}</div>
-            <div className="text-2xl font-bold text-white">
+          <div key={stat.label} className="group relative rounded-2xl border border-surface-800 bg-surface-900/40 p-6 transition-all hover:border-surface-700 hover:bg-surface-900/60">
+            <div className="mb-4 text-3xl transition-transform group-hover:scale-110 group-hover:rotate-6">{stat.icon}</div>
+            <div className="text-3xl font-black text-white">
               {stat.value}
-              {stat.unit && <span className="ml-1 text-xs font-medium text-surface-500">{stat.unit}</span>}
+              {stat.unit && <span className="ml-1 text-sm font-bold text-surface-500">{stat.unit}</span>}
             </div>
-            <div className="text-xs font-medium text-surface-400 uppercase tracking-wider">{stat.label}</div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-surface-500">{stat.label}</div>
+            
+            {/* Tooltip for Best Affinity */}
+            {stat.label === "Mejor Afinidad" && stats?.best_molecule_name && (
+              <div className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 w-max max-w-[280px] scale-95 opacity-0 transition-all group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100">
+                <div className="rounded-xl border border-brand-500/30 bg-surface-950 p-4 shadow-2xl shadow-brand-500/20">
+                  <div className="mb-2 flex items-center justify-between border-b border-surface-800 pb-2">
+                    <h4 className="text-[10px] font-black uppercase tracking-wider text-brand-400">Récord Mundial</h4>
+                    <span className="text-[10px] text-surface-500 font-mono">🏆 Best Docking</span>
+                  </div>
+                  <div className="space-y-3 text-[11px]">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-surface-500">Diseñador</span>
+                      <span className="font-bold text-white flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                        {stats.best_molecule_user ?? "Anónimo"}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-surface-500">Estructura Química (SMILES)</span>
+                      <div className="relative group/smiles">
+                        <code className="block break-all rounded-lg bg-surface-900 p-2 font-mono text-[10px] text-brand-300 border border-brand-500/10">
+                          {stats.best_molecule_name}
+                        </code>
+                        <div className="mt-1 text-[9px] text-surface-600 italic">
+                          Copia este SMILES para evaluarlo
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Connector Arrow */}
+                <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
+              </div>
+            )}
           </div>
         ))}
       </section>
 
-      {/* Target Spotlight */}
-      <section className="relative overflow-hidden rounded-2xl border border-brand-500/20 bg-surface-900 p-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center">
-          <div className="flex-1 space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
-              </span>
-              Target Activo
-            </div>
-            <h2 className="text-3xl font-bold text-white">Receptor 5-HT1A <span className="text-surface-500 font-mono text-xl">(7E2Y)</span></h2>
-            <p className="text-surface-400 leading-relaxed">
-              Actualmente centramos nuestra potencia de cálculo en el receptor de serotonina 1A, 
-              crucial para el tratamiento de la ansiedad, depresión y enfermedades neurodegenerativas. 
-            </p>
-            <div className="flex items-center gap-4 text-sm font-medium text-brand-400">
-              <span>✓ Estructura Cryo-EM</span>
-              <span>✓ Resolución 3.0 Å</span>
-              <span className="text-surface-500">• Próximamente: Multi-target a demanda</span>
-            </div>
-          </div>
-          <div className="flex-shrink-0 rounded-xl bg-surface-800/50 p-4 border border-surface-700">
-             <div className="text-xs text-surface-500 mb-2 uppercase font-bold tracking-widest">Estado del Motor</div>
-             <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-surface-300">
-                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> 
-                   Vina 1.2.5: Online
-                </div>
-                <div className="flex items-center gap-2 text-sm text-surface-300">
-                   <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> 
-                   RDKit Engine: Online
-                </div>
-                <div className="flex items-center gap-2 text-sm text-surface-300 opacity-50">
-                   <div className="h-1.5 w-1.5 rounded-full bg-surface-600" /> 
-                   Custom PDB Upload: Pending
-                </div>
-             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pipeline Steps */}
+      {/* Interactive Pipeline Steps */}
       <section>
-        <h2 className="mb-6 text-2xl font-bold text-white">Pipeline científico</h2>
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-white tracking-tight">Pipeline Científico</h2>
+            <p className="text-sm text-surface-500">Flujo de trabajo automatizado end-to-end</p>
+          </div>
+          <div className="hidden h-px flex-1 bg-surface-800 mx-8 md:block" />
+        </div>
+        
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {PIPELINE_STEPS.map((s) => (
             <div
               key={s.step}
-              className="group rounded-xl border border-surface-800 bg-surface-900 p-5 transition-all hover:border-surface-700 hover:bg-surface-900/80"
+              className="group relative rounded-2xl border border-surface-800 bg-surface-900 p-6 transition-all hover:-translate-y-1 hover:border-brand-500/30 hover:bg-surface-800/50"
             >
-              <div className="mb-3 flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600/20 text-sm font-bold text-brand-400">
-                  {s.step}
+              <div className="mb-4 flex items-center justify-between">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/10 text-sm font-black text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                  0{s.step}
                 </span>
-                <span className="text-xl">{s.icon}</span>
+                <span className="text-2xl grayscale group-hover:grayscale-0 transition-all">{s.icon}</span>
               </div>
-              <h3 className="mb-1 font-semibold text-gray-200">{s.title}</h3>
-              <p className="text-sm leading-relaxed text-surface-400">{s.desc}</p>
+              <h3 className="mb-2 text-base font-bold text-white">{s.title}</h3>
+              <p className="text-xs leading-relaxed text-surface-400 group-hover:text-surface-300 transition-colors">{s.desc}</p>
+              
+              {/* Detailed Tooltip on Hover */}
+              <div className="mt-4 overflow-hidden max-h-0 opacity-0 transition-all duration-300 group-hover:max-h-20 group-hover:opacity-100">
+                <div className="pt-4 border-t border-surface-800 text-[10px] text-surface-500 italic">
+                  {s.detail}
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Open Science & Technologies */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        <section className="lg:col-span-2">
-          <h2 className="mb-6 text-2xl font-bold text-white">Tecnologías</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {TECHNOLOGIES.map((t) => (
-              <div
-                key={t.name}
-                className={`rounded-lg border px-4 py-3 ${t.color}`}
-              >
-                <div className="text-sm font-bold">{t.name}</div>
-                <div className="text-xs opacity-70">{t.desc}</div>
+      {/* Target Spotlight & System Status */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <section className="lg:col-span-2 relative overflow-hidden rounded-3xl border border-brand-500/20 bg-surface-900 p-8 shadow-2xl shadow-brand-500/5">
+          <div className="flex flex-col gap-8 md:flex-row md:items-center">
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 px-4 py-1 text-xs font-bold text-brand-400 border border-brand-500/20">
+                Target Activo 7E2Y
               </div>
-            ))}
+              <h2 className="text-4xl font-black text-white tracking-tighter">Receptor 5-HT1A</h2>
+              <p className="text-base leading-relaxed text-surface-400">
+                Nuestro motor principal está calibrado para el receptor de serotonina 1A, el pilar fundamental 
+                en el diseño de fármacos para trastornos del SNC. 
+              </p>
+              <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest">
+                <span className="flex items-center gap-2 text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> ESTRUCTURA CRYO-EM
+                </span>
+                <span className="flex items-center gap-2 text-emerald-400">
+                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> RESOLUCIÓN 3.0 Å
+                </span>
+              </div>
+            </div>
+          </div>
+          {/* Subtle decoration */}
+          <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+             <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+                <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
+                <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="1" />
+             </svg>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
-          <div className="mb-4 text-2xl">🔓</div>
-          <h2 className="mb-2 text-xl font-bold text-emerald-400">Ciencia Abierta (CC0)</h2>
-          <p className="text-sm leading-relaxed text-emerald-100/60">
-            MolDesign promueve la democratización del descubrimiento de fármacos. 
-            Todos los hallazgos certificados se registran bajo licencia de Dominio Público, 
-            garantizando que el conocimiento sea libre mientras tu autoría queda 
-            grabada para siempre en la blockchain.
-          </p>
+        <section className="rounded-3xl border border-surface-800 bg-surface-950 p-8 font-mono">
+           <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-surface-500">System Monitor</h3>
+              <div className="flex gap-1">
+                 <div className="h-2 w-2 rounded-full bg-red-500" />
+                 <div className="h-2 w-2 rounded-full bg-yellow-500/20" />
+                 <div className="h-2 w-2 rounded-full bg-emerald-500/20" />
+              </div>
+           </div>
+           <div className="space-y-4">
+              {[
+                { name: "Vina Physics", status: "ONLINE", color: "text-emerald-400" },
+                { name: "XGBoost Machine Learning", status: "ONLINE", color: "text-emerald-400" },
+                { name: "RDKit Engine", status: "ONLINE", color: "text-emerald-400" },
+                { name: "Solana Node (Devnet)", status: "SYNCED", color: "text-brand-400" },
+                { name: "Claude-3-OPUS/Gemini (sin tokens actualmente)", status: "OFFLINE", color: "text-red-500" },
+              ].map((sys) => (
+                <div key={sys.name} className="flex items-center justify-between border-b border-surface-900 pb-2 last:border-0">
+                  <span className="text-[10px] text-surface-500 leading-tight">{sys.name}</span>
+                  <span className={`text-[10px] font-bold ${sys.color}`}>{sys.status}</span>
+                </div>
+              ))}
+           </div>
+           <div className="mt-8 text-[9px] text-surface-600 animate-pulse">
+              {">"} SYSTEM ALERT: AI INFERENCE SUSPENDED
+           </div>
         </section>
       </div>
 
-      {/* Scientific Principles */}
-      <section className="rounded-2xl border border-surface-800 bg-surface-900 p-6">
-        <h2 className="mb-4 text-lg font-bold text-white">Principios científicos</h2>
-        <ul className="grid gap-3 text-sm leading-relaxed text-surface-400 md:grid-cols-2">
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 text-emerald-400">✓</span>
-            Valores de módulos científicos explícitos (RDKit, Vina)
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 text-emerald-400">✓</span>
-            Interpretación IA basada en datos, sin invención
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 text-emerald-400">✓</span>
-            Trazabilidad completa para reproducibilidad
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 text-emerald-400">✓</span>
-            Certificación en Solana para reconocimiento de autor
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 text-emerald-400">✓</span>
-            Umbral LE de -0.30 kcal/mol/at para eliminación de ruido
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-0.5 text-emerald-400">✓</span>
-            Heurística de priorización, no verdad biológica absoluta
-          </li>
-        </ul>
+      {/* Tech Stack Interactive Grid */}
+      <section>
+        <h2 className="mb-8 text-2xl font-black text-white tracking-tight text-center">Tecnologías de Grado Industrial</h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {TECHNOLOGIES.map((t) => (
+            <div
+              key={t.name}
+              title={t.tooltip}
+              className={`group cursor-help rounded-2xl border bg-surface-900 p-4 transition-all hover:bg-surface-800 hover:shadow-2xl ${t.color}`}
+            >
+              <div className="mb-1 text-sm font-black">{t.name}</div>
+              <div className="text-[10px] opacity-60 font-medium">{t.desc}</div>
+              
+              {/* Invisible expandable area for the "pop" effect */}
+              <div className="mt-2 h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 transition-all text-[9px] leading-tight text-white/80 pt-2 border-t border-white/10">
+                {t.tooltip}
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* Creator Info Footer */}
-      <footer className="border-t border-surface-800 pt-8 pb-12">
-        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+      {/* Open Science & Ethics */}
+      <section className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-10">
+        <div className="relative z-10 flex flex-col md:flex-row gap-10 items-center">
+          <div className="text-5xl">🔓</div>
+          <div>
+            <h2 className="mb-3 text-2xl font-black text-emerald-400 tracking-tight">Ciencia Abierta (Licencia CC0)</h2>
+            <p className="max-w-3xl text-sm leading-relaxed text-emerald-100/60 font-medium">
+              MolDesign no es una "caja negra". Promovemos la democratización del descubrimiento de fármacos. 
+              Todos los hallazgos certificados se registran bajo licencia de **Dominio Público**, 
+              garantizando que el conocimiento sea libre mientras tu autoría queda grabada de forma inmutable 
+              en la red de Solana.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer / Creator */}
+      <footer className="border-t border-surface-800 pt-12">
+        <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
           <div className="text-center md:text-left">
-            <div className="text-sm font-semibold text-white">Johan Amezcua</div>
-            <div className="text-xs text-surface-500">Fundador y desarrollador de MolDesign</div>
+            <div className="text-base font-black text-white tracking-tight">Johan Amezcua</div>
+            <div className="text-xs font-bold text-surface-500 uppercase tracking-widest">Molecular Design Founder</div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-surface-400">
-            <span>📧</span>
-            <a href="mailto:26000885@es.uveg.edu.mx" className="hover:text-brand-400 transition-colors">
-              26000885@es.uveg.edu.mx
-            </a>
+          <div className="flex gap-4">
+             <a href="mailto:26000885@es.uveg.edu.mx" className="rounded-xl border border-surface-800 p-3 text-surface-400 hover:text-brand-400 hover:border-brand-500/30 transition-all">
+                📧 26000885@es.uveg.edu.mx
+             </a>
           </div>
-          <div className="text-[10px] uppercase tracking-widest text-surface-600">
-            UVEG • Ingeniería en Software
+          <div className="text-[10px] font-black uppercase tracking-[0.4em] text-surface-700">
+            UVEG • SOFTWARE ENGINEERING
           </div>
         </div>
       </footer>
     </div>
   );
 }
+

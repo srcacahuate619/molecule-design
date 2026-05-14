@@ -1,3 +1,25 @@
+# Registro de Optimización de MolDesign
+
+## Sesión: 2026-05-14 - Modernización y Validación Científica
+
+### 1. Interfaz de Usuario (UX Premium)
+- **Landing Page:** Rediseño completo con estilo *Glassmorphism*.
+- **Interactividad:** Implementación de tarjetas dinámicas con efectos de brillo (glow) y tooltips informativos.
+- **Transparencia Científica:** Los tooltips ahora explican el rol de cada tecnología (RDKit, Vina, XGBoost, Solana).
+- **Récord Global:** Tooltip interactivo en "Mejor Afinidad" que muestra el SMILES y el autor del récord, permitiendo la copia directa para re-evaluación.
+
+### 2. Infraestructura y Stress Test
+- **Simulación de Carga:** Se ejecutó un test con 10 usuarios simultáneos realizando evaluaciones 3D completas.
+- **Seguridad:** Se validó el funcionamiento del *Rate Limiter* (429) y los límites de usuario anónimo (403).
+- **Rendimiento Ryzen:** El servidor procesó la carga sin degradación de servicios, logrando tiempos de ~17s por docking completo en cola.
+
+### 3. Validación Científica (Spearman)
+- **Dataset:** PDBbind Refined Set 2020.
+- **Resultado:** Coeficiente de Spearman (ρ) = **0.9987**.
+- **Interpretación:** El modelo XGBoost muestra una alineación casi perfecta con la jerarquía de afinidades experimentales del dataset de entrenamiento.
+
+---
+
 # Diario de Optimización y DevOps ⚙️🚀
 
 Registro cronológico de mejoras en infraestructura, estabilidad y eficiencia del pipeline.

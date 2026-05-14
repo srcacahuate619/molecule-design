@@ -43,6 +43,8 @@ type ScoreCardProps = {
   isControl?: boolean;
   saScore?: number | null;
   saReasons?: string[] | null;
+  rawVinaKcal?: number | null;
+  rawXgboostKcal?: number | null;
 };
 
 export function ScoreCard({
@@ -60,6 +62,8 @@ export function ScoreCard({
   isControl = false,
   saScore,
   saReasons,
+  rawVinaKcal,
+  rawXgboostKcal,
 }: ScoreCardProps) {
   const totalDisplay =
     totalScore !== null && totalScore !== undefined
@@ -149,26 +153,100 @@ export function ScoreCard({
       )}
 
       {affinityKcal !== null && affinityKcal !== undefined && (
-        <div className="text-xs text-surface-400">
-          Afinidad (Vina + XGBoost): <strong className="text-gray-300">{affinityKcal.toFixed(3)} kcal/mol</strong>
+        <div className="group relative text-xs text-surface-400">
+          <div className="flex cursor-help items-center gap-1 w-max">
+            <span>Afinidad (Vina + XGBoost):</span>
+            <strong className="text-gray-300 border-b border-dashed border-gray-500 pb-0.5">
+              {affinityKcal.toFixed(3)} kcal/mol
+            </strong>
+          </div>
+          
+          {/* Tooltip Hover */}
+          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
+            <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
+              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-400">Desglose del Motor Físico y de IA</h4>
+              <div className="space-y-1.5 text-[11px]">
+                <div className="flex justify-between gap-4">
+                  <span className="text-surface-400">1. Motor Físico (AutoDock Vina):</span>
+                  <strong className="text-white">{rawVinaKcal !== null && rawVinaKcal !== undefined ? `${rawVinaKcal.toFixed(3)} kcal/mol` : "N/A"}</strong>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-surface-400">2. Cerebro Espacial (XGBoost):</span>
+                  <strong className="text-brand-300">{rawXgboostKcal !== null && rawXgboostKcal !== undefined ? `${rawXgboostKcal.toFixed(3)} kcal/mol` : "N/A (Fallback)"}</strong>
+                </div>
+              </div>
+              <div className="mt-2 border-t border-surface-800 pt-2 text-[9px] leading-tight text-surface-500">
+                XGBoost ajusta el puntaje de Vina utilizando patrones de interacción 3D aprendidos de PDBbind (5,000 complejos experimentales).
+              </div>
+            </div>
+            {/* Tooltip Arrow */}
+            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
+          </div>
         </div>
       )}
 
       {ligandEfficiency !== null && ligandEfficiency !== undefined && (
-        <div className="text-xs text-surface-400">
-          Ligand Efficiency (LE):{" "}
-          <strong className="text-brand-400">
-            {ligandEfficiency.toFixed(3)} kcal/mol/atom
-          </strong>
+        <div className="group relative text-xs text-surface-400">
+          <div className="flex cursor-help items-center gap-1 w-max">
+            <span>Ligand Efficiency (LE):</span>
+            <strong className="text-brand-400 border-b border-dashed border-brand-500/50 pb-0.5">
+              {ligandEfficiency.toFixed(3)} kcal/mol/atom
+            </strong>
+          </div>
+          
+          {/* Tooltip Hover */}
+          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
+            <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
+              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-400">Ligand Efficiency (Eficiencia del Ligando)</h4>
+              <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
+                <p>
+                  Mide qué tan eficiente es cada átomo de la molécula para generar afinidad por la proteína.
+                </p>
+                <div className="mt-2 rounded bg-surface-900 p-2 text-center font-mono text-[10px] text-brand-300 border border-surface-800">
+                  LE = Afinidad / Número de Átomos Pesados
+                </div>
+                <p className="mt-2 text-[9px] text-surface-500">
+                  Un valor más negativo es mejor. Valores típicos para fármacos orales rondan los -0.3 kcal/mol/átomo.
+                </p>
+              </div>
+            </div>
+            {/* Tooltip Arrow */}
+            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
+          </div>
         </div>
       )}
+      
       {saScore !== null && saScore !== undefined && (
         <div className="space-y-2">
-          <div className="text-xs text-surface-400">
-            Accesibilidad Sintética (SA):{" "}
-            <strong className={saScore > 6.0 ? "text-red-400" : saScore > 4.5 ? "text-yellow-400" : "text-emerald-400"}>
-              {saScore.toFixed(2)} {saScore > 6.0 ? "(Inviable)" : saScore > 4.5 ? "(Difícil)" : "(Fácil)"}
-            </strong>
+          <div className="group relative text-xs text-surface-400">
+            <div className="flex cursor-help items-center gap-1 w-max">
+              <span>Accesibilidad Sintética (SA):</span>
+              <strong className={`border-b border-dashed pb-0.5 ${saScore > 6.0 ? "text-red-400 border-red-500/50" : saScore > 4.5 ? "text-yellow-400 border-yellow-500/50" : "text-emerald-400 border-emerald-500/50"}`}>
+                {saScore.toFixed(2)} {saScore > 6.0 ? "(Inviable)" : saScore > 4.5 ? "(Difícil)" : "(Fácil)"}
+              </strong>
+            </div>
+
+            {/* Tooltip Hover */}
+            <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
+              <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
+                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-400">Accesibilidad Sintética (SA Score)</h4>
+                <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
+                  <p>
+                    Estima qué tan difícil será sintetizar esta molécula en un laboratorio real.
+                  </p>
+                  <p className="text-[10px] text-surface-400">
+                    Se basa en la complejidad estructural (anillos, estereocentros) y fragmentos inusuales comparados con catálogos químicos (RDKit).
+                  </p>
+                  <div className="mt-2 flex justify-between border-t border-surface-800 pt-2 text-[9px] font-bold">
+                    <span className="text-emerald-400">1.0 = Muy Fácil</span>
+                    <span className="text-yellow-400">4.5+ = Difícil</span>
+                    <span className="text-red-400">6.0+ = Inviable</span>
+                  </div>
+                </div>
+              </div>
+              {/* Tooltip Arrow */}
+              <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
+            </div>
           </div>
           
           {saScore > 6.0 && saReasons && saReasons.length > 0 && (

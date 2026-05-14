@@ -41,15 +41,25 @@ export default function KetcherEditorInner({
 }: Props) {
   const ketcherRef = useRef<Ketcher | null>(null);
   const [ready, setReady] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReportedSmiles = useRef<string | null>(null);
 
   // When Ketcher initializes, store the instance and load initial SMILES
   const handleInit = async (ketcher: Ketcher) => {
     ketcherRef.current = ketcher;
+    
+    // Enable valency error display and other "free" drawing settings
+    ketcher.setSettings({
+      "valency-error-display": true,
+      "ignore-stereochemistry-errors": true,
+      "smart-layout": true,
+      "disable-check-on-save": true
+    });
+
     setReady(true);
 
     if (initialSmiles) {
       try {
+        lastReportedSmiles.current = initialSmiles;
         await ketcher.setMolecule(initialSmiles);
       } catch (e) {
         console.warn("Ketcher: could not load initial SMILES", e);
@@ -65,17 +75,74 @@ export default function KetcherEditorInner({
       try {
         if (ketcherRef.current) {
           const smiles = await ketcherRef.current.getSmiles();
-          if (smiles && smiles !== initialSmiles) {
+          if (smiles !== undefined && smiles !== lastReportedSmiles.current) {
+            lastReportedSmiles.current = smiles;
             onSmilesChange(smiles);
           }
         }
       } catch {
         // Ketcher may throw if canvas is empty
       }
-    }, 300);
+    }, 500); // Slightly slower interval to feel less "jittery"
 
     return () => clearInterval(interval);
   }, [ready, onSmilesChange]);
+
+  const isProcessing = useRef(false);
+  const pendingSmiles = useRef<string | null>(null);
+
+  // Internal function to handle the heavy lifting
+  const syncToKetcher = async (smiles: string) => {
+    if (!ready || !ketcherRef.current) return;
+    
+    if (isProcessing.current) {
+      pendingSmiles.current = smiles;
+      return;
+    }
+
+    try {
+      // Check if SMILES is valid before attempting to set it (to avoid chaotic jumps)
+      // We can use a simple check or just let ketcher fail, but a "clean" way is to 
+      // only update if it's empty or doesn't have obvious syntax errors.
+      const current = await ketcherRef.current.getSmiles();
+      if (current !== smiles) {
+        // We only proceed if it's empty or looks like a valid SMILES 
+        // (simple heuristic: balanced parentheses and numbers)
+        const isPotentiallyValid = smiles === "" || (
+            (smiles.match(/\(/g) || []).length === (smiles.match(/\)/g) || []).length
+        );
+
+        if (isPotentiallyValid) {
+            isProcessing.current = true;
+            lastReportedSmiles.current = smiles;
+            await ketcherRef.current.setMolecule(smiles);
+        }
+      }
+    } catch (e) {
+      // Invalid SMILES during typing - ignore
+    } finally {
+      isProcessing.current = false;
+      // If a new request came in while we were busy, process the LATEST one now
+      if (pendingSmiles.current !== null) {
+        const next = pendingSmiles.current;
+        pendingSmiles.current = null;
+        syncToKetcher(next);
+      }
+    }
+  };
+
+  // Sync external SMILES changes to Ketcher (ONLY if they didn't originate from Ketcher)
+  useEffect(() => {
+    if (ready && ketcherRef.current && initialSmiles !== undefined) {
+      if (initialSmiles === lastReportedSmiles.current) return;
+
+      const timeout = setTimeout(() => {
+        syncToKetcher(initialSmiles);
+      }, 50); // Fast 50ms debounce
+
+      return () => clearTimeout(timeout);
+    }
+  }, [initialSmiles, ready]);
 
   return (
     <div
@@ -87,7 +154,8 @@ export default function KetcherEditorInner({
         structServiceProvider={getStructServiceProvider()}
         onInit={handleInit}
         errorHandler={(message: string) => {
-          console.warn("Ketcher error:", message);
+          // Log but don't block
+          console.debug("Ketcher notice:", message);
         }}
       />
     </div>

@@ -98,8 +98,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         },
       });
     } else {
+      // Si el refresh falla, borramos el token muerto del storage
       if (typeof window !== "undefined") {
-        window.location.href = "/login?expired=true";
+        localStorage.removeItem("moldesign_auth");
+        // Solo redirigir si NO estamos en la página de evaluación (donde permitimos anónimos)
+        if (!window.location.pathname.startsWith("/evaluation")) {
+          window.location.href = "/login?expired=true";
+        }
       }
     }
   }
@@ -128,6 +133,10 @@ export async function submitEvaluation(smiles: string, targetPdbId = "7E2Y", isC
     method: "POST",
     body: JSON.stringify({ smiles, target_pdb_id: targetPdbId, is_control: isControl }),
   });
+}
+
+export async function getLimitStatus() {
+  return request<{ is_limited: boolean; count: number; max: number; remaining: number }>("/evaluation/limit-status");
 }
 
 export async function getJobStatus(taskId: string) {

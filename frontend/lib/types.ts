@@ -132,6 +132,7 @@ export type MolecularSuggestion = {
   modification_type: string;
   expected_effect: string;
   confidence: string;
+  ml_score?: number | null;
   source: string;
   warnings: string[];
 };
