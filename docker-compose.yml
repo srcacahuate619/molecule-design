@@ -31,30 +31,15 @@ services:
     volumes:
       - ./rescoring:/app
       - ./artifacts/rescoring:/app/artifacts
+      - ./data:/app/data
+      - ./data/pdbbind:/data/pdbbind
+      - ./data/targets:/data/targets
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import httpx; import sys;
-
-            try:
-
-            \ r = httpx.get('http://localhost:8001/health');
-
-            \ if r.status_code == 200: sys.exit(0)
-
-            \ except Exception: pass
-
-            sys.exit(1)"
-        ]
+      test: ["CMD", "python", "-c", "import httpx; import sys; r = httpx.get('http://localhost:8001/health'); sys.exit(0 if r.status_code == 200 else 1)"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 15s
-    networks:
-      - moldesign_net
 
   # ─────────────────────────────────────────────
   # BACKEND PRINCIPAL — FastAPI
@@ -66,32 +51,34 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: development
+      target: production
     container_name: moldesign_api
     restart: unless-stopped
     env_file:
       - ./backend/.env
     environment:
+      ENVIRONMENT: production
       DATABASE_URL: postgresql+asyncpg://admin:Johan619.@172.17.0.1:5432/moldesign_db
       REDIS_URL: redis://172.17.0.1:6379/0
       MINIO_ENDPOINT: 172.17.0.1:9005
       MINIO_ACCESS_KEY: admin
       MINIO_SECRET_KEY: Johan619.
       MINIO_SECURE: "false"
-      CORS_ORIGINS: '["http://localhost:3000","http://localhost:3001","http://localhost:5173","http://192.168.1.64:3001","http://192.168.1.64:3000","http://192.168.1.64:8010","https://molecule-design-4ztv.vercel.app"]'
+      VINA_EXECUTABLE_PATH: /usr/local/bin/vina
+      CORS_ORIGINS: '["*"]'
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--loop", "asyncio"]
     ports:
       - "8010:8000"
     volumes:
       - ./backend:/app
       - vina_temp:/tmp/vina
+      - almacenamiento-minio_minio_data:/minio_data:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 30s
-    networks:
-      - moldesign_net
+      start_period: 120s
 
   # ─────────────────────────────────────────────
   # WORKER CELERY — Jobs pesados (docking, generación 3D)
@@ -103,10 +90,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: development
+      target: production
     container_name: moldesign_worker
     restart: unless-stopped
-    command: celery -A api.celery_app worker --loglevel=info --pool=prefork --concurrency=2
+    command: celery -A api.celery_app worker --loglevel=info --pool=solo --concurrency=1
     env_file:
       - ./backend/.env
     environment:
@@ -120,8 +107,7 @@ services:
     volumes:
       - ./backend:/app
       - vina_temp:/tmp/vina
-    networks:
-      - moldesign_net
+      - ./data/targets:/data/targets
 
   # ─────────────────────────────────────────────
   # FLOWER — Monitor de tareas Celery
@@ -145,8 +131,6 @@ services:
       - worker
     profiles:
       - dev
-    networks:
-      - moldesign_net
 
   # ─────────────────────────────────────────────
   # FRONTEND — Next.js
@@ -170,8 +154,38 @@ services:
       NODE_ENV: development
     profiles:
       - dev
-    networks:
-      - moldesign_net
+
+  tunnel:
+    image: cloudflare/cloudflared
+    container_name: moldesign_tunnel
+    restart: unless-stopped
+    command: tunnel --url http://api:8000
+    depends_on:
+      - api
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+
+  # ─────────────────────────────────────────────
+  # TUNNEL SYNC — Automatización de Vercel
+  # ─────────────────────────────────────────────
+  tunnel-sync:
+    image: node:20-alpine
+    container_name: moldesign_tunnel_sync
+    restart: on-failure
+    depends_on:
+      - tunnel
+    env_file:
+      - ./backend/.env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./backend:/app
+    working_dir: /app
+    # El script sync_vercel.js ahora usa el token del environment (cargado via env_file)
+    command: >
+      sh -c "apk add --no-cache curl docker-cli &&
+             node scripts/sync_vercel.js"
 
 # ─────────────────────────────────────────────
 # VOLÚMENES
@@ -181,10 +195,6 @@ volumes:
     driver: local
   frontend_node_modules:
     driver: local
+  almacenamiento-minio_minio_data:
+    external: true
 
-# ─────────────────────────────────────────────
-# RED INTERNA
-# ─────────────────────────────────────────────
-networks:
-  moldesign_net:
-    driver: bridge

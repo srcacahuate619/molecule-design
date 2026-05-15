@@ -9,6 +9,16 @@ import type {
   GlobalStats,
 } from "./types";
 
+export interface Target {
+  pdb_id: string;
+  name: string;
+  organism: string;
+  resolution: number;
+  chain: string;
+  requires_cns: boolean;
+  structural_family: string;
+}
+
 import { API_URL } from "./config";
 
 function getAuthHeaders(): Record<string, string> {
@@ -250,6 +260,12 @@ export async function getSuggestions(
 
 export async function lookupAlphaFold(uniprotId: string): Promise<AlphaFoldEntry> {
   return request<AlphaFoldEntry>(`/targets/alphafold/lookup/${uniprotId}`);
+}
+
+// ── Targets ──────────────────────────────────────────────────────
+
+export async function getTargets(): Promise<Target[]> {
+  return request<Target[]>("/targets/");
 }
 
 // ── Blockchain ────────────────────────────────────────────────────

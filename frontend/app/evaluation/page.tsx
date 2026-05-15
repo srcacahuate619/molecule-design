@@ -11,7 +11,7 @@ import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
 import { ScoreCard } from "../../components/ScoreCard";
 import { ScientificWarnings } from "../../components/ScientificWarnings";
 import { MolecularInsight } from "../../components/MolecularInsight";
-import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus } from "../../lib/api";
+import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus, getTargets, Target } from "../../lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../lib/types";
 import { useAuth } from "../../lib/auth";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,23 @@ export default function EvaluationPage() {
   // --- Input state ---
   const [smiles, setSmiles] = useState("CC(=O)Oc1ccccc1C(=O)O");
   const [target, setTarget] = useState("7E2Y");
+  const [targets, setTargets] = useState<Target[]>([]);
+  const [loadingTargets, setLoadingTargets] = useState(true);
+
+  useEffect(() => {
+    getTargets()
+      .then((data) => {
+        setTargets(data);
+        if (data.length > 0) {
+          const hasDefault = data.some((t) => t.pdb_id === "7E2Y");
+          if (!hasDefault) {
+            setTarget(data[0].pdb_id);
+          }
+        }
+      })
+      .catch((err) => console.error("Error loading targets:", err))
+      .finally(() => setLoadingTargets(false));
+  }, []);
 
   // --- Pipeline state ---
   const [validation, setValidation] = useState<ValidationResult | null>(null);
@@ -336,16 +353,33 @@ export default function EvaluationPage() {
               <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-surface-400">
                 Target PDB
               </label>
-              <input
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                disabled={!!taskId && !isTerminal}
-                className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-gray-200 placeholder-surface-500 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50"
-                placeholder="Ej: 7E2Y"
-              />
-              <p className="mt-1 text-xs text-surface-500">
-                5-HT1A (7E2Y) · cryo-EM 3.0 Å · Xu et al. 2021
-              </p>
+              {loadingTargets ? (
+                <div className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-surface-500">
+                  Cargando targets...
+                </div>
+              ) : (
+                <select
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  disabled={!!taskId && !isTerminal}
+                  className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-gray-200 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50 appearance-none"
+                >
+                  {targets.map((t) => (
+                    <option key={t.pdb_id} value={t.pdb_id}>
+                      {t.pdb_id} - {t.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {(() => {
+                const selected = targets.find((t) => t.pdb_id === target);
+                if (!selected) return null;
+                return (
+                  <p className="mt-1 text-xs text-surface-500">
+                    {selected.name} · {selected.resolution} Å · {selected.organism}
+                  </p>
+                );
+              })()}
             </div>
 
             <div className="flex items-center gap-2 rounded-xl border border-surface-700 bg-surface-950/50 px-4 py-2">

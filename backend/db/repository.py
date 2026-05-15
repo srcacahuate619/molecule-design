@@ -50,6 +50,11 @@ class Repository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_all_targets(self) -> list[TargetORM]:
+        stmt = select(TargetORM).order_by(TargetORM.created_at.asc())
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
     async def ensure_default_target(self) -> TargetORM:
         target = await self.get_target_by_pdb_id(settings.default_target_pdb_id)
         if target is not None:
@@ -66,6 +71,8 @@ class Repository:
             grid_size_x=settings.vina_size_x,
             grid_size_y=settings.vina_size_y,
             grid_size_z=settings.vina_size_z,
+            requires_cns=True,
+            structural_family="gpcr",
             is_prepared=False,
         )
         self.db.add(target)

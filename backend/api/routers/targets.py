@@ -9,14 +9,33 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import get_db_session
+from core.models import Target
+from db.repository import Repository
 
 from utils.logger import get_logger
 
 log = get_logger(__name__)
 
 router = APIRouter(prefix="/targets", tags=["Targets biológicos"])
+
+@router.get(
+    "/",
+    response_model=list[Target],
+    summary="Listar todos los targets biológicos disponibles",
+)
+async def list_targets(db: AsyncSession = Depends(get_db_session)) -> list[Target]:
+    repo = Repository(db)
+    targets = await repo.get_all_targets()
+    # Ensure default target is seeded if empty
+    if not targets:
+        await repo.ensure_default_target()
+        targets = await repo.get_all_targets()
+    return [Target.model_validate(t) for t in targets]
 
 
 class AlphaFoldLookupRequest(BaseModel):

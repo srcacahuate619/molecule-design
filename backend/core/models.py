@@ -105,6 +105,10 @@ class TargetORM(Base):
     grid_size_y   = Column(Float, nullable=False, default=20.0)
     grid_size_z   = Column(Float, nullable=False, default=20.0)
 
+    # Novedad Multi-Target
+    requires_cns      = Column(Boolean, default=False, nullable=False)
+    structural_family = Column(String(50), nullable=True)
+
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
     prepared_file_path = Column(String(500), nullable=True)
     is_prepared        = Column(Boolean, default=False, nullable=False)
@@ -473,6 +477,8 @@ class Target(BaseModel):
     chain:       str
     description: str | None
     is_prepared: bool
+    requires_cns: bool
+    structural_family: str | None
 
     model_config = {"from_attributes": True}
 

@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS targets (
     grid_size_x DOUBLE PRECISION NOT NULL DEFAULT 20.0,
     grid_size_y DOUBLE PRECISION NOT NULL DEFAULT 20.0,
     grid_size_z DOUBLE PRECISION NOT NULL DEFAULT 20.0,
+    requires_cns BOOLEAN NOT NULL DEFAULT FALSE,
+    structural_family VARCHAR(50),
     prepared_file_path VARCHAR(500),
     is_prepared BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -130,6 +132,8 @@ INSERT INTO targets (
     grid_size_x,
     grid_size_y,
     grid_size_z,
+    requires_cns,
+    structural_family,
     is_prepared
 ) VALUES (
     '7E2Y',
@@ -142,6 +146,8 @@ INSERT INTO targets (
     25.0,
     25.0,
     25.0,
+    TRUE,
+    'gpcr',
     FALSE
 )
 ON CONFLICT (pdb_id) DO NOTHING;

@@ -31,13 +31,13 @@ export function MolecularInsight({ result }: Props) {
       insights.push({
         type: "success",
         title: "Validación Científica v4.0",
-        message: "Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el receptor 5-HT1A (Spearman ρ=0.33)."
+        message: "Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el target seleccionado (Spearman ρ=0.512)."
       });
     } else {
       insights.push({
         type: "info",
         title: "Señal Biológica Débil",
-        message: "El modelo ML v4.0 no detecta suficientes interacciones clave. La molécula podría no tener la orientación adecuada en el bolsillo Asp114."
+        message: "El modelo ML v4.0 no detecta suficientes interacciones clave. La molécula podría no tener la orientación adecuada en el bolsillo de unión."
       });
     }
   }

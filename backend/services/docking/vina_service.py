@@ -189,6 +189,8 @@ async def _run_vina_subprocess(
     output_path: Path,
     log_path: Path,
     target_pdb_id: str,
+    center: tuple[float, float, float],
+    size: tuple[float, float, float],
 ) -> str:
     vina_executable = _resolve_executable(settings.vina_executable_path)
     if not vina_executable:
@@ -198,12 +200,12 @@ async def _run_vina_subprocess(
         vina_executable,
         "--receptor", str(receptor_path),
         "--ligand", str(ligand_path),
-        "--center_x", str(settings.vina_center_x),
-        "--center_y", str(settings.vina_center_y),
-        "--center_z", str(settings.vina_center_z),
-        "--size_x", str(settings.vina_size_x),
-        "--size_y", str(settings.vina_size_y),
-        "--size_z", str(settings.vina_size_z),
+        "--center_x", str(center[0]),
+        "--center_y", str(center[1]),
+        "--center_z", str(center[2]),
+        "--size_x", str(size[0]),
+        "--size_y", str(size[1]),
+        "--size_z", str(size[2]),
         "--exhaustiveness", str(settings.vina_exhaustiveness),
         "--num_modes", str(settings.vina_num_poses),
         "--cpu", str(settings.vina_cpu),
@@ -259,6 +261,8 @@ async def run_vina_docking(
     smiles_hash: str,
     target_pdb_id: str,
     target_chain: str,
+    target_center: tuple[float, float, float],
+    target_size: tuple[float, float, float],
     force_redock: bool = False,
 ) -> DockingResult:
     """Ejecuta docking real o devuelve cache si ya existe un cálculo idéntico."""
@@ -279,8 +283,8 @@ async def run_vina_docking(
     receptor_object_path = await prepare_target(
         pdb_id=target_pdb_id,
         chain_id=target_chain,
-        center=(settings.vina_center_x, settings.vina_center_y, settings.vina_center_z),
-        size=(settings.vina_size_x, settings.vina_size_y, settings.vina_size_z),
+        center=target_center,
+        size=target_size,
         force_reprepare=False,
     )
     ligand_object_path = await _prepare_ligand_pdbqt(smiles_hash)
@@ -311,6 +315,8 @@ async def run_vina_docking(
                     output_path=output_pdbqt,
                     log_path=output_log,
                     target_pdb_id=target_pdb_id,
+                    center=target_center,
+                    size=target_size,
                 )
 
                 export_process = await asyncio.create_subprocess_exec(

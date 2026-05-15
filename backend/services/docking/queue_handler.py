@@ -140,6 +140,8 @@ async def _run_full_evaluation_async(
                 smiles_hash=molecule.smiles_hash,
                 target_pdb_id=target.pdb_id,
                 target_chain=target.chain,
+                target_center=(target.grid_center_x, target.grid_center_y, target.grid_center_z),
+                target_size=(target.grid_size_x, target.grid_size_y, target.grid_size_z),
             )
 
             await cache.set_job_progress(task_id, 80, "scoring")
