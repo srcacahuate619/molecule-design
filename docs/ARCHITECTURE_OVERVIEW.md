@@ -18,8 +18,9 @@ graph TD
     H --> I[Pose Quality Filter]
     I --> J[ML Rescoring XGBoost]
     J --> K[Análisis de Hotspots & Especificidad]
-    K --> L[Scoring Compuesto Final]
-    L --> M[AI Report & Certificación]
+    K --> L[Filtro 'Potency Floor' vs Threshold DB]
+    L --> M[Scoring Compuesto Final]
+    M --> N[AI Report & Certificación]
 ```
 
 ## 2. Microservicio de ML Rescoring

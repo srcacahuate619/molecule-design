@@ -25,6 +25,12 @@ La afinidad cruda de Vina tiende a favorecer moléculas grandes simplemente por 
 - **Umbral Industrial**: -0.30 kcal/mol/at.
 - **Lógica**: Una molécula con -10 kcal/mol y 50 átomos (LE = -0.20) es menos prometedora que una con -8 kcal/mol y 20 átomos (LE = -0.40). La segunda aprovecha mejor cada interacción atómica.
 
+### Suelo de Afinidad Absoluta (v4.5) [NUEVO]
+Para evitar que moléculas pequeñas pero eficientes (como la serotonina) inflen artificialmente su score sin tener potencia real, introducimos el **Potency Floor**:
+- **Umbral del Target**: Cada receptor tiene un `affinity_threshold` definido en DB (ej: -7.0 para CTLA-4).
+- **Penalización Sigmoidea**: Si la afinidad absoluta es más débil que el umbral, se aplica una penalización drástica mediante una función sigmoidea (k=2.0). 
+- **Filosofía**: La eficiencia (LE) es necesaria, pero la potencia absoluta es obligatoria para ser un candidato a fármaco viable.
+
 ### Reglas Fisicoquímicas Detalladas
 MolDesign evalúa el "Drug-likeness" basándose en tres estándares de la industria:
 1.  **Regla de Lipinski (Oralidad)**: MW < 500 Da, LogP < 5, H-Bond Donors < 5, H-Bond Acceptors < 10.
@@ -40,6 +46,7 @@ MolDesign v4.2 introduce el concepto de **Puntos de Interacción Críticos (Hots
 Tras pruebas de validación con el target CTLA-4 (3OSK), hemos ajustado el umbral de detección:
 - **Umbral Antiguo (4.0 Å)**: Demasiado estricto para interacciones hidrofóbicas y de apilamiento aromático (pi-stacking).
 - **Nuevo Umbral (5.0 Å)**: Optimizado para capturar el radio de influencia biológica de residuos como Metionina y Tirosina.
+- **Especificidad de Cadena (v4.2)**: Para proteínas multiméricas (como el dímero de CTLA-4), los hotspots se definen con prefijo de cadena (ej: `A:MET99`). Esto evita falsos positivos visuales en la cadena opuesta del receptor.
 - **Lógica de Scoring**: Cada hotspot tiene un peso relativo. Si una molécula no "toca" al menos un hotspot crítico, el score final es penalizado mediante un multiplicador de especificidad (rango 0.5x a 1.0x).
 
 ## 5. El "Filtro de Honestidad" y ML v4.2 (Spearman ρ=0.512)

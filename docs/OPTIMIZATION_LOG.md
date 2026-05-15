@@ -1,20 +1,20 @@
 # Registro de Optimización de MolDesign
 
-## Sesión: 2026-05-15 - Hotspots y Especificidad Biológica
-### 1. Sistema de Hotspots (CTLA-4 3OSK)
-- **Umbral de Interacción**: Calibración científica a **5.0 Å** (desde 4.0 Å) para capturar contactos hidrofóbicos y pi-stacking.
-- **Jerarquía Visual 3D**: Implementación de tres estados (Crítico, Proximidad, Miss) con colores diferenciados y leyenda interactiva.
-- **Click-to-Identify**: Activación de labels detallados al hacer click sobre los hotspots en el visor 3D.
-- **Pipeline de Datos**: Integración de `target_hotspots` desde la base de datos hasta el frontend mediante props reactivas.
+## Sesión: 2026-05-15 - Rigor Científico v4.5 y Potency Floor
+### 1. Calibración de Potencia Absoluta (Potency Floor)
+- **Umbral por Target**: Implementación de `affinity_threshold` en base de datos. Cada target define su propio nivel de potencia mínimo (ej: -7.0 para CTLA-4).
+- **Penalizador Sigmoideo**: Introducción de una penalización drástica para moléculas eficientes pero débiles. Esto elimina el "sesgo de fragmento" (falsos positivos como la serotonina).
+- **Justificación en UI**: Nueva alerta dinámica en `MolecularInsight.tsx` que explica el "Suelo de Afinidad" al usuario con valores reales.
 
-### 2. Estabilización de Rescoring e Insights
-- **Fragment Warning**: Implementación de alerta para moléculas pequeñas (HAC < 15) que sobrestiman afinidad (e.g., Serotonina).
-- **Display de Spearman**: Actualización de la métrica visual a **ρ=0.512** tras validación con el set industrial de fármacos aprobados.
-- **Hotspot Distance Logging**: El worker ahora registra distancias mínimas a cada hotspot para auditoría de diseño.
+### 2. Especificidad y Hotspots (v4.2)
+- **Chain-Specific Matching**: Corrección del algoritmo de detección para soportar prefijos de cadena (ej: `A:MET99`). Resuelve el problema de visualización en proteínas diméricas (3OSK).
+- **Umbral de Interacción**: Calibración científica a **5.0 Å** para capturar contactos hidrofóbicos y pi-stacking.
+- **Jerarquía Visual 3D**: Implementación de tres estados (Crítico, Proximidad, Miss) con colores diferenciados.
 
-### 3. Debugging y Parches Críticos
-- **JSX Syntax Fix**: Corrección de errores de compilación por falta de fragmentos y escape de caracteres especiales (<, >) en el visor.
-- **Sync Optimization**: Actualización del script de sincronización para incluir descriptores estructurales y componentes 3D actualizados.
+### 3. Infraestructura y Persistencia
+- **Evaluation Persistence**: El umbral de afinidad usado en cada simulación ahora se guarda en `evaluation_results` para auditoría histórica.
+- **JSX Syntax Fix**: Corrección de errores de compilación en el visor 3D.
+- **Worker Synchronization**: El worker ahora recibe y procesa dinámicamente el umbral del target desde la base de datos sin hardcoding.
 
 ## Sesión: 2026-05-14 - Modernización y Validación Científica
 
