@@ -46,12 +46,14 @@ def validate_hotspots_in_pdb(pdb_path: str | Path, hotspots: list[dict]) -> dict
         "report": report
     }
 
-def discover_pocket_from_pdb(pdb_content: str, target_chain: str = "A") -> dict:
+def discover_pocket_from_pdb(pdb_content: str, target_chain: str = "A", ligand_chain: str | None = None) -> dict:
     """
     Analiza un PDB para encontrar el ligando más grande y sugerir
     un grid box y hotspots automáticos.
+    Soporta ligandos HETATM o una cadena específica (para péptidos).
     """
     ligands = {} # res_id -> list of atom coords
+    chain_ligand_coords = [] # Coords if ligand_chain is used
     standard_residues = [] # list of (res_id, res_name, atom_coord)
     
     # Buffers comunes a ignorar
@@ -74,39 +76,79 @@ def discover_pocket_from_pdb(pdb_content: str, target_chain: str = "A") -> dict:
         except:
             continue
 
+        # Opción A: Ligando por Cadena (Péptido)
+        if ligand_chain and chain == ligand_chain:
+            chain_ligand_coords.append((x, y, z))
+            continue # No lo contamos como residuo del receptor
+
+        # Opción B: Ligando HETATM
         if record == "HETATM" and res_name not in skip_res:
             if res_id not in ligands:
                 ligands[res_id] = []
             ligands[res_id].append((x, y, z))
         
+        # Residuos del Receptor
         if record == "ATOM" and chain == target_chain:
             standard_residues.append((res_id, res_name, (x, y, z)))
 
-    if not ligands:
-        return {"success": False, "error": "No se encontraron ligandos de referencia adecuados."}
-
-    # Seleccionar el ligando más grande (más átomos)
-    best_res_id = max(ligands, key=lambda k: len(ligands[k]))
-    coords = ligands[best_res_id]
+    # Determinar coordenadas del ligando de referencia
+    if ligand_chain:
+        if not chain_ligand_coords:
+            return {"success": False, "error": f"No se encontraron átomos en la cadena de ligando {ligand_chain}."}
+        coords = chain_ligand_coords
+        best_res_id = f"Chain:{ligand_chain}"
+    else:
+        if not ligands:
+            return {"success": False, "error": "No se encontraron ligandos HETATM de referencia."}
+        # Seleccionar el ligando más grande (más átomos)
+        best_res_id = max(ligands, key=lambda k: len(ligands[k]))
+        coords = ligands[best_res_id]
     
     # Calcular centroide
     cx = sum(c[0] for c in coords) / len(coords)
     cy = sum(c[1] for c in coords) / len(coords)
     cz = sum(c[2] for c in coords) / len(coords)
     
-    # Hotspot mining: Residuos ATOM dentro de 5.0A del ligando
-    hotspots = set()
+    # Hotspot mining: Calcular densidad de contactos por residuo
+    residue_scores = {} # res_id -> score
+    
     for res_id, res_name, r_coord in standard_residues:
+        min_dist_sq = 999.0
+        contacts = 0
+        
         for l_coord in coords:
             dist_sq = (r_coord[0]-l_coord[0])**2 + (r_coord[1]-l_coord[1])**2 + (r_coord[2]-l_coord[2])**2
-            if dist_sq < 5.0 * 5.0: # 5A threshold
-                hotspots.add(res_id)
-                break
+            if dist_sq < 5.0 * 5.0:
+                contacts += 1
+                if dist_sq < min_dist_sq:
+                    min_dist_sq = dist_sq
+        
+        if contacts > 0:
+            proximity_bonus = 2.0 if min_dist_sq < 3.5 * 3.5 else 1.0
+            residue_scores[res_id] = contacts * proximity_bonus
+
+    if not residue_scores:
+        return {
+            "success": True,
+            "ligand_id": best_res_id,
+            "grid_center": (round(cx, 2), round(cy, 2), round(cz, 2)),
+            "suggested_hotspots": []
+        }
+
+    # Ordenar por importancia y tomar los top 15
+    sorted_hotspots = sorted(residue_scores.items(), key=lambda x: x[1], reverse=True)
+    top_hotspots = sorted_hotspots[:15]
     
+    max_score = top_hotspots[0][1]
+    final_hotspots = []
+    for res_id, score in top_hotspots:
+        importance = round(0.5 + (score / max_score) * 0.5, 2)
+        final_hotspots.append({"name": res_id, "importance": importance})
+
     return {
         "success": True,
         "ligand_id": best_res_id,
         "atom_count": len(coords),
         "grid_center": (round(cx, 2), round(cy, 2), round(cz, 2)),
-        "suggested_hotspots": [{"name": h, "importance": 1.0} for h in sorted(list(hotspots))]
+        "suggested_hotspots": final_hotspots
     }

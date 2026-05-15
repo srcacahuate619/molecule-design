@@ -21,8 +21,10 @@ async def ingest_new_target(
     pdb_id: str,
     db: AsyncSession,
     chain_id: str = "A",
+    ligand_chain: str | None = None,
     is_hot: bool = False,
-    structural_family: str | None = None
+    structural_family: str | None = None,
+    force_reingest: bool = False
 ) -> dict:
     """
     Orquesta la ingesta completa de un target desde el PDB ID.
@@ -36,7 +38,7 @@ async def ingest_new_target(
     
     # 1. Verificar si ya existe
     existing = await repo.get_target_by_pdb_id(pdb_id)
-    if existing and existing.is_prepared:
+    if existing and existing.is_prepared and not force_reingest:
         return {"success": True, "message": f"Target {pdb_id} ya existe y está preparado.", "target": existing}
 
     # 2. Descargar PDB crudo
@@ -50,7 +52,7 @@ async def ingest_new_target(
         pdb_content = await download_text(raw_path)
 
     # 3. Descubrir Pocket y Hotspots
-    pocket_info = discover_pocket_from_pdb(pdb_content, chain_id)
+    pocket_info = discover_pocket_from_pdb(pdb_content, chain_id, ligand_chain)
     if not pocket_info["success"]:
         log.warning("pocket_discovery_fallido", pdb_id=pdb_id, error=pocket_info.get("error"))
         # Fallback a centro (0,0,0) o error? Por rigor científico, fallamos si no hay ligando

@@ -25,6 +25,10 @@ FILES = [
     "backend/scripts/prepare_new_targets.py",
     "backend/services/targets/ingestion_manager.py",
     "backend/scripts/test_ingestion.py",
+    "backend/scripts/reingest_all.py",
+    "backend/scripts/audit_hotspots.py",
+    "backend/scripts/inspect_pdb.py",
+    "backend/scripts/benchmark_glp1r.py",
 ]
 
 REMOTE_USER = "srcacahuate619"
