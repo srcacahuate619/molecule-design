@@ -358,18 +358,91 @@ export default function EvaluationPage() {
                   Cargando targets...
                 </div>
               ) : (
-                <select
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  disabled={!!taskId && !isTerminal}
-                  className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-gray-200 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50 appearance-none"
-                >
-                  {targets.map((t) => (
-                    <option key={t.pdb_id} value={t.pdb_id}>
-                      {t.pdb_id} - {t.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-3">
+                  <select
+                    value={target}
+                    onChange={(e) => setTarget(e.target.value)}
+                    disabled={!!taskId && !isTerminal}
+                    className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-gray-200 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50 appearance-none"
+                  >
+                    {/* --- SECCIÓN: HUMANOS --- */}
+                    <optgroup label="🧬 HUMANOS (Áreas Terapéuticas)">
+                      {/* Subcategoría: Neurología */}
+                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
+                        🧠 Neurología / Psiquiatría
+                      </option>
+                      {targets.filter(t => t.pdb_id === '7E2Y').map(t => (
+                        <option key={t.pdb_id} value={t.pdb_id}>
+                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
+                        </option>
+                      ))}
+
+                      {/* Subcategoría: Oncología */}
+                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
+                        🧬 Oncología / Inmunoterapia
+                      </option>
+                      {targets.filter(t => t.pdb_id === '3OSK' || t.pdb_id === 'EGFR' || t.pdb_id === 'MET').map(t => (
+                        <option key={t.pdb_id} value={t.pdb_id}>
+                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
+                        </option>
+                      ))}
+
+                      {/* Subcategoría: Cardiología */}
+                      <option disabled className="text-surface-500 bg-surface-900 mt-2">
+                        ❤️ Cardiología (Próximamente)
+                      </option>
+                      
+                      {/* Subcategoría: Endocrinología */}
+                      <option disabled className="text-surface-500 bg-surface-900 mt-2">
+                        🩸 Endocrinología (Próximamente)
+                      </option>
+                    </optgroup>
+
+                    {/* --- SECCIÓN: PATÓGENOS --- */}
+                    <optgroup label="🦠 PATÓGENOS (Mecanismos de Acción)">
+                      {/* Subcategoría: Pared Celular */}
+                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
+                        🦠 Bacterias - Pared Celular
+                      </option>
+                      {targets.filter(t => t.pdb_id.includes('PBP')).length > 0 ? (
+                        targets.filter(t => t.pdb_id.includes('PBP')).map(t => (
+                          <option key={t.pdb_id} value={t.pdb_id}>
+                            &nbsp;&nbsp;{t.pdb_id} - {t.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option disabled className="text-surface-600 italic">
+                          &nbsp;&nbsp;(Sin targets cargados)
+                        </option>
+                      )}
+
+                      {/* Subcategoría: Replicación ADN */}
+                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
+                        🧬 Bacterias - Replicación ADN
+                      </option>
+                      {targets.filter(t => t.name.toLowerCase().includes('girasa')).map(t => (
+                        <option key={t.pdb_id} value={t.pdb_id}>
+                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
+                        </option>
+                      ))}
+
+                      {/* Subcategoría: Resistencia */}
+                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
+                        🛡️ Bacterias - Resistencia
+                      </option>
+                      {targets.filter(t => t.name.toLowerCase().includes('lactamasa')).map(t => (
+                        <option key={t.pdb_id} value={t.pdb_id}>
+                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
+                        </option>
+                      ))}
+
+                      {/* Subcategoría: Virus */}
+                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
+                        🧫 Virus (Próximamente)
+                      </option>
+                    </optgroup>
+                  </select>
+                </div>
               )}
               {(() => {
                 const selected = targets.find((t) => t.pdb_id === target);
