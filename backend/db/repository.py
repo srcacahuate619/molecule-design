@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -73,6 +74,8 @@ class Repository:
             grid_size_z=settings.vina_size_z,
             requires_cns=True,
             structural_family="gpcr",
+            organism="Homo sapiens",
+            resolution=2.8,
             is_prepared=False,
         )
         self.db.add(target)
@@ -212,9 +215,15 @@ class Repository:
         self,
         molecule_id: uuid.UUID,
     ) -> EvaluationResultORM | None:
-        stmt = select(EvaluationResultORM).where(EvaluationResultORM.molecule_id == molecule_id)
+        stmt = (
+            select(EvaluationResultORM)
+            .join(MoleculeORM, EvaluationResultORM.molecule_id == MoleculeORM.id)
+            .join(TargetORM, MoleculeORM.target_id == TargetORM.id)
+            .where(EvaluationResultORM.molecule_id == molecule_id)
+            .options(joinedload(EvaluationResultORM.molecule).joinedload(MoleculeORM.target))
+        )
         result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def upsert_evaluation_result(
         self,
@@ -271,6 +280,7 @@ class Repository:
             result.vina_version = str(docking.vina_version) if docking.vina_version is not None else None
             result.vina_random_seed = int(docking.vina_random_seed) if docking.vina_random_seed is not None else None
             result.scientific_warnings = list(docking.scientific_warnings) if docking.scientific_warnings is not None else []
+            result.hotspots_hit = list(docking.hotspots_hit) if hasattr(docking, "hotspots_hit") and docking.hotspots_hit is not None else []
 
         if scores is not None:
             # Cast all scores to native float
@@ -283,6 +293,7 @@ class Repository:
             result.adme_score = safe_float(scores.get("adme_score"))
             result.druglikeness_score = safe_float(scores.get("druglikeness_score"))
             result.total_score = safe_float(scores.get("total_score"))
+            result.specificity_score = safe_float(scores.get("specificity_score"))
 
         if ai_report is not None:
             result.ai_report = ai_report

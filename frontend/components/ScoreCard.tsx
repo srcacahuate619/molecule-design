@@ -45,6 +45,8 @@ type ScoreCardProps = {
   saReasons?: string[] | null;
   rawVinaKcal?: number | null;
   rawXgboostKcal?: number | null;
+  lipophilicEfficiency?: number | null;
+  specificity?: number | null;
 };
 
 export function ScoreCard({
@@ -64,6 +66,8 @@ export function ScoreCard({
   saReasons,
   rawVinaKcal,
   rawXgboostKcal,
+  lipophilicEfficiency,
+  specificity,
 }: ScoreCardProps) {
   const totalDisplay =
     totalScore !== null && totalScore !== undefined
@@ -142,6 +146,9 @@ export function ScoreCard({
         <>
           <ScoreBar label="ADME" value={adme} weight="30%" color="#8b5cf6" />
           <ScoreBar label="Drug-likeness" value={druglikeness} weight="25%" color="#06b6d4" />
+          {specificity !== null && specificity !== undefined && (
+            <ScoreBar label="Especificidad" value={specificity} color="#f59e0b" />
+          )}
         </>
       ) : (
         <div className="rounded-lg border border-brand-500/30 bg-brand-500/10 p-3 text-center">
@@ -207,6 +214,37 @@ export function ScoreCard({
                 </div>
                 <p className="mt-2 text-[9px] text-surface-500">
                   Un valor más negativo es mejor. Valores típicos para fármacos orales rondan los -0.3 kcal/mol/átomo.
+                </p>
+              </div>
+            </div>
+            {/* Tooltip Arrow */}
+            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
+          </div>
+        </div>
+      )}
+
+      {lipophilicEfficiency !== null && lipophilicEfficiency !== undefined && (
+        <div className="group relative text-xs text-surface-400">
+          <div className="flex cursor-help items-center gap-1 w-max">
+            <span>Lipophilic Efficiency (LLE):</span>
+            <strong className="text-emerald-400 border-b border-dashed border-emerald-500/50 pb-0.5">
+              {lipophilicEfficiency.toFixed(3)}
+            </strong>
+          </div>
+          
+          {/* Tooltip Hover */}
+          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
+            <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
+              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-emerald-400">Lipophilic Efficiency (LLE)</h4>
+              <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
+                <p>
+                  Mide la "calidad" de la afinidad. Evita que la molécula sea potente solo por ser demasiado grasa.
+                </p>
+                <div className="mt-2 rounded bg-surface-900 p-2 text-center font-mono text-[10px] text-emerald-300 border border-surface-800">
+                  LLE = -Afinidad - LogP
+                </div>
+                <p className="mt-2 text-[9px] text-surface-500">
+                  Un valor mayor es mejor. Para un buen fármaco se busca un LLE {">"} 3 o incluso {">"} 5.
                 </p>
               </div>
             </div>

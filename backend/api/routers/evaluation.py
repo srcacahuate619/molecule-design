@@ -211,7 +211,13 @@ async def get_evaluation_result(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No existe resultado persistido para molecule_id={molecule_id}",
         )
-    return EvaluationResultRead.model_validate(result)
+    
+    # Mapeo manual de target_hotspots si existe la relación cargada
+    data = EvaluationResultRead.model_validate(result)
+    if result.molecule and result.molecule.target:
+        data.target_hotspots = result.molecule.target.hotspots
+        
+    return data
 
 
 class AIReportResponse(BaseModel):

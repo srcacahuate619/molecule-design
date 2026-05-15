@@ -108,6 +108,9 @@ class TargetORM(Base):
     # Novedad Multi-Target
     requires_cns      = Column(Boolean, default=False, nullable=False)
     structural_family = Column(String(50), nullable=True)
+    organism          = Column(String(100), nullable=True)
+    resolution        = Column(Float, nullable=True)
+    hotspots          = Column(JSONB, nullable=True) # Lista de residuos críticos: [{"name": "MET97", "importance": 1.0}, ...]
 
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
     prepared_file_path = Column(String(500), nullable=True)
@@ -232,6 +235,8 @@ class EvaluationResultORM(Base):
     vina_random_seed = Column(Integer, nullable=True)
     scientific_warnings = Column(JSONB, nullable=True)
     celery_task_id   = Column(String(200), nullable=True)  # para polling del frontend
+    hotspots_hit     = Column(JSONB, nullable=True)        # residuos con los que interactuó
+    specificity_score = Column(Float, nullable=True)       # normalizado 0-100
 
     # ── Propiedades fisicoquímicas (RDKit) ───────────────────────────────────
     molecular_weight = Column(Float, nullable=True)
@@ -334,6 +339,7 @@ class DockingResult(BaseModel):
     vina_version: str | None = None
     vina_random_seed: int | None = None
     scientific_warnings: list[str] = Field(default_factory=list)
+    hotspots_hit: list[str] = Field(default_factory=list)
 
     @field_validator("best_affinity")
     @classmethod
@@ -422,12 +428,28 @@ class EvaluationResultRead(BaseModel):
     adme_score:         float | None
     druglikeness_score: float | None
     total_score:        float | None   # 0–100, el score del juego
+    specificity_score:  float | None = None
+    hotspots_hit:       list[str] | None = None
+    target_hotspots:    list[dict] | None = None
 
     @computed_field
     @property
     def ligand_efficiency(self) -> float | None:
+        """
+        LE = affinity_kcal / heavy_atom_count
+        """
         if self.affinity_kcal is not None and self.heavy_atom_count and self.heavy_atom_count > 0:
             return round(self.affinity_kcal / self.heavy_atom_count, 3)
+        return None
+
+    @computed_field
+    @property
+    def ligand_lipophilicity_efficiency(self) -> float | None:
+        """
+        LLE = (-affinity_kcal) - log_p
+        """
+        if self.affinity_kcal is not None and self.log_p is not None:
+            return round((-self.affinity_kcal) - self.log_p, 3)
         return None
 
     is_control:        bool = False
@@ -456,7 +478,9 @@ class ScoreBreakdown(BaseModel):
     adme_score:         float = Field(..., ge=0, le=100)
     druglikeness_score: float = Field(..., ge=0, le=100)
     total_score:        float = Field(..., ge=0, le=100)
+    specificity_score:  float | None = None
     ligand_efficiency:  float | None = None
+    lipophilic_efficiency: float | None = None
 
     # Pesos usados en el cálculo (para transparencia)
     weight_affinity:     float
@@ -479,6 +503,9 @@ class Target(BaseModel):
     is_prepared: bool
     requires_cns: bool
     structural_family: str | None
+    organism: str | None
+    resolution: float | None
+    hotspots: list[dict] | None = None
 
     model_config = {"from_attributes": True}
 

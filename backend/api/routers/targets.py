@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_db_session
+from core.database import get_db
 from core.models import Target
 from db.repository import Repository
 
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/targets", tags=["Targets biológicos"])
     response_model=list[Target],
     summary="Listar todos los targets biológicos disponibles",
 )
-async def list_targets(db: AsyncSession = Depends(get_db_session)) -> list[Target]:
+async def list_targets(db: AsyncSession = Depends(get_db)) -> list[Target]:
     repo = Repository(db)
     targets = await repo.get_all_targets()
     # Ensure default target is seeded if empty

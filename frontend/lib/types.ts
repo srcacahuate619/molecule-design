@@ -56,7 +56,11 @@ export type EvaluationResult = {
   adme_score: number | null;
   druglikeness_score: number | null;
   total_score: number | null;
+  specificity_score: number | null;
+  hotspots_hit: string[] | null;
+  target_hotspots: { name: string; importance: number }[] | null;
   ligand_efficiency: number | null;
+  ligand_lipophilicity_efficiency: number | null;
 
   // Files
   poses_file_path: string | null;

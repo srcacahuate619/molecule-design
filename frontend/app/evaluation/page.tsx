@@ -375,9 +375,61 @@ export default function EvaluationPage() {
                 const selected = targets.find((t) => t.pdb_id === target);
                 if (!selected) return null;
                 return (
-                  <p className="mt-1 text-xs text-surface-500">
-                    {selected.name} · {selected.resolution} Å · {selected.organism}
-                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2 items-center">
+                    {/* Family Badge */}
+                    <div className="group relative">
+                      <span className="px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 text-[10px] uppercase tracking-tighter font-semibold cursor-help">
+                        {selected.structural_family || "Other"}
+                      </span>
+                      <div className="absolute bottom-full left-0 mb-2 hidden w-48 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
+                        <p className="font-bold text-brand-400 mb-1">Familia Estructural</p>
+                        Clasificación biológica de la proteína. Determina los parámetros del modelo de scoring ML v4.0.
+                      </div>
+                    </div>
+
+                    {/* CNS Badge */}
+                    <div className="group relative">
+                      <span className={`px-2 py-0.5 rounded-full border text-[10px] tracking-tighter uppercase font-semibold cursor-help ${
+                        selected.requires_cns 
+                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20" 
+                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                      }`}>
+                        {selected.requires_cns ? "🧠 CNS Active" : "🛡️ Peripheral"}
+                      </span>
+                      <div className="absolute bottom-full left-0 mb-2 hidden w-48 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
+                        <p className="font-bold text-purple-400 mb-1">Requerimiento CNS</p>
+                        {selected.requires_cns 
+                          ? "Este target reside en el cerebro. El sistema aplicará penalizaciones si la molécula no cruza la barrera hematoencefálica (BBB)."
+                          : "Target periférico. No requiere cruzar la barrera hematoencefálica para su efectividad."}
+                      </div>
+                    </div>
+
+                    {/* Organism Badge */}
+                    {selected.organism && (
+                      <div className="group relative">
+                        <span className="px-2 py-0.5 rounded-full bg-surface-800 text-surface-400 border border-surface-700 text-[10px] tracking-tighter uppercase cursor-help">
+                          🧬 {selected.organism}
+                        </span>
+                        <div className="absolute bottom-full left-0 mb-2 hidden w-40 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
+                          <p className="font-bold text-surface-100 mb-1">Organismo</p>
+                          Fuente biológica de la estructura proteica utilizada para el docking.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Resolution Badge */}
+                    {selected.resolution && (
+                      <div className="group relative">
+                        <span className="px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700 text-[10px] tracking-tighter uppercase font-mono cursor-help">
+                          ✨ {selected.resolution.toFixed(2)} Å
+                        </span>
+                        <div className="absolute bottom-full left-0 mb-2 hidden w-44 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
+                          <p className="font-bold text-yellow-500 mb-1">Resolución Cristalográfica</p>
+                          Calidad de la estructura. Valores menores a 2.5 Å indican alta fiabilidad para docking preciso.
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })()}
             </div>
@@ -518,6 +570,8 @@ export default function EvaluationPage() {
                   ? status.result.affinity_kcal
                   : null
               }
+              lipophilicEfficiency={status.result.ligand_lipophilicity_efficiency}
+              specificity={status.result.specificity_score}
             />
             
             <div className="flex flex-col gap-5">
@@ -557,6 +611,7 @@ export default function EvaluationPage() {
                 poseData={poseData ?? undefined}
                 proteinData={proteinData ?? undefined}
                 height={320}
+                hotspots={status.result.target_hotspots?.map(h => h.name) || []}
               />
             </div>
           </div>

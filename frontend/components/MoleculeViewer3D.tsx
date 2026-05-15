@@ -6,6 +6,7 @@ type Props = {
   poseData?: string;     // SDF — ligando con enlaces correctos
   proteinData?: string;  // PDB — receptor
   height?: number;
+  hotspots?: string[]; // ej. ["MET99", "TYR100"]
 };
 
 type ViewMode = "standard" | "surface" | "charges";
@@ -18,6 +19,9 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450 }: Props)
   const [viewMode, setViewMode] = useState<ViewMode>("standard");
   const [showInteractions, setShowInteractions] = useState(false);
   const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [showHotspots, setShowHotspots] = useState(true);
+
+  console.log("MoleculeViewer3D Hotspots Prop:", hotspots);
 
   // 1. Carga inicial de modelos (Solo se ejecuta al recibir datos nuevos)
   useEffect(() => {
@@ -66,7 +70,7 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450 }: Props)
     }
   }, [poseData, proteinData]);
 
-  // 2. Renderizado dinámico de estilos, superficies e interacciones
+  // 3. Renderizado dinámico de estilos, superficies e interacciones
   useEffect(() => {
     if (!modelsLoaded || !viewerRef.current) return;
     const v = viewerRef.current;
@@ -177,6 +181,45 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450 }: Props)
           }
         }
 
+        // --- [NUEVO] Resaltar Hotspots ---
+        if (showHotspots && hotspots && hotspots.length > 0) {
+          console.log("Rendering hotspots for model 0:", hotspots);
+          for (const hs of hotspots) {
+            const match = hs.match(/([A-Z]{1,3})\s*(\d+)/i);
+            if (match) {
+              const resn = match[1].toUpperCase();
+              const resi = parseInt(match[2]);
+              
+              // Intentar seleccionar en el modelo 0 (Receptor)
+              const selector = { model: 0, resn, resi };
+              
+              v.addStyle(
+                selector,
+                {
+                  stick: {
+                    color: "#ff00ff", 
+                    radius: 0.35,
+                    opacity: 1.0,
+                  },
+                  sphere: {
+                    color: "#ff00ff",
+                    radius: 0.6, // Más grandes para que se noten
+                  }
+                }
+              );
+              
+              v.addLabel(hs, {
+                fontSize: 14,
+                fontColor: "#ffffff",
+                backgroundColor: "#ff00ff",
+                backgroundOpacity: 1.0,
+                selection: selector,
+                inFront: true,
+              });
+            }
+          }
+        }
+
         // Aplicar Capas de Superficie (View Modes)
         if (viewMode === "surface") {
           v.addSurface(
@@ -204,7 +247,7 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450 }: Props)
     }
 
     v.render();
-  }, [modelsLoaded, viewMode, showInteractions, poseData, proteinData]);
+  }, [modelsLoaded, viewMode, showInteractions, showHotspots, poseData, proteinData, hotspots]);
 
   const hasData = !!(poseData || proteinData);
 
@@ -243,7 +286,7 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450 }: Props)
       {hasData && (
         <>
           {/* Toggles Superiores */}
-          <div style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, display: "flex", gap: "8px" }}>
+          <div style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "8px", maxWidth: "90%" }}>
             
             <div className="flex bg-surface-950/80 rounded-lg p-1 border border-surface-700 backdrop-blur-md">
               <button 
@@ -276,6 +319,18 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450 }: Props)
             >
               {showInteractions ? "Ocultar Interacciones" : "Ver Interacciones"}
             </button>
+
+            <button
+              onClick={() => setShowHotspots(!showHotspots)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border backdrop-blur-md transition-all ${
+                showHotspots 
+                  ? 'bg-pink-500/20 border-pink-500/50 text-pink-400 shadow-[0_0_10px_rgba(255,0,255,0.2)]' 
+                  : 'bg-surface-950/80 border-surface-700 text-surface-400 hover:text-white'
+              }`}
+              style={showHotspots ? { borderColor: '#ff00ff', color: '#ff00ff' } : {}}
+            >
+              {showHotspots ? "Ocultar Hotspots" : "Ver Hotspots"}
+            </button>
           </div>
 
           {/* Leyenda Inferior */}
@@ -290,6 +345,9 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450 }: Props)
             <span><span style={{ color: "#4ade80" }}>■</span> Ligando docking (pose)</span>
             {showInteractions && (
               <span><span style={{ color: "#facc15" }}>■</span> Interacciones polares (H-bonds)</span>
+            )}
+            {showHotspots && (
+              <span><span style={{ color: "#ff00ff" }}>■</span> Hotspots Biológicos</span>
             )}
             <span style={{ color: "#6b7280", fontSize: "9px", marginTop: "2px" }}>
               Arrastra para rotar · Scroll para zoom

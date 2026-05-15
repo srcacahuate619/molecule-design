@@ -76,15 +76,41 @@ def calculate_score_breakdown(
     docking: DockingResult,
     properties: PhysicochemicalProperties,
     is_control: bool = False,
+    target_hotspots: list[dict] | None = None,
 ) -> ScoreBreakdown:
     """Calcula el breakdown completo del score para una evaluación."""
     
-    # Afinidad ahora evalúa Ligand Efficiency (LE)
-    affinity_score = normalize_affinity(docking.best_affinity, properties.heavy_atom_count)
+    # Afinidad ahora evalúa Ligand Efficiency (LE) y Lipophilic Efficiency (LLE)
+    affinity_score = normalize_affinity(
+        docking.best_affinity, 
+        properties.heavy_atom_count,
+        properties.log_p
+    )
     
     # Ambos scores usan QED internamente (Bickerton 2012)
     adme_score = calculate_adme_score(properties)
     druglikeness_score = calculate_druglikeness_score(properties)
+    
+    # --- [NUEVO] Score de Especificidad Biológica ---
+    specificity_score = 100.0
+    specificity_multiplier = 1.0
+    
+    if target_hotspots:
+        # Calcular cuánto de los hotspots se cubrieron
+        total_importance = sum(h.get("importance", 1.0) for h in target_hotspots)
+        hits_importance = 0.0
+        
+        hit_names = set(docking.hotspots_hit or [])
+        for h in target_hotspots:
+            if h["name"].upper() in hit_names:
+                hits_importance += h.get("importance", 1.0)
+        
+        if total_importance > 0:
+            specificity_score = (hits_importance / total_importance) * 100
+        
+        # El multiplicador reduce el score final si la especificidad es baja.
+        # Rango: 0.5 (si hit=0) a 1.0 (si hit=total).
+        specificity_multiplier = 0.5 + (0.5 * specificity_score / 100.0)
 
     # El score físico es esencialmente el QED ponderado
     physico_score = (adme_score * settings.score_weight_adme) + (druglikeness_score * settings.score_weight_druglikeness)
@@ -103,9 +129,9 @@ def calculate_score_breakdown(
         # Si es ligando de control endógeno, ignorar propiedades fisicoquímicas
         total_score = clamp_score(affinity_score)
     else:
-        total_score = clamp_score(
-            (affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
-        )
+        # El score base se multiplica por la especificidad
+        base_score = (affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
+        total_score = clamp_score(base_score * specificity_multiplier)
 
     strongest, weakest = _pick_dimensions(
         affinity_score,
@@ -113,15 +139,18 @@ def calculate_score_breakdown(
         druglikeness_score,
     )
 
-    # Calcular LE bruta para pasarla al frontend si es posible
+    # Calcular LE y LLE bruta para pasarla al frontend
     le_raw = round(docking.best_affinity / properties.heavy_atom_count, 3) if properties.heavy_atom_count else None
+    lle_raw = round((-docking.best_affinity) - properties.log_p, 3) if properties.log_p is not None else None
 
     return ScoreBreakdown(
         affinity_score=affinity_score,
         adme_score=adme_score,
         druglikeness_score=druglikeness_score,
         total_score=total_score,
+        specificity_score=specificity_score,
         ligand_efficiency=le_raw,
+        lipophilic_efficiency=lle_raw,
         weight_affinity=settings.score_weight_affinity,
         weight_adme=settings.score_weight_adme,
         weight_druglikeness=settings.score_weight_druglikeness,
@@ -169,6 +198,7 @@ def breakdown_to_result_dict(breakdown: ScoreBreakdown) -> dict[str, Any]:
         "druglikeness_score": float(breakdown.druglikeness_score),
         "total_score": float(breakdown.total_score),
         "ligand_efficiency": float(breakdown.ligand_efficiency) if breakdown.ligand_efficiency else None,
+        "lipophilic_efficiency": float(breakdown.lipophilic_efficiency) if breakdown.lipophilic_efficiency is not None else None,
         "strongest_dimension": str(breakdown.strongest_dimension),
         "weakest_dimension": str(breakdown.weakest_dimension),
         "improvement_hint": str(breakdown.improvement_hint),

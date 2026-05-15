@@ -142,6 +142,7 @@ async def _run_full_evaluation_async(
                 target_chain=target.chain,
                 target_center=(target.grid_center_x, target.grid_center_y, target.grid_center_z),
                 target_size=(target.grid_size_x, target.grid_size_y, target.grid_size_z),
+                hotspots=target.hotspots,
             )
 
             await cache.set_job_progress(task_id, 80, "scoring")
@@ -181,7 +182,12 @@ async def _run_full_evaluation_async(
             except Exception as ml_err:
                 log.warning({"event": "ml_rescoring_skipped", "error": str(ml_err)})
 
-            breakdown = calculate_score_breakdown(docking, properties, is_control=is_control)
+            breakdown = calculate_score_breakdown(
+                docking, 
+                properties, 
+                is_control=is_control,
+                target_hotspots=target.hotspots
+            )
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,
                 properties=properties,
@@ -300,6 +306,8 @@ async def get_job_status(task_id: str) -> JobStatus:
                 evaluation = await repository.get_evaluation_result(UUID(molecule_id))
                 if evaluation is not None:
                     result_payload = EvaluationResultRead.model_validate(evaluation)
+                    if evaluation.molecule and evaluation.molecule.target:
+                        result_payload.target_hotspots = evaluation.molecule.target.hotspots
     elif async_result.failed():
         error = str(async_result.result)
 

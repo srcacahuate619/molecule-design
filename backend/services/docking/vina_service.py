@@ -21,6 +21,8 @@ import shutil
 import sys
 import tempfile
 import os
+import math
+import json
 from pathlib import Path
 
 from core.config import get_settings
@@ -264,6 +266,7 @@ async def run_vina_docking(
     target_center: tuple[float, float, float],
     target_size: tuple[float, float, float],
     force_redock: bool = False,
+    hotspots: list[dict] | None = None,
 ) -> DockingResult:
     """Ejecuta docking real o devuelve cache si ya existe un cálculo idéntico."""
     # DEBUG: Bypass cache completely for all jobs (force recompute every time)
@@ -505,6 +508,23 @@ async def run_vina_docking(
                 await upload_file_from_path(output_sdf, poses_path)
                 await upload_text(output_log.read_text(encoding="utf-8"), log_path)
 
+                # --- [NUEVO] Análisis de Hotspots Dinámico ---
+                hotspots_hit = []
+                if hotspots and poses and poses[0].pdbqt_block:
+                    try:
+                        hotspots_hit = _analyze_hotspot_interactions(
+                            receptor_local, 
+                            poses[0].pdbqt_block, 
+                            hotspots
+                        )
+                        if hotspots_hit:
+                            log.info("Hotspots hit detectados", hits=hotspots_hit)
+                        else:
+                            scientific_warnings.append("No se detectaron interacciones con los residuos críticos (hotspots) del receptor.")
+                    except Exception as e:
+                        log.error("Error analizando hotspots", error=str(e))
+                        scientific_warnings.append(f"Error en análisis de hotspots: {e}")
+
                 result = DockingResult(
                     best_affinity=poses[0].affinity,
                     poses=poses,
@@ -513,6 +533,7 @@ async def run_vina_docking(
                     vina_version=vina_version,
                     vina_random_seed=vina_random_seed,
                     scientific_warnings=scientific_warnings,
+                    hotspots_hit=hotspots_hit,
                 )
                 await cache.set_docking_result(smiles_hash, target_pdb_id, result.model_dump())
 
@@ -520,3 +541,73 @@ async def run_vina_docking(
                     f"docking completado: smiles_hash={smiles_hash}, target={target_pdb_id}, best_affinity={result.best_affinity}, poses={len(result.poses)}"
                 )
                 return result
+def _analyze_hotspot_interactions(
+    receptor_path: Path, 
+    ligand_pdbqt: str, 
+    hotspots: list[dict]
+) -> list[str]:
+    """
+    Analiza si el ligando interactúa con los residuos críticos.
+    Lógica: Distancia mínima < 4.0 Å entre cualquier átomo del ligando
+    y cualquier átomo de la cadena lateral del residuo hotspot.
+    """
+    if not hotspots:
+        return []
+
+    # 1. Extraer coordenadas de los átomos del ligando
+    ligand_coords = []
+    for line in ligand_pdbqt.splitlines():
+        if line.startswith(("ATOM", "HETATM")):
+            try:
+                x = float(line[30:38])
+                y = float(line[38:46])
+                z = float(line[46:54])
+                ligand_coords.append((x, y, z))
+            except:
+                continue
+    
+    if not ligand_coords:
+        return []
+
+    # 2. Extraer coordenadas del receptor para los residuos hotspot
+    # Formato esperado de hotspot['name']: "MET97", "ASP116", etc.
+    hotspot_names = {h["name"].upper() for h in hotspots}
+    receptor_atoms = {} # name -> list of coords
+
+    with open(receptor_path, "r") as f:
+        for line in f:
+            if line.startswith(("ATOM", "HETATM")):
+                res_name = line[17:20].strip()
+                res_seq = line[22:26].strip()
+                full_res = f"{res_name}{res_seq}"
+                
+                if full_res in hotspot_names:
+                    try:
+                        x = float(line[30:38])
+                        y = float(line[38:46])
+                        z = float(line[46:54])
+                        if full_res not in receptor_atoms:
+                            receptor_atoms[full_res] = []
+                        receptor_atoms[full_res].append((x, y, z))
+                    except:
+                        continue
+
+    # 3. Calcular distancias mínimas
+    hits = []
+    THRESHOLD_SQ = 4.0 * 4.0 # 4.0 Angstroms
+    
+    for res_name, res_coords in receptor_atoms.items():
+        found = False
+        for r_coord in res_coords:
+            for l_coord in ligand_coords:
+                dist_sq = (r_coord[0]-l_coord[0])**2 + \
+                          (r_coord[1]-l_coord[1])**2 + \
+                          (r_coord[2]-l_coord[2])**2
+                if dist_sq < THRESHOLD_SQ:
+                    hits.append(res_name)
+                    found = True
+                    break
+            if found:
+                break
+    
+    return hits
