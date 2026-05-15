@@ -297,6 +297,8 @@ class Repository:
             result.ligand_efficiency = safe_float(scores.get("ligand_efficiency"))
             result.ligand_lipophilicity_efficiency = safe_float(scores.get("lipophilic_efficiency"))
             result.affinity_threshold = safe_float(scores.get("affinity_threshold"))
+            result.affinity_multiplier = safe_float(scores.get("affinity_multiplier"))
+            result.specificity_multiplier = safe_float(scores.get("specificity_multiplier"))
 
         if ai_report is not None:
             result.ai_report = ai_report

@@ -434,6 +434,8 @@ class EvaluationResultRead(BaseModel):
     hotspots_hit:       list[str] | None = None
     target_hotspots:    list[dict] | None = None
     affinity_threshold: float | None = None
+    affinity_multiplier: float | None = None
+    specificity_multiplier: float | None = None
 
     @computed_field
     @property
@@ -485,6 +487,8 @@ class ScoreBreakdown(BaseModel):
     ligand_efficiency:  float | None = None
     lipophilic_efficiency: float | None = None
     affinity_threshold: float | None = None
+    affinity_multiplier: float | None = None
+    specificity_multiplier: float | None = None
 
     # Pesos usados en el cálculo (para transparencia)
     weight_affinity:     float

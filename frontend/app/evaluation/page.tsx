@@ -572,6 +572,8 @@ export default function EvaluationPage() {
               }
               lipophilicEfficiency={status.result.ligand_lipophilicity_efficiency}
               specificity={status.result.specificity_score}
+              affinityMultiplier={status.result.affinity_multiplier}
+              specificityMultiplier={status.result.specificity_multiplier}
             />
             
             <div className="flex flex-col gap-5">

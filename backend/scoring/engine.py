@@ -154,6 +154,8 @@ def calculate_score_breakdown(
         ligand_efficiency=le_raw,
         lipophilic_efficiency=lle_raw,
         affinity_threshold=affinity_threshold,
+        affinity_multiplier=affinity_multiplier,
+        specificity_multiplier=specificity_multiplier,
         weight_affinity=settings.score_weight_affinity,
         weight_adme=settings.score_weight_adme,
         weight_druglikeness=settings.score_weight_druglikeness,

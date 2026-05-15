@@ -60,6 +60,8 @@ export type EvaluationResult = {
   hotspots_hit: string[] | null;
   target_hotspots: { name: string; importance: number }[] | null;
   affinity_threshold: number | null;
+  affinity_multiplier: number | null;
+  specificity_multiplier: number | null;
   ligand_efficiency: number | null;
   ligand_lipophilicity_efficiency: number | null;
 
