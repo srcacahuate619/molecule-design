@@ -10,15 +10,18 @@ Se ha integrado un componente reactivo (`MolecularInsight.tsx`) que analiza los 
 - **Dificultad Sintética (SA Score)**: Alerta si el score es superior a 6.0, desglosando los motivos estructurales (e.g., anillos tensionados, puentes).
 - **Validación Científica v4.0**: Solo se otorga si la molécula tiene un `total_score > 35`, confirmando la señal biológica mediante descriptores de interacción (ProLIF).
 - **Aprovechamiento de Fragmento/LE**: Analiza la Eficiencia de Ligando. Si el score es bajo pero la eficiencia es alta, lo marca como un punto de partida para optimización (Fragment-based design).
+- **Alerta de Tamaño (Fragment Warning)**: Si la molécula tiene <15 átomos pesados, el sistema advierte que, a pesar de scores altos (como en Serotonina), se requiere crecimiento estructural para ser un inhibidor competitivo.
+- **Reporte de Hotspots**: Desglose dinámico de los residuos críticos impactados exitosamente por el ligando.
 
 ## 2. Refuerzo de Transparencia (Línea de Vida v4.0) 📉 [IMPLEMENTADO]
 Se han actualizado los módulos de metadatos para reflejar el estado actual del proyecto:
-- **ML Model Version**: Identificación explícita de `v4.0 (Spearman ρ=0.33)`.
+- **ML Model Version**: Identificación explícita de `v4.2 (Spearman ρ=0.512)`.
 - **Reproducibilidad**: Inyección de la versión del modelo en el panel de metadatos para auditoría científica.
+- **Jerarquía Visual de Hotspots**: Nueva leyenda 3D que clasifica los impactos en: Crítico (Verde Neón), Proximidad (Verde Pálido) y Miss (Magenta).
 
 ## 3. Pipeline End-to-End con Solana ⛓️🛡️ [IMPLEMENTADO]
 El flujo visual del pipeline ahora refleja la realidad del sistema completo:
-`validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.0) → interpretación IA → certificación On-Chain (Solana)`
+`validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.2) → hotspots → interpretación IA → certificación On-Chain (Solana)`
 
 ## 4. Modelo Freemium (Límites Anónimos) 🌐🛑 [IMPLEMENTADO]
 Para proteger los recursos computacionales y fomentar el registro, se ha implementado un sistema de límites basado en IP:

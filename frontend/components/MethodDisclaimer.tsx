@@ -10,7 +10,7 @@ export function MethodDisclaimer() {
           in vitro o clínica.
         </li>
         <li>
-          Se aplica un modelo de <strong className="text-gray-300">re-scoring ML v4.0</strong> (Spearman ρ=0.512) para reducir el ruido de Vina y rescatar la señal biológica del target seleccionado.
+          Se aplica un modelo de <strong className="text-gray-300">re-scoring ML v4.2</strong> (Spearman ρ=0.512) para reducir el ruido de Vina y rescatar la señal biológica del target seleccionado.
         </li>
         <li>
           Las propiedades ADME y de accesibilidad sintética (SA) son estimaciones teóricas; un SA {">"} 6.0 indica alta complejidad estructural.

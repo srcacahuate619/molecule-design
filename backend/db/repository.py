@@ -294,6 +294,9 @@ class Repository:
             result.druglikeness_score = safe_float(scores.get("druglikeness_score"))
             result.total_score = safe_float(scores.get("total_score"))
             result.specificity_score = safe_float(scores.get("specificity_score"))
+            result.ligand_efficiency = safe_float(scores.get("ligand_efficiency"))
+            result.ligand_lipophilicity_efficiency = safe_float(scores.get("lipophilic_efficiency"))
+            result.affinity_threshold = safe_float(scores.get("affinity_threshold"))
 
         if ai_report is not None:
             result.ai_report = ai_report

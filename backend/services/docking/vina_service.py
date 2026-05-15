@@ -578,36 +578,49 @@ def _analyze_hotspot_interactions(
         for line in f:
             if line.startswith(("ATOM", "HETATM")):
                 res_name = line[17:20].strip()
+                res_chain = line[21].strip() # [NUEVO] Capturar cadena
                 res_seq = line[22:26].strip()
-                full_res = f"{res_name}{res_seq}"
                 
-                if full_res in hotspot_names:
+                # Soportamos tanto "PRO101" como "A:PRO101"
+                full_res_no_chain = f"{res_name}{res_seq}"
+                full_res_with_chain = f"{res_chain}:{res_name}{res_seq}" if res_chain else full_res_no_chain
+                
+                # Verificar si alguna de las formas está en hotspots
+                matched_id = None
+                if full_res_with_chain in hotspot_names:
+                    matched_id = full_res_with_chain
+                elif full_res_no_chain in hotspot_names:
+                    matched_id = full_res_no_chain
+                
+                if matched_id:
                     try:
                         x = float(line[30:38])
                         y = float(line[38:46])
                         z = float(line[46:54])
-                        if full_res not in receptor_atoms:
-                            receptor_atoms[full_res] = []
-                        receptor_atoms[full_res].append((x, y, z))
+                        if matched_id not in receptor_atoms:
+                            receptor_atoms[matched_id] = []
+                        receptor_atoms[matched_id].append((x, y, z))
                     except:
                         continue
 
     # 3. Calcular distancias mínimas
     hits = []
-    THRESHOLD_SQ = 4.0 * 4.0 # 4.0 Angstroms
+    # Aumentamos a 5.0 Å para capturar interacciones hidrofóbicas/apilamiento (stacking) 
+    # que son comunes en hotspots y tienen un rango mayor que los H-bonds.
+    THRESHOLD_SQ = 5.0 * 5.0 
     
     for res_name, res_coords in receptor_atoms.items():
-        found = False
+        min_dist_sq = float('inf')
         for r_coord in res_coords:
             for l_coord in ligand_coords:
-                dist_sq = (r_coord[0]-l_coord[0])**2 + \
-                          (r_coord[1]-l_coord[1])**2 + \
-                          (r_coord[2]-l_coord[2])**2
-                if dist_sq < THRESHOLD_SQ:
-                    hits.append(res_name)
-                    found = True
-                    break
-            if found:
-                break
+                d2 = (r_coord[0]-l_coord[0])**2 + (r_coord[1]-l_coord[1])**2 + (r_coord[2]-l_coord[2])**2
+                if d2 < min_dist_sq:
+                    min_dist_sq = d2
+        
+        min_dist = min_dist_sq**0.5
+        log.info(f"Hotspot distance: {res_name} -> {min_dist:.2f} A")
+        
+        if min_dist_sq < THRESHOLD_SQ:
+            hits.append(res_name)
     
     return hits

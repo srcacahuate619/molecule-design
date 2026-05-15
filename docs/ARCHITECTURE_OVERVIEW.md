@@ -17,8 +17,9 @@ graph TD
     G --> H[Docking AutoDock Vina]
     H --> I[Pose Quality Filter]
     I --> J[ML Rescoring XGBoost]
-    J --> K[Scoring Compuesto Final]
-    K --> L[AI Report & Certificación]
+    J --> K[Análisis de Hotspots & Especificidad]
+    K --> L[Scoring Compuesto Final]
+    L --> M[AI Report & Certificación]
 ```
 
 ## 2. Microservicio de ML Rescoring
@@ -31,6 +32,7 @@ Debido a los requisitos científicos (ODDT, ProLIF, XGBoost), el rescoring opera
 3.  **Modelo A (Ranking)**: Predicción del score de ranking basada en interacciones específicas.
 4.  **Modelo NULL (Control)**: Predicción basada SOLO en propiedades 1D/2D para detectar sesgo de ligando.
 5.  **Delta de Especificidad**: `Score_A - Score_NULL`. Mide cuánto de la afinidad es debida al encaje geométrico real.
+6.  **Hotspot Matching**: Identificación de contactos con residuos críticos biológicos (Threshold 5.0Å).
 - **Dominio de Aplicabilidad (Mahalanobis)**: Check automático de si la molécula es similar a los datos de entrenamiento (PDBbind). Si es demasiado exótica, el sistema degrada la confianza del ML para evitar la extrapolación ciega.
 - **Interpretación por Likelihood Ratios (LR)**: En lugar de dar un número frío, el sistema comunica cuánto más probable es encontrar actividad real dado el score obtenido (basado en el panel de calibración de 40 compuestos).
 

@@ -16,10 +16,11 @@ FILES = [
     "frontend/components/MethodDisclaimer.tsx",
     "frontend/components/MolecularInsight.tsx",
     "frontend/components/ReproducibilityInfo.tsx",
-    "frontend/components/ScoreCard.tsx",
+    "frontend/components/MoleculeViewer3D.tsx",
     "frontend/lib/api.ts",
     "frontend/lib/config.ts",
     "frontend/lib/types.ts",
+    "backend/utils/structural.py",
 ]
 
 REMOTE_USER = "srcacahuate619"

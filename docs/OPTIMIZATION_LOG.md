@@ -1,5 +1,21 @@
 # Registro de Optimización de MolDesign
 
+## Sesión: 2026-05-15 - Hotspots y Especificidad Biológica
+### 1. Sistema de Hotspots (CTLA-4 3OSK)
+- **Umbral de Interacción**: Calibración científica a **5.0 Å** (desde 4.0 Å) para capturar contactos hidrofóbicos y pi-stacking.
+- **Jerarquía Visual 3D**: Implementación de tres estados (Crítico, Proximidad, Miss) con colores diferenciados y leyenda interactiva.
+- **Click-to-Identify**: Activación de labels detallados al hacer click sobre los hotspots en el visor 3D.
+- **Pipeline de Datos**: Integración de `target_hotspots` desde la base de datos hasta el frontend mediante props reactivas.
+
+### 2. Estabilización de Rescoring e Insights
+- **Fragment Warning**: Implementación de alerta para moléculas pequeñas (HAC < 15) que sobrestiman afinidad (e.g., Serotonina).
+- **Display de Spearman**: Actualización de la métrica visual a **ρ=0.512** tras validación con el set industrial de fármacos aprobados.
+- **Hotspot Distance Logging**: El worker ahora registra distancias mínimas a cada hotspot para auditoría de diseño.
+
+### 3. Debugging y Parches Críticos
+- **JSX Syntax Fix**: Corrección de errores de compilación por falta de fragmentos y escape de caracteres especiales (<, >) en el visor.
+- **Sync Optimization**: Actualización del script de sincronización para incluir descriptores estructurales y componentes 3D actualizados.
+
 ## Sesión: 2026-05-14 - Modernización y Validación Científica
 
 ### 1. Interfaz de Usuario (UX Premium)

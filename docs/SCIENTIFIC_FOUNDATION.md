@@ -30,13 +30,25 @@ MolDesign evalúa el "Drug-likeness" basándose en tres estándares de la indust
 1.  **Regla de Lipinski (Oralidad)**: MW < 500 Da, LogP < 5, H-Bond Donors < 5, H-Bond Acceptors < 10.
 2.  **Regla de Veber (Biodisponibilidad)**: Rotatable Bonds ≤ 10, TPSA ≤ 140 Å².
 3.  **Filtro CNS (Cerebral)**: Para el receptor 5-HT1A, penalizamos TPSA > 90 Å², ya que dificulta el cruce de la barrera hematoencefálica.
+4.  **Biological Specificity (Hotspots)**: Penalización por falta de contacto con residuos clave definidos experimentalmente.
 
-## 4. El "Filtro de Honestidad" (Delta 3D y Control NULL)
+## 4. Especificidad Biológica y Hotspots (5.0 Å)
+
+MolDesign v4.2 introduce el concepto de **Puntos de Interacción Críticos (Hotspots)** para diferenciar entre "unir cualquier bolsillo" y "bloquear el sitio funcional".
+
+### Calibración del Umbral de Interacción
+Tras pruebas de validación con el target CTLA-4 (3OSK), hemos ajustado el umbral de detección:
+- **Umbral Antiguo (4.0 Å)**: Demasiado estricto para interacciones hidrofóbicas y de apilamiento aromático (pi-stacking).
+- **Nuevo Umbral (5.0 Å)**: Optimizado para capturar el radio de influencia biológica de residuos como Metionina y Tirosina.
+- **Lógica de Scoring**: Cada hotspot tiene un peso relativo. Si una molécula no "toca" al menos un hotspot crítico, el score final es penalizado mediante un multiplicador de especificidad (rango 0.5x a 1.0x).
+
+## 5. El "Filtro de Honestidad" y ML v4.2 (Spearman ρ=0.512)
 
 Para evitar el **sesgo de ligando** (atribuir éxito a una molécula solo por su lipofilia), MolDesign utiliza un sistema de dos modelos:
 
 - **Modelo A (Full)**: Entrenado con interacciones proteína-ligando (H-bonds, π-stacking, contactos hidrofóbicos).
 - **Modelo NULL (Ciego)**: Entrenado SOLO con descriptores 1D/2D (MW, LogP, etc.).
+- **Métrica de Desempeño**: El modelo actual v4.2 ha sido calibrado para un **Spearman ρ=0.512**, mejorando significativamente la capacidad de ranking frente a la v4.0 (ρ=0.33).
 - **Interpretación del Delta**:
     - `Delta (A - NULL) > 0.5`: La geometría 3D aporta afinidad real.
     - `Delta ≈ 0`: La molécula se une por "fuerza bruta" fisicoquímica, no por diseño.

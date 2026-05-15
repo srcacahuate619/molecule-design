@@ -77,6 +77,7 @@ def calculate_score_breakdown(
     properties: PhysicochemicalProperties,
     is_control: bool = False,
     target_hotspots: list[dict] | None = None,
+    affinity_threshold: float = -7.5,
 ) -> ScoreBreakdown:
     """Calcula el breakdown completo del score para una evaluación."""
     
@@ -84,7 +85,8 @@ def calculate_score_breakdown(
     affinity_score = normalize_affinity(
         docking.best_affinity, 
         properties.heavy_atom_count,
-        properties.log_p
+        properties.log_p,
+        threshold=affinity_threshold
     )
     
     # Ambos scores usan QED internamente (Bickerton 2012)
@@ -151,6 +153,7 @@ def calculate_score_breakdown(
         specificity_score=specificity_score,
         ligand_efficiency=le_raw,
         lipophilic_efficiency=lle_raw,
+        affinity_threshold=affinity_threshold,
         weight_affinity=settings.score_weight_affinity,
         weight_adme=settings.score_weight_adme,
         weight_druglikeness=settings.score_weight_druglikeness,
@@ -170,11 +173,20 @@ async def score_and_persist(
     Calcula el score y persiste los resultados normalizados.
     """
     try:
-        # Obtenemos el resultado previo para saber si es control
+        # Obtenemos el resultado previo y la molécula para saber el target
         result = await repository.get_evaluation_result(molecule_id)
         is_control = bool(result.is_control) if result else False
-
-        breakdown = calculate_score_breakdown(docking, properties, is_control=is_control)
+        
+        mol = await repository.get_molecule(molecule_id)
+        target = mol.target if mol else None
+        
+        breakdown = calculate_score_breakdown(
+            docking, 
+            properties, 
+            is_control=is_control,
+            target_hotspots=target.hotspots if target else None,
+            affinity_threshold=target.affinity_threshold if target and target.affinity_threshold is not None else -7.5
+        )
         await repository.upsert_evaluation_result(
             molecule_id=molecule_id,
             properties=properties,

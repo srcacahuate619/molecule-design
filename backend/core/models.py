@@ -111,6 +111,7 @@ class TargetORM(Base):
     organism          = Column(String(100), nullable=True)
     resolution        = Column(Float, nullable=True)
     hotspots          = Column(JSONB, nullable=True) # Lista de residuos críticos: [{"name": "MET97", "importance": 1.0}, ...]
+    affinity_threshold = Column(Float, nullable=True, default=-7.5) # [NUEVO] Suelo de afinidad absoluta
 
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
     prepared_file_path = Column(String(500), nullable=True)
@@ -237,6 +238,7 @@ class EvaluationResultORM(Base):
     celery_task_id   = Column(String(200), nullable=True)  # para polling del frontend
     hotspots_hit     = Column(JSONB, nullable=True)        # residuos con los que interactuó
     specificity_score = Column(Float, nullable=True)       # normalizado 0-100
+    affinity_threshold = Column(Float, nullable=True)     # [NUEVO] Umbral del target usado en esta evaluación
 
     # ── Propiedades fisicoquímicas (RDKit) ───────────────────────────────────
     molecular_weight = Column(Float, nullable=True)
@@ -427,10 +429,10 @@ class EvaluationResultRead(BaseModel):
     # Scores
     adme_score:         float | None
     druglikeness_score: float | None
-    total_score:        float | None   # 0–100, el score del juego
     specificity_score:  float | None = None
     hotspots_hit:       list[str] | None = None
     target_hotspots:    list[dict] | None = None
+    affinity_threshold: float | None = None
 
     @computed_field
     @property
@@ -481,6 +483,7 @@ class ScoreBreakdown(BaseModel):
     specificity_score:  float | None = None
     ligand_efficiency:  float | None = None
     lipophilic_efficiency: float | None = None
+    affinity_threshold: float | None = None
 
     # Pesos usados en el cálculo (para transparencia)
     weight_affinity:     float
@@ -506,6 +509,7 @@ class Target(BaseModel):
     organism: str | None
     resolution: float | None
     hotspots: list[dict] | None = None
+    affinity_threshold: float | None = -7.5
 
     model_config = {"from_attributes": True}
 

@@ -25,41 +25,75 @@ export function MolecularInsight({ result }: Props) {
     });
   }
 
-  // 3. Consistencia Vina vs ML v4.0 (Ajustado por honestidad científica)
+  // 3. Consistencia Vina vs ML v4.2 + Suelo de Afinidad
   if (result.affinity_kcal !== null) {
+    const threshold = result.affinity_threshold ?? -7.5;
+    const isWeak = result.affinity_kcal > threshold; // e.g., -6.2 > -7.5 is True (Weak)
+
+    if (isWeak) {
+      insights.push({
+        type: "warning",
+        title: "Potencia Insuficiente",
+        message: `Aunque tu molécula es eficiente, su afinidad absoluta de ${result.affinity_kcal} kcal/mol es demasiado débil. Para este target, necesitamos al menos ${threshold} kcal/mol para considerar la molécula como un candidato viable.`
+      });
+    }
+
     if (result.total_score !== null && result.total_score > 35) {
       insights.push({
         type: "success",
-        title: "Validación Científica v4.0",
-        message: "Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el target seleccionado (Spearman ρ=0.512)."
+        title: "Validación Científica v4.2",
+        message: "Los descriptores de interacción (ProLIF) y el modelo ML v4.2 confirman una señal biológica prometedora para el target seleccionado (Spearman ρ=0.512)."
       });
-    } else {
+    } else if (!isWeak) {
       insights.push({
         type: "info",
         title: "Señal Biológica Débil",
-        message: "El modelo ML v4.0 no detecta suficientes interacciones clave. La molécula podría no tener la orientación adecuada en el bolsillo de unión."
+        message: "El modelo ML v4.2 no detecta suficientes interacciones clave. La molécula podría no tener la orientación adecuada en el bolsillo de unión."
       });
     }
   }
 
-  // 4. Eficiencia de Ligando (Ajustado para evitar falsos positivos en moléculas junk)
-  if (result.ligand_efficiency !== null && result.ligand_efficiency < -0.3) {
-    if (result.total_score !== null && result.total_score > 30) {
-      insights.push({
-        type: "success",
-        title: "Alta Eficiencia de Ligando",
-        message: `Con un LE de ${result.ligand_efficiency.toFixed(3)}, cada átomo pesado está contribuyendo significativamente a la unión. Es un excelente punto de partida para optimización.`
-      });
-    } else {
-      insights.push({
-        type: "info",
-        title: "Aprovechamiento de Fragmento",
-        message: `Aunque la molécula es pequeña y eficiente (LE: ${result.ligand_efficiency.toFixed(3)}), su tamaño actual no es suficiente para generar una afinidad competitiva.`
+  // 4. Eficiencia de Ligando y Alerta de Fragmento
+  if (result.ligand_efficiency !== null) {
+    const isFragment = (result.heavy_atom_count ?? 0) < 15;
+    
+    if (result.ligand_efficiency < -0.3) {
+      if (isFragment) {
+        insights.push({
+          type: "info",
+          title: "Potencial de Fragmento",
+          message: `Tu molécula es pequeña pero extremadamente eficiente (LE: ${Math.abs(result.ligand_efficiency).toFixed(3)}). Ojo: No es un fármaco aún, sino un 'semilla' ideal. Necesitas hacerla crecer para que bloquee el target de forma competitiva.`
+        });
+      } else if (result.total_score !== null && result.total_score > 30) {
+        insights.push({
+          type: "success",
+          title: "Alta Eficiencia de Ligando",
+          message: `Con un LE de ${Math.abs(result.ligand_efficiency).toFixed(3)}, cada átomo pesado está contribuyendo significativamente a la unión. Es un excelente punto de partida para optimización.`
+        });
+      }
+    } else if (isFragment) {
+       insights.push({
+        type: "warning",
+        title: "Tamaño Insuficiente",
+        message: "La molécula es demasiado pequeña para este target y no tiene la eficiencia necesaria para compensarlo. Considera expandir el scaffold."
       });
     }
   }
 
-  if (insights.length === 0) return null;
+  // 5. Análisis de Hotspots
+  if (result.hotspots_hit && result.hotspots_hit.length > 0) {
+    insights.push({
+      type: "success",
+      title: "Especificidad Biológica Lograda",
+      message: `¡Excelente! Tu molécula ha logrado interactuar con los siguientes hotspots críticos: ${result.hotspots_hit.join(", ")}. Esto valida que el diseño está atacando el sitio funcional correcto.`
+    });
+  } else if (result.target_hotspots && result.target_hotspots.length > 0) {
+    insights.push({
+      type: "info",
+      title: "Falta de Especificidad",
+      message: "La molécula está en el sitio activo, pero no está impactando los hotspots críticos. Considera reorientar la molécula hacia estos residuos para mejorar la potencia biológica."
+    });
+  }
 
   return (
     <section className="space-y-3">

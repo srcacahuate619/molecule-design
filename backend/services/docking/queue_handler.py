@@ -186,7 +186,8 @@ async def _run_full_evaluation_async(
                 docking, 
                 properties, 
                 is_control=is_control,
-                target_hotspots=target.hotspots
+                target_hotspots=target.hotspots,
+                affinity_threshold=target.affinity_threshold if target.affinity_threshold is not None else -7.5
             )
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,

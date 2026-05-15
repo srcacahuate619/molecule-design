@@ -8,12 +8,14 @@ def insert_target_3osk():
         id, pdb_id, name, chain, description, 
         grid_center_x, grid_center_y, grid_center_z, 
         grid_size_x, grid_size_y, grid_size_z, 
-        requires_cns, structural_family, organism, resolution, is_prepared
+        requires_cns, structural_family, organism, resolution, is_prepared,
+        affinity_threshold
     ) VALUES (
         '{target_id}', '3OSK', 'CTLA-4 Immune Checkpoint', 'A', 
         'Receptor inmunitario (Checkpoint). Sitio de unión B7 (Loop MYPPPY).', 
         -2.132, -19.592, 22.149, 25.0, 25.0, 25.0, 
-        false, 'checkpoint', 'Homo sapiens', 2.5, false
+        false, 'checkpoint', 'Homo sapiens', 2.5, false,
+        -7.0
     ) ON CONFLICT (pdb_id) DO UPDATE SET 
         name = EXCLUDED.name, 
         description = EXCLUDED.description,

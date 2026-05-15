@@ -612,6 +612,7 @@ export default function EvaluationPage() {
                 proteinData={proteinData ?? undefined}
                 height={320}
                 hotspots={status.result.target_hotspots?.map(h => h.name) || []}
+                hotspotsHit={status.result.hotspots_hit || []}
               />
             </div>
           </div>

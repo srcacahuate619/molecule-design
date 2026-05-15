@@ -2,10 +2,10 @@ import subprocess
 import json
 
 HOTSPOTS_3OSK = [
-    {"name": "MET97", "importance": 1.0},
-    {"name": "TYR99", "importance": 1.0},
-    {"name": "PRO101", "importance": 0.5},
-    {"name": "TYR103", "importance": 0.8}
+    {"name": "A:MET99", "importance": 1.0},
+    {"name": "A:TYR100", "importance": 1.0},
+    {"name": "A:PRO102", "importance": 1.0},
+    {"name": "A:TYR104", "importance": 1.0}
 ]
 
 HOTSPOTS_7E2Y = [
