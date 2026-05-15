@@ -23,6 +23,47 @@ log = get_logger(__name__)
 
 router = APIRouter(prefix="/targets", tags=["Targets biológicos"])
 
+class TargetIngestRequest(BaseModel):
+    pdb_id: str = Field(..., min_length=4, max_length=4, description="PDB ID de 4 caracteres")
+    chain_id: str = Field(default="A", description="Cadena de interés")
+    is_hot: bool = Field(default=False)
+    structural_family: str | None = None
+
+@router.post(
+    "/ingest",
+    status_code=status.HTTP_201_CREATED,
+    summary="Ingesta científica de una nueva proteína",
+)
+async def ingest_target(
+    request: TargetIngestRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Inicia el pipeline de ingesta científica:
+    - Descarga estructura del RCSB.
+    - Descubre pocket automáticamente basado en ligandos experimentales.
+    - Mina hotspots (residuos críticos) automáticamente.
+    - Prepara el receptor para Vina (PDBQT).
+    - Actualiza el catálogo en tiempo real.
+    """
+    from services.targets.ingestion_manager import ingest_new_target
+    
+    try:
+        result = await ingest_new_target(
+            pdb_id=request.pdb_id,
+            db=db,
+            chain_id=request.chain_id,
+            is_hot=request.is_hot,
+            structural_family=request.structural_family
+        )
+        return result
+    except Exception as e:
+        log.error("error_ingesta_api", pdb_id=request.pdb_id, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Fallo en la ingesta científica: {str(e)}"
+        )
+
 @router.get(
     "/",
     response_model=list[Target],

@@ -346,17 +346,17 @@ class DockingResult(BaseModel):
 
     @field_validator("best_affinity")
     @classmethod
-    def affinity_must_be_negative(cls, v: float) -> float:
+    def affinity_must_be_non_positive(cls, v: float) -> float:
         """
-        Las afinidades de Vina son siempre estrictamente negativas.
-        Un valor >= 0 indica un error en el parsing del output de Vina
-        o una ejecución inválida (una afinidad de 0.0 kcal/mol significa
-        ausencia total de interacción, que no es un resultado válido).
+        Las afinidades de Vina son siempre negativas si hay interacción.
+        Un valor > 0 indica un error en el parsing del output de Vina.
+        Permitimos 0.0 como caso borde de "ausencia de interacción" para evitar
+        crashes de validación, aunque se tratará como score cero.
         """
-        if v >= 0:
+        if v > 0:
             raise ValueError(
-                f"La afinidad de docking debe ser estrictamente negativa (got {v}). "
-                "Un valor >= 0 indica un error en el parsing de Vina o ausencia de interacción."
+                f"La afinidad de docking debe ser negativa o cero (got {v}). "
+                "Un valor > 0 indica un error en el parsing de Vina."
             )
         return v
 

@@ -13,6 +13,9 @@
 
 MolDesign es una plataforma *Open Science* que permite a cualquier persona — desde un estudiante de química hasta un investigador independiente — diseñar y evaluar moléculas contra blancos biológicos reales, utilizando los mismos estándares que la industria farmacéutica. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana, otorgando reconocimiento permanente al **creador in silico**.
 
+### Novedades v4.7: Ingesta Científica de Targets
+Ahora puedes expandir la librería de proteínas del sistema en segundos. El **Scientific Ingestion Pipeline** descarga estructuras del RCSB, descubre el sitio activo automáticamente analizando ligandos experimentales y prepara el receptor con rigor industrial.
+
 ---
 
 ## Índice
@@ -345,18 +348,13 @@ MINIO_ROOT_PASSWORD=...
 
 | Fase | Feature | Estado |
 |:---|:---|:---:|
-| v4.0 | ML Rescoring XGBoost + ProLIF | ✅ |
-| v4.0 | Filtro SA con penalización de tensión de anillo | ✅ |
-| v4.0 | Certificación Solana Devnet | ✅ |
-| v4.0 | Score compuesto calibrado (Afinidad + ADME + QED) | ✅ |
+| v4.7 | Scientific Ingestion Pipeline (PDB -> PDBQT auto) | ✅ |
+| v4.7 | Multitarget Jerárquico (Humanos / Patógenos) | ✅ |
 | v5.0 | Validación ciega 50 fármacos post-2022 (ρ=0.512) | ✅ |
 | v5.0 | Mentor Químico (Molecular Insight) | ✅ |
 | v5.0 | Modelo Freemium (límites anónimos por IP) | ✅ |
 | v5.1 | Feature Asp114 como interacción obligatoria 5-HT1A | 🔄 |
-| v5.1 | Fix Meeko → SDF con metadatos numéricos | 🔄 |
 | v5.2 | MM-GBSA rescoring con AmberTools | 📋 |
-| v5.2 | WaterMap logic con 3D-RISM | 📋 |
-| v6.0 | Multitarget (receptor configurable por usuario) | 📋 |
 | v6.0 | GNN / Point Cloud rescoring | 📋 |
 | v6.0 | Ensemble docking (receptor flexible) | 📋 |
 | v7.0 | Hydrated Docking (Vina-Hydrated / WIDD) | 📋 |

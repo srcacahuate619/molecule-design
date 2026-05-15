@@ -1,5 +1,20 @@
 # Registro de Optimización de MolDesign
 
+## Sesión: 2026-05-15 - Ingesta Científica y Multitarget v4.7
+### 1. Scientific Target Ingestion Pipeline [NUEVO]
+- **Automated Pocket Discovery**: Algoritmo en `utils/structural.py` que analiza ligandos co-cristalizados para derivar automáticamente el centro del grid y los hotspots.
+- **Ingestion Manager**: Nuevo servicio en `ingestion_manager.py` que coordina la descarga desde RCSB, preparación con Meeko y persistencia en DB.
+- **Validación Exitosa**: Ingesta de **PCSK9 (4NC3)** con detección automática de 28 hotspots y afinidad experimental como referencia.
+
+### 2. UX Jerárquico y Hot Targets
+- **Selector Profesional**: Transición de lista plana a selector de dos niveles (Humanos/Patógenos -> Categoría -> Target).
+- **Indicador Hot Target**: Implementación de badges visuales (🔥) para targets de alta relevancia (GLP-1R, PCSK9).
+- **Default State**: Nueva pantalla de bienvenida en el selector ("Selecciona un Target!") para una experiencia más profesional.
+
+### 3. Robustez y Pydantic v2
+- **Fix Validación Afinidad**: Relajación del validador de `DockingResult` para permitir afinidades de `0.0` (ausencia de unión) sin crashear el worker.
+- **Sync de Esquema**: Actualización de la tabla `evaluation_results` en producción para soportar metadatos de hotspots y umbrales dinámicos.
+
 ## Sesión: 2026-05-15 - Rigor Científico v4.5 y Potency Floor
 ### 1. Calibración de Potencia Absoluta (Potency Floor)
 - **Umbral por Target**: Implementación de `affinity_threshold` en base de datos. Cada target define su propio nivel de potencia mínimo (ej: -7.0 para CTLA-4).
@@ -33,7 +48,6 @@
 - **Dataset:** 50 Fármacos aprobados post-2022 (Fruquintinib, Capivasertib, Axitinib, etc.).
 - **Resultado:** Coeficiente de Spearman (ρ) = **0.512**.
 - **Significancia:** p = 0.00014.
-- **Muestra de Moléculas Evaluadas:**
 
 | Fármaco (SMILES) | Vina (kcal) | XGBoost (kcal) | ∆ (IA Correction) |
 |:---:|:---:|:---:|:---:|
@@ -50,27 +64,8 @@ El modelo demuestra una capacidad de generalización real en química no vista. 
 
 # Diario de Optimización y DevOps ⚙️🚀
 
-Registro cronológico de mejoras en infraestructura, estabilidad y eficiencia del pipeline.
-
 ## 2026-05-13: Endurecimiento Científico v4.0
 - **Fix Cubano**: Implementación de penalización manual por tensión de anillo (anillos de 3 y 4 carbonos). SA Score ahora detecta inviabilidad en scaffolds altamente tensionados.
 - **Topología ProLIF**: Corrección del extractor de features para manejar PDBQTs sin hidrógenos explícitos (`inferrer=None`). Se añadió un parser de coordenadas manual como fallback.
 - **Limpieza Automática**: El backend ahora limpia scores previos en la DB cuando una nueva evaluación falla, evitando datos "zombis".
 - **Invalidación de Caché**: Cada evaluación fuerza la actualización de Redis para evitar resultados desactualizados.
-
-## 2026-05-12: Estabilización de Despliegue Híbrido
-- **Tunnel Sync v2**: Implementación de script para actualizar `NEXT_PUBLIC_API_URL` en Vercel automáticamente al cambiar la IP o subdominio del túnel local.
-- **CORS Hardening**: Configuración estricta de orígenes permitidos para aceptar solo el dominio de producción de Vercel y las previews autorizadas.
-- **Vercel Edge Adapter**: Optimización del cliente API en el frontend para manejar timeouts largos durante evaluaciones de docking de alta exhaustividad.
-
-## 2026-05-11: Reportes IA Deterministas
-- **Typewriter Effect**: Implementación en el frontend para mostrar el reporte de Gemini en tiempo real.
-- **Structured Reporting**: Prompts de IA ajustados para reportar por dimensiones (Afinidad, ADME, Drug-likeness) sin preámbulos innecesarios.
-
-## 2026-04-12: Estabilización de Concurrencia
-- **Asyncio Isolation**: Aislamiento del event loop de Celery para permitir docking concurrente sin cerrar conexiones de base de datos.
-- **Tunnel Sync**: Sincronización automática de la URL de Cloudflare con las variables de entorno de Vercel.
-
-## 2026-04-05: Migración a Servidor Remoto
-- **Docker Orchestration**: Despliegue completo en servidor Ubuntu remoto (Ryzen 3).
-- **MinIO integration**: Migración de archivos locales a almacenamiento S3-compatible.

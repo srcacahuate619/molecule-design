@@ -23,6 +23,8 @@ FILES = [
     "frontend/components/ScoreCard.tsx",
     "backend/utils/structural.py",
     "backend/scripts/prepare_new_targets.py",
+    "backend/services/targets/ingestion_manager.py",
+    "backend/scripts/test_ingestion.py",
 ]
 
 REMOTE_USER = "srcacahuate619"
