@@ -71,6 +71,7 @@ services:
       - "8010:8000"
     volumes:
       - ./backend:/app
+      - ./data/targets:/data/targets
       - vina_temp:/tmp/vina
       - almacenamiento-minio_minio_data:/minio_data:ro
     healthcheck:
