@@ -112,6 +112,7 @@ class TargetORM(Base):
     resolution        = Column(Float, nullable=True)
     hotspots          = Column(JSONB, nullable=True) # Lista de residuos críticos: [{"name": "MET97", "importance": 1.0}, ...]
     affinity_threshold = Column(Float, nullable=True, default=-7.5) # [NUEVO] Suelo de afinidad absoluta
+    is_hot             = Column(Boolean, default=False, nullable=False) # [NUEVO] UX: Hot/Trending target
 
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
     prepared_file_path = Column(String(500), nullable=True)
@@ -515,6 +516,7 @@ class Target(BaseModel):
     resolution: float | None
     hotspots: list[dict] | None = None
     affinity_threshold: float | None = -7.5
+    is_hot: bool = False
 
     model_config = {"from_attributes": True}
 

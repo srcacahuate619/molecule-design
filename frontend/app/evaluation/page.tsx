@@ -364,10 +364,24 @@ export default function EvaluationPage() {
                             ))}
                           </optgroup>
                           <optgroup label="❤️ Cardiología">
-                            <option disabled>Próximamente: Receptores Hipertensión</option>
+                            {targets.filter(t => t.pdb_id === '2P4E' || t.pdb_id === '6U26').map(t => (
+                              <option key={t.pdb_id} value={t.pdb_id}>
+                                {t.pdb_id} - {t.name} {t.is_hot ? "🔥" : ""}
+                              </option>
+                            ))}
+                            {targets.filter(t => t.pdb_id === '2P4E' || t.pdb_id === '6U26').length === 0 && (
+                              <option disabled>Próximamente: Receptores Hipertensión</option>
+                            )}
                           </optgroup>
                           <optgroup label="🩸 Endocrinología">
-                            <option disabled>Próximamente: Insulina / Diabetes</option>
+                            {targets.filter(t => t.name.toUpperCase().includes('GLP')).map(t => (
+                              <option key={t.pdb_id} value={t.pdb_id}>
+                                {t.pdb_id} - {t.name} {t.is_hot ? "🔥" : ""}
+                              </option>
+                            ))}
+                            {targets.filter(t => t.name.toUpperCase().includes('GLP')).length === 0 && (
+                              <option disabled>Próximamente: Insulina / Diabetes</option>
+                            )}
                           </optgroup>
                         </>
                       ) : (
@@ -429,6 +443,16 @@ export default function EvaluationPage() {
                           : "Target periférico. No requiere cruzar la barrera hematoencefálica para su efectividad."}
                       </div>
                     </div>
+                    {selected.is_hot && (
+                      <div className="group relative">
+                        <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/40 text-[10px] uppercase tracking-wider font-black animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.3)]">
+                          🔥 Hot Target
+                        </span>
+                        <div className="absolute bottom-full left-0 mb-2 hidden w-40 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
+                          Proteína de alta relevancia farmacéutica actual (Trending).
+                        </div>
+                      </div>
+                    )}
                     {selected.organism && (
                       <div className="group relative">
                         <span className="px-2 py-0.5 rounded-full bg-surface-800 text-surface-400 border border-surface-700 text-[10px] tracking-tighter uppercase cursor-help">

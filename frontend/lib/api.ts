@@ -17,6 +17,7 @@ export interface Target {
   chain: string;
   requires_cns: boolean;
   structural_family: string;
+  is_hot: boolean;
 }
 
 import { API_URL } from "./config";
