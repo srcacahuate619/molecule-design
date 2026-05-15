@@ -1,4 +1,17 @@
-# Registro de Optimización de MolDesign
+## Sesión: 2026-05-15 - Calibración y Rigor Científico v4.7.1
+### 1. Calibración contra Fármacos Clínicos [Benchmarking]
+- **Set de Validación**: Evaluación de **Danuglipron** y **Lotiglipron** (agonistas orales de GLP-1R).
+- **Ajuste de Suelo (Threshold)**: Recalibración del umbral de afinidad a **-7.2 kcal/mol** para GLP-1R tras verificar que candidatos clínicos exitosos operan en el rango de -7.3 a -7.8 en el modelo in silico.
+- **Detección de Falsos Positivos**: El sistema ahora distingue con éxito entre agonistas terapéuticos y moléculas inertes (Caffeine, Aspirin) mediante el score de especificidad.
+
+### 2. Soporte de Ligandos Peptídicos y Complejos
+- **Chain-Specific Discovery**: El motor de descubrimiento estructural ahora permite definir una cadena específica como ligando (ej: Cadena P en 6B3J). Esto permite auditar pockets ocupados por péptidos endógenos.
+- **Inspección Profunda PCSK9**: Corrección de la ingesta para **6U26 (Alostérico)**. Se identificó que el bolsillo alostérico se encuentra en la Cadena B, permitiendo el minado de 15 hotspots reales en el dominio V.
+
+### 3. Toolkit de Auditoría [Backend]
+- **Audit Tooling**: Implementación de `audit_hotspots.py` para validación cruzada con literatura.
+- **Inspect Tooling**: Nueva herramienta `inspect_pdb.py` para análisis de proximidad ligando-proteína.
+- **Benchmarking Engine**: Automatización de pruebas de redocking y validación externa en `benchmark_glp1r.py`.
 
 ## Sesión: 2026-05-15 - Ingesta Científica y Multitarget v4.7
 ### 1. Scientific Target Ingestion Pipeline [NUEVO]

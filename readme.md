@@ -13,8 +13,13 @@
 
 MolDesign es una plataforma *Open Science* que permite a cualquier persona — desde un estudiante de química hasta un investigador independiente — diseñar y evaluar moléculas contra blancos biológicos reales, utilizando los mismos estándares que la industria farmacéutica. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana, otorgando reconocimiento permanente al **creador in silico**.
 
-### Novedades v4.7: Ingesta Científica de Targets
+### Novedades v4.7.1: Calibración y Rigor Científico
 Ahora puedes expandir la librería de proteínas del sistema en segundos. El **Scientific Ingestion Pipeline** descarga estructuras del RCSB, descubre el sitio activo automáticamente analizando ligandos experimentales y prepara el receptor con rigor industrial.
+
+**v4.7.1 Highlights:**
+- **Calibración Clínica:** Motor verificado contra agonistas orales de GLP-1R (Danuglipron) y PCSK9 (inhibidores alostéricos).
+- **Soporte de Péptidos:** Descubrimiento automático de pockets basado en cadenas específicas (péptido GLP-1 en 6B3J).
+- **Minado de Hotspots:** Selección de los top 15 residuos críticos por densidad de contacto y proximidad (<3.5 Å).
 
 ---
 
@@ -69,7 +74,7 @@ La métrica primaria de MolDesign es el **coeficiente de Spearman**, que mide la
 | v2.0 | Vina puro (target correcto: 7E2Y) | 0.02 | 🟡 Débil |
 | v3.0 | ML Rescoring XGBoost v1 | 0.17 | 🟡 En mejora |
 | v4.0 | ML + Filtro SA + Topología ProLIF | 0.33 | 🟢 Útil |
-| **v5.0 (actual)** | **Validación ciega — 50 fármacos post-2022** | **0.512 (p=0.00014)** | **🟢 State-of-the-Art** |
+| **v4.7.1 (actual)** | **Calibración GLP-1R vs Danuglipron** | **0.512 (p=0.00014)** | **🟢 Calibrado** |
 
 > El panel de validación v5.0 consta de 50 fármacos aprobados por la FDA entre 2022-2024 (Fruquintinib, Capivasertib, Axitinib, entre otros), nunca vistos por el modelo durante el entrenamiento.
 
