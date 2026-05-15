@@ -85,80 +85,71 @@ async def run_calibration(panel_path: Path, output_path: Path, pchembl_active_th
     accepted: list[dict] = []
     rejected: list[dict] = []
 
-    for row in records:
-        smiles = row["canonical_smiles"]
-        activity_value = row.get("pchembl_value")
-        if activity_value is None:
-            activity_value = row.get("p_activity")
-        if activity_value is None:
-            rejected.append(
-                {
-                    "molecule_id": row.get("molecule_chembl_id") or row.get("bindingdb_monomerid"),
-                    "smiles": smiles,
-                    "reason": "missing_activity_value",
-                }
-            )
-            continue
+    sem = asyncio.Semaphore(4)  # Ryzen 3 has 4 cores/threads usually, let's use 4 concurrent dockings
 
-        activity_value = float(activity_value)
+    async def dock_molecule(row):
+        async with sem:
+            smiles = row["canonical_smiles"]
+            activity_value = row.get("pchembl_value")
+            if activity_value is None:
+                activity_value = row.get("p_activity")
+            if activity_value is None:
+                return {"rejected": {
+                        "molecule_id": row.get("molecule_chembl_id") or row.get("bindingdb_monomerid"),
+                        "smiles": smiles,
+                        "reason": "missing_activity_value",
+                    }}
 
-        validation = validate_smiles(smiles)
-        if not validation.is_valid:
-            rejected.append(
-                {
-                    "molecule_id": row.get("molecule_chembl_id") or row.get("bindingdb_monomerid"),
-                    "smiles": smiles,
-                    "reason": "validation_failed",
-                    "errors": validation.errors,
-                }
-            )
-            continue
+            activity_value = float(activity_value)
+            validation = validate_smiles(smiles)
+            if not validation.is_valid:
+                return {"rejected": {
+                        "molecule_id": row.get("molecule_chembl_id") or row.get("bindingdb_monomerid"),
+                        "smiles": smiles,
+                        "reason": "validation_failed",
+                        "errors": validation.errors,
+                    }}
 
-        # Per-molecule error handling: if Vina crashes on a specific molecule
-        # (e.g., segfault from pathological conformations), record as rejection
-        # and continue with remaining panel. This is scientifically correct —
-        # we want maximum coverage while honestly reporting failures.
-        try:
-            await generate_conformer(smiles)
-            # Calibración usa exhaustiveness alta para reducir varianza del score.
-            # Se sobreescribe temporalmente el setting. Esto no afecta el loop de producción.
-            original_exh = settings.vina_exhaustiveness
-            settings.vina_exhaustiveness = settings.vina_calibration_exhaustiveness
             try:
+                await generate_conformer(smiles)
+                center = (settings.vina_center_x, settings.vina_center_y, settings.vina_center_z)
+                size = (settings.vina_size_x, settings.vina_size_y, settings.vina_size_z)
                 docking = await run_vina_docking(
                     smiles_hash=validation.smiles_hash,
                     target_pdb_id=settings.default_target_pdb_id,
                     target_chain=settings.default_target_chain,
+                    target_center=center,
+                    target_size=size,
                     force_redock=True,
                 )
-            finally:
-                settings.vina_exhaustiveness = original_exh
-        except Exception as docking_exc:
-            mol_id = row.get("molecule_chembl_id") or row.get("bindingdb_monomerid")
-            rejected.append(
-                {
-                    "molecule_id": mol_id,
+                return {"accepted": {
+                    "molecule_id": row.get("molecule_chembl_id") or row.get("bindingdb_monomerid"),
+                    "canonical_smiles": smiles,
+                    "activity_value": activity_value,
+                    "predicted_affinity_kcal": float(docking.best_affinity),
+                    "predicted_positive_kcal": float(-docking.best_affinity),
+                    "parsing_source": docking.parsing_source,
+                    "vina_version": docking.vina_version,
+                    "vina_random_seed": docking.vina_random_seed,
+                    "scientific_warnings": docking.scientific_warnings,
+                    "active_label": activity_value >= pchembl_active_threshold,
+                }}
+            except Exception as docking_exc:
+                return {"rejected": {
+                    "molecule_id": row.get("molecule_chembl_id") or row.get("bindingdb_monomerid"),
                     "smiles": smiles,
                     "reason": "docking_failed",
                     "error": f"{type(docking_exc).__name__}: {docking_exc}",
-                }
-            )
-            continue
+                }}
 
-        accepted.append(
-            {
-                "molecule_id": row.get("molecule_chembl_id") or row.get("bindingdb_monomerid"),
-                "canonical_smiles": smiles,
-                "activity_value": activity_value,
-                "predicted_affinity_kcal": float(docking.best_affinity),
-                "predicted_positive_kcal": float(-docking.best_affinity),
-                "parsing_source": docking.parsing_source,
-                "vina_version": docking.vina_version,
-                "vina_random_seed": docking.vina_random_seed,
-                "scientific_warnings": docking.scientific_warnings,
-                "active_label": activity_value >= pchembl_active_threshold,
-            }
-        )
+    tasks = [dock_molecule(row) for row in records]
+    results = await asyncio.gather(*tasks)
+
+    for res in results:
+        if "accepted" in res:
+            accepted.append(res["accepted"])
+        else:
+            rejected.append(res["rejected"])
 
     y_true = [x["activity_value"] for x in accepted]
     y_pred = [x["predicted_positive_kcal"] for x in accepted]

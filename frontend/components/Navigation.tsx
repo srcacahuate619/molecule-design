@@ -7,7 +7,7 @@ import { useAuth } from "../lib/auth";
 const NAV_ITEMS = [
   { href: "/", label: "Inicio" },
   { href: "/evaluation", label: "Evaluación" },
-  { href: "/history", label: "Guardado" },
+  { href: "/pokedex", label: "Pokedex" },
 ];
 
 export function Navigation() {

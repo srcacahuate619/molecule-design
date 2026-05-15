@@ -494,6 +494,18 @@ export default function EvaluationPage() {
               </label>
             </div>
 
+            {isSaved && (
+              <div className="mt-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-4 text-center">
+                <p className="text-sm font-bold text-emerald-400 mb-3">¡Molécula guardada con éxito en tu Pokedex!</p>
+                <button
+                  onClick={() => router.push("/pokedex")}
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors"
+                >
+                  IR A LA POKEDEX
+                </button>
+              </div>
+            )}
+
             <div className="space-y-2">
               <button
                 onClick={handleValidate}

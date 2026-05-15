@@ -149,12 +149,15 @@ app = FastAPI(
 # app.state.limiter = limiter
 # app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+from api.pokedex import router as pokedex_router
+
 register_middleware(app)
 app.include_router(auth_router)
 app.include_router(blockchain_router)
 app.include_router(chem_router)
 app.include_router(evaluation_router)
 app.include_router(history_router)
+app.include_router(pokedex_router)
 app.include_router(targets_router)
 app.include_router(suggestions_router)
 app.include_router(stats_router)

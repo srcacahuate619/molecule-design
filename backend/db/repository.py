@@ -211,6 +211,30 @@ class Repository:
         await self.db.flush()
         return molecule
 
+    async def get_pokedex_molecules(
+        self,
+        user_id: uuid.UUID,
+        target_pdb_id: str | None = None,
+    ) -> list[EvaluationResultORM]:
+        """Obtiene todas las moléculas evaluadas exitosamente para la Pokedex."""
+        stmt = (
+            select(EvaluationResultORM)
+            .join(MoleculeORM, EvaluationResultORM.molecule_id == MoleculeORM.id)
+            .join(TargetORM, MoleculeORM.target_id == TargetORM.id)
+            .where(MoleculeORM.user_id == user_id)
+            .where(MoleculeORM.status == MoleculeStatus.EVALUATED)
+            .options(
+                joinedload(EvaluationResultORM.molecule).joinedload(MoleculeORM.target)
+            )
+            .order_by(EvaluationResultORM.evaluated_at.desc())
+        )
+        
+        if target_pdb_id:
+            stmt = stmt.where(TargetORM.pdb_id == target_pdb_id.upper())
+            
+        result = await self.db.execute(stmt)
+        return list(result.unique().scalars().all())
+
     async def get_evaluation_result(
         self,
         molecule_id: uuid.UUID,

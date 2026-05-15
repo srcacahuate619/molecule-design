@@ -29,6 +29,13 @@ FILES = [
     "backend/scripts/audit_hotspots.py",
     "backend/scripts/inspect_pdb.py",
     "backend/scripts/benchmark_glp1r.py",
+    "backend/scripts/calibrate_external_panel.py",
+    "backend/api/pokedex.py",
+    "frontend/app/pokedex/page.tsx",
+    "frontend/components/PokedexCard.tsx",
+    "frontend/components/MolecularComparison.tsx",
+    "frontend/components/Navigation.tsx",
+    "frontend/package.json",
 ]
 
 REMOTE_USER = "srcacahuate619"

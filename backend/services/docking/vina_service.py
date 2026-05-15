@@ -274,40 +274,34 @@ async def run_vina_docking(
     # if cached is not None:
     #     return DockingResult(**cached)
 
-    # Clean temp directory before each job to avoid leftover files (MinIO/Storage Cleanup)
-    # import shutil (ya importado globalmente)
-    temp_root = settings.vina_temp_dir
+    # Use a unique subdirectory for each job to avoid race conditions in parallel runs
+    job_temp_dir = Path(tempfile.mkdtemp(prefix=f"vina-{smiles_hash[:8]}-{target_pdb_id}-", dir=settings.vina_temp_dir))
+    
     try:
-        shutil.rmtree(temp_root, ignore_errors=True)
-        Path(temp_root).mkdir(parents=True, exist_ok=True)
-    except Exception as cleanup_exc:
-        log.warning("No se pudo limpiar el directorio temporal antes del docking", error=str(cleanup_exc))
-
-    receptor_object_path = await prepare_target(
-        pdb_id=target_pdb_id,
-        chain_id=target_chain,
-        center=target_center,
-        size=target_size,
-        force_reprepare=False,
-    )
-    ligand_object_path = await _prepare_ligand_pdbqt(smiles_hash)
-
-    export_cmd = _resolve_executable(settings.meeko_export_path)
-    if not export_cmd:
-        raise DockingFailed(
-            molecule_id=smiles_hash,
-            target_pdb_id=target_pdb_id,
-            detail=(
-                "No se encontró 'mk_export.py'. La exportación a SDF es necesaria para "
-                "conservar conectividad y órdenes de enlace de forma defendible."
-            ),
+        receptor_object_path = await prepare_target(
+            pdb_id=target_pdb_id,
+            chain_id=target_chain,
+            center=target_center,
+            size=target_size,
+            force_reprepare=False,
         )
+        ligand_object_path = await _prepare_ligand_pdbqt(smiles_hash)
 
-    async with temp_file_from_minio(receptor_object_path, suffix=".pdbqt") as receptor_local:
-        async with temp_file_from_minio(ligand_object_path, suffix=".pdbqt") as ligand_local:
-            Path(settings.vina_temp_dir).mkdir(parents=True, exist_ok=True)
-            with tempfile.TemporaryDirectory(dir=settings.vina_temp_dir) as tmp_dir:
-                tmp_dir_path = Path(tmp_dir)
+        export_cmd = _resolve_executable(settings.meeko_export_path)
+        if not export_cmd:
+            raise DockingFailed(
+                molecule_id=smiles_hash,
+                target_pdb_id=target_pdb_id,
+                detail=(
+                    "No se encontró 'mk_export.py'. La exportación a SDF es necesaria para "
+                    "conservar conectividad y órdenes de enlace de forma defendible."
+                ),
+            )
+
+        async with temp_file_from_minio(receptor_object_path, suffix=".pdbqt") as receptor_local:
+            async with temp_file_from_minio(ligand_object_path, suffix=".pdbqt") as ligand_local:
+                # We use the job_temp_dir we created
+                tmp_dir_path = job_temp_dir
                 output_pdbqt = tmp_dir_path / f"{smiles_hash}_{target_pdb_id}_out.pdbqt"
                 output_sdf = tmp_dir_path / f"{smiles_hash}_{target_pdb_id}_out.sdf"
                 output_log = tmp_dir_path / f"{smiles_hash}_{target_pdb_id}.log"
@@ -541,6 +535,9 @@ async def run_vina_docking(
                     f"docking completado: smiles_hash={smiles_hash}, target={target_pdb_id}, best_affinity={result.best_affinity}, poses={len(result.poses)}"
                 )
                 return result
+    finally:
+        shutil.rmtree(job_temp_dir, ignore_errors=True)
+
 def _analyze_hotspot_interactions(
     receptor_path: Path, 
     ligand_pdbqt: str, 
