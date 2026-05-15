@@ -20,6 +20,7 @@ FILES = [
     "frontend/lib/api.ts",
     "frontend/lib/config.ts",
     "frontend/lib/types.ts",
+    "frontend/components/ScoreCard.tsx",
     "backend/utils/structural.py",
 ]
 
