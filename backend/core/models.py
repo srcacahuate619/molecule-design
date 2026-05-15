@@ -429,6 +429,7 @@ class EvaluationResultRead(BaseModel):
     # Scores
     adme_score:         float | None
     druglikeness_score: float | None
+    total_score:        float | None   # 0–100, el score del juego
     specificity_score:  float | None = None
     hotspots_hit:       list[str] | None = None
     target_hotspots:    list[dict] | None = None
