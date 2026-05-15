@@ -21,7 +21,8 @@ const POLL_INTERVAL_MS = 2000;
 export default function EvaluationPage() {
   // --- Input state ---
   const [smiles, setSmiles] = useState("CC(=O)Oc1ccccc1C(=O)O");
-  const [target, setTarget] = useState("7E2Y");
+  const [target, setTarget] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<"HUMANOS" | "PATOGENOS" | "">("");
   const [targets, setTargets] = useState<Target[]>([]);
   const [loadingTargets, setLoadingTargets] = useState(true);
 
@@ -29,12 +30,6 @@ export default function EvaluationPage() {
     getTargets()
       .then((data) => {
         setTargets(data);
-        if (data.length > 0) {
-          const hasDefault = data.some((t) => t.pdb_id === "7E2Y");
-          if (!hasDefault) {
-            setTarget(data[0].pdb_id);
-          }
-        }
       })
       .catch((err) => console.error("Error loading targets:", err))
       .finally(() => setLoadingTargets(false));
@@ -349,99 +344,94 @@ export default function EvaluationPage() {
 
           {/* Target + Actions */}
           <div className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-surface-400">
-                Target PDB
+                Objetivo Biológico (Target)
               </label>
               {loadingTargets ? (
                 <div className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-surface-500">
-                  Cargando targets...
+                  Cargando catálogo...
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Paso 1: Origen */}
                   <select
-                    value={target}
-                    onChange={(e) => setTarget(e.target.value)}
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value as any);
+                      setTarget(""); // Reset al cambiar origen
+                    }}
                     disabled={!!taskId && !isTerminal}
                     className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-gray-200 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50 appearance-none"
                   >
-                    {/* --- SECCIÓN: HUMANOS --- */}
-                    <optgroup label="🧬 HUMANOS (Áreas Terapéuticas)">
-                      {/* Subcategoría: Neurología */}
-                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
-                        🧠 Neurología / Psiquiatría
-                      </option>
-                      {targets.filter(t => t.pdb_id === '7E2Y').map(t => (
-                        <option key={t.pdb_id} value={t.pdb_id}>
-                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
-                        </option>
-                      ))}
-
-                      {/* Subcategoría: Oncología */}
-                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
-                        🧬 Oncología / Inmunoterapia
-                      </option>
-                      {targets.filter(t => t.pdb_id === '3OSK' || t.pdb_id === 'EGFR' || t.pdb_id === 'MET').map(t => (
-                        <option key={t.pdb_id} value={t.pdb_id}>
-                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
-                        </option>
-                      ))}
-
-                      {/* Subcategoría: Cardiología */}
-                      <option disabled className="text-surface-500 bg-surface-900 mt-2">
-                        ❤️ Cardiología (Próximamente)
-                      </option>
-                      
-                      {/* Subcategoría: Endocrinología */}
-                      <option disabled className="text-surface-500 bg-surface-900 mt-2">
-                        🩸 Endocrinología (Próximamente)
-                      </option>
-                    </optgroup>
-
-                    {/* --- SECCIÓN: PATÓGENOS --- */}
-                    <optgroup label="🦠 PATÓGENOS (Mecanismos de Acción)">
-                      {/* Subcategoría: Pared Celular */}
-                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
-                        🦠 Bacterias - Pared Celular
-                      </option>
-                      {targets.filter(t => t.pdb_id.includes('PBP')).length > 0 ? (
-                        targets.filter(t => t.pdb_id.includes('PBP')).map(t => (
-                          <option key={t.pdb_id} value={t.pdb_id}>
-                            &nbsp;&nbsp;{t.pdb_id} - {t.name}
-                          </option>
-                        ))
-                      ) : (
-                        <option disabled className="text-surface-600 italic">
-                          &nbsp;&nbsp;(Sin targets cargados)
-                        </option>
-                      )}
-
-                      {/* Subcategoría: Replicación ADN */}
-                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
-                        🧬 Bacterias - Replicación ADN
-                      </option>
-                      {targets.filter(t => t.name.toLowerCase().includes('girasa')).map(t => (
-                        <option key={t.pdb_id} value={t.pdb_id}>
-                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
-                        </option>
-                      ))}
-
-                      {/* Subcategoría: Resistencia */}
-                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
-                        🛡️ Bacterias - Resistencia
-                      </option>
-                      {targets.filter(t => t.name.toLowerCase().includes('lactamasa')).map(t => (
-                        <option key={t.pdb_id} value={t.pdb_id}>
-                          &nbsp;&nbsp;{t.pdb_id} - {t.name}
-                        </option>
-                      ))}
-
-                      {/* Subcategoría: Virus */}
-                      <option disabled className="text-brand-500 font-bold bg-surface-900 mt-2">
-                        🧫 Virus (Próximamente)
-                      </option>
-                    </optgroup>
+                    <option value="">Seleccionar Origen del Target...</option>
+                    <option value="HUMANOS">🧬 Organismo: Humano (H. sapiens)</option>
+                    <option value="PATOGENOS">🦠 Organismo: Patógenos / Microorganismos</option>
                   </select>
+
+                  {/* Paso 2: Receptor Específico (Solo si hay origen seleccionado) */}
+                  {selectedCategory && (
+                    <select
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      disabled={!!taskId && !isTerminal}
+                      className="w-full animate-in fade-in slide-in-from-top-2 rounded-xl border border-brand-500/30 bg-surface-950 px-4 py-3 font-mono text-sm text-brand-300 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50 appearance-none shadow-[0_0_15px_rgba(20,241,149,0.1)]"
+                    >
+                      <option value="">Seleccionar Receptor Específico...</option>
+                      {selectedCategory === "HUMANOS" ? (
+                        <>
+                          <optgroup label="🧠 Neurología / Psiquiatría">
+                            {targets.filter(t => t.pdb_id === '7E2Y').map(t => (
+                              <option key={t.pdb_id} value={t.pdb_id}>
+                                {t.pdb_id} - {t.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="🧬 Oncología / Inmunoterapia">
+                            {targets.filter(t => t.pdb_id === '3OSK' || t.pdb_id === 'EGFR' || t.pdb_id === 'MET').map(t => (
+                              <option key={t.pdb_id} value={t.pdb_id}>
+                                {t.pdb_id} - {t.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="❤️ Cardiología">
+                            <option disabled>Próximamente: Receptores Hipertensión</option>
+                          </optgroup>
+                          <optgroup label="🩸 Endocrinología">
+                            <option disabled>Próximamente: Insulina / Diabetes</option>
+                          </optgroup>
+                        </>
+                      ) : (
+                        <>
+                          <optgroup label="🦠 Bacterias - Pared Celular">
+                            {targets.filter(t => t.pdb_id.includes('PBP')).map(t => (
+                              <option key={t.pdb_id} value={t.pdb_id}>
+                                {t.pdb_id} - {t.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="🧬 Bacterias - Replicación ADN">
+                            {targets.filter(t => t.name.toLowerCase().includes('girasa')).map(t => (
+                              <option key={t.pdb_id} value={t.pdb_id}>
+                                {t.pdb_id} - {t.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="🛡️ Bacterias - Resistencia">
+                            {targets.filter(t => t.name.toLowerCase().includes('lactamasa')).map(t => (
+                              <option key={t.pdb_id} value={t.pdb_id}>
+                                {t.pdb_id} - {t.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="🧫 Virus">
+                            <option disabled>Próximamente: Proteasas Virales</option>
+                          </optgroup>
+                        </>
+                      )}
+                    </select>
+                  )}
                 </div>
               )}
               {(() => {
