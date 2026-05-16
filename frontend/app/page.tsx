@@ -26,14 +26,14 @@ const TECHNOLOGIES = [
 
 export default function HomePage() {
   const [stats, setStats] = useState<GlobalStats | null>(null);
-  const [statsError, setStatsError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     getGlobalStats()
       .then(setStats)
       .catch((err) => {
         console.error("Error loading stats:", err);
-        setStatsError((err as Error).message);
+        setError(true);
       });
   }, []);
 
@@ -43,6 +43,17 @@ export default function HomePage() {
     { label: "Mejor Puntuación", value: stats?.best_score?.toFixed(1) ?? "...", unit: "pts", icon: "🏆" },
     { label: "Comunidad", value: stats?.community_status ?? "Global", icon: "🌍" },
   ];
+
+  if (!stats && !error) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-500 border-t-transparent mx-auto" />
+          <p className="text-xs font-black tracking-widest text-surface-500 uppercase">Cargando Moldex AI...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12 pb-20">
@@ -92,10 +103,10 @@ export default function HomePage() {
       </section>
 
       {/* Stats Error (if API failed) */}
-      {statsError && (
+      {error && (
         <section className="rounded-2xl border border-yellow-900/50 bg-yellow-950/30 p-4">
           <h3 className="mb-2 text-sm font-bold text-yellow-400">⚠ Estadísticas no disponibles</h3>
-          <p className="text-xs text-yellow-300">{statsError}</p>
+          <p className="text-xs text-yellow-300">Hubo un problema conectando con el motor de estadísticas. El sistema principal sigue operativo.</p>
           <p className="mt-2 text-xs text-yellow-200/60">Las estadísticas globales se cargan en background. Puedes continuar utilizando el sistema normalmente.</p>
         </section>
       )}
