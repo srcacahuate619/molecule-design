@@ -9,7 +9,7 @@ import { useState } from "react";
 const NAV_ITEMS = [
   { href: "/", label: "Inicio" },
   { href: "/evaluation", label: "Evaluación" },
-  { href: "/moldex", label: "Librería" },
+  { href: "/moldex", label: "Moldex" },
 ];
 
 export function Navigation() {

@@ -130,7 +130,7 @@ export default function MoldexPage() {
           <div className="flex items-center justify-between px-6 py-4">
             <h1 className="text-sm font-black tracking-tighter text-white flex items-center gap-2">
               <FlaskConical size={16} className="text-indigo-500" />
-              MOLDESIGN <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+              MOLDEX <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
             </h1>
             <div className="flex gap-1">
               {[
@@ -168,7 +168,7 @@ export default function MoldexPage() {
           <div className="p-8 border-b border-white/5 min-w-[320px]">
             <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2 mb-8">
               <FlaskConical size={24} className="text-indigo-500" />
-              MOLDESIGN <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+              MOLDEX <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
             </h1>
             
             <div className="space-y-4">
