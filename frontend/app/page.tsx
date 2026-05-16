@@ -179,16 +179,16 @@ export default function HomePage() {
           <div className="flex flex-col gap-8 md:flex-row md:items-center">
             <div className="flex-1 space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 px-4 py-1 text-xs font-bold text-brand-400 border border-brand-500/20">
-                Hot Target Activo: {stats.hot_target?.name || "Cargando..."} ({stats.hot_target?.pdb_id || "----"})
+                Hot Target Activo: {stats?.hot_target?.name || "Cargando..."} ({stats?.hot_target?.pdb_id || "----"})
               </div>
-              <h2 className="text-4xl font-black text-white tracking-tighter">Precisión Calibrada: {stats.hot_target?.spearman_rho?.toFixed(3) || "0.000"}</h2>
+              <h2 className="text-4xl font-black text-white tracking-tighter">Precisión Calibrada: {stats?.hot_target?.spearman_rho?.toFixed(3) || "0.000"}</h2>
               <p className="text-base leading-relaxed text-surface-400">
-                Nuestro motor ha sido validado contra el receptor {stats.hot_target?.name || "----"}, 
-                logrando una correlación de Spearman de {stats.hot_target?.spearman_rho?.toFixed(3) || "0.000"} en pruebas blindadas.
+                Nuestro motor ha sido validado contra el receptor {stats?.hot_target?.name || "----"}, 
+                logrando una correlación de Spearman de {stats?.hot_target?.spearman_rho?.toFixed(3) || "0.000"} en pruebas blindadas.
               </p>
               <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest">
                 <span className="flex items-center gap-2 text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> SPEARMAN ρ = {stats.hot_target?.spearman_rho?.toFixed(3) || "0.000"}
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> SPEARMAN ρ = {stats?.hot_target?.spearman_rho?.toFixed(3) || "0.000"}
                 </span>
                 <span className="flex items-center gap-2 text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> MULTI-TARGET SUPPORT
