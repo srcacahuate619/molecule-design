@@ -23,6 +23,15 @@ export default function PokedexPage() {
   const [proteinData, setProteinData] = useState<string | null>(null);
   const [poseData, setPoseData] = useState<string | null>(null);
   const [loading3D, setLoading3D] = useState(false);
+  const [activeView, setActiveView] = useState<'LIST' | '3D' | 'INFO'>('LIST');
+  const [windowHeight, setWindowHeight] = useState(1000);
+
+  useEffect(() => {
+    setWindowHeight(window.innerHeight);
+    const handleResize = () => setWindowHeight(window.innerHeight);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     getPokedex()
@@ -94,9 +103,38 @@ export default function PokedexPage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#05080f] text-slate-300 font-sans selection:bg-indigo-500/30 overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#05080f] text-slate-300 font-sans selection:bg-indigo-500/30 overflow-hidden md:flex-row">
+      {/* Mobile Navigation Header */}
+      <div className="flex md:hidden items-center justify-between px-6 py-4 bg-[#0a0f1d] border-b border-slate-800/50 z-50">
+        <h1 className="text-sm font-black tracking-tighter text-white flex items-center gap-2">
+          <FlaskConical size={16} className="text-indigo-500" />
+          POKEDEX <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+        </h1>
+        <div className="flex gap-1">
+          {[
+            { id: 'LIST', icon: <Database size={14} /> },
+            { id: '3D', icon: <Box size={14} /> },
+            { id: 'INFO', icon: <Info size={14} /> }
+          ].map((btn) => (
+            <button
+              key={btn.id}
+              onClick={() => setActiveView(btn.id as any)}
+              className={`p-2 rounded-lg transition-all ${
+                activeView === btn.id 
+                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  : 'bg-slate-900 text-slate-500'
+              }`}
+            >
+              {btn.icon}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Sidebar: Biblioteca de Especies Moleculares */}
-      <aside className="w-80 flex flex-col border-r border-slate-800/50 bg-[#0a0f1d]/80 backdrop-blur-xl z-20">
+      <aside className={`w-full md:w-80 flex-col border-r border-slate-800/50 bg-[#0a0f1d]/80 backdrop-blur-xl z-20 ${
+        activeView === 'LIST' ? 'flex' : 'hidden md:flex'
+      }`}>
         <div className="p-6 border-b border-slate-800/30">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2">
@@ -142,7 +180,12 @@ export default function PokedexPage() {
                 key={m.id}
                 molecule={m}
                 isSelected={selectedId === m.id}
-                onClick={setSelectedId}
+                onClick={(id) => {
+                  setSelectedId(id);
+                  if (window.innerWidth < 768) {
+                    setActiveView('3D');
+                  }
+                }}
                 onCompareToggle={() => handleToggleCompare(m.id)}
                 isComparing={selectionForCompare.includes(m.id)}
               />
@@ -158,21 +201,23 @@ export default function PokedexPage() {
       </aside>
 
       {/* Main Stage: El Estándar Científico (Docked SDF) */}
-      <main className="flex-1 relative bg-[#020408]">
+      <main className={`flex-1 relative bg-[#020408] ${
+        activeView === '3D' ? 'block' : 'hidden md:block'
+      }`}>
         {/* Header HUD */}
         <div className="absolute top-6 left-6 right-6 flex items-start justify-between z-10 pointer-events-none">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4 pointer-events-auto"
+            className="flex items-center gap-2 md:gap-4 pointer-events-auto"
           >
-            <div className="rounded-2xl bg-slate-950/80 border border-slate-800 p-3 backdrop-blur-md">
-               <Box className="text-indigo-500" size={24} />
+            <div className="rounded-xl md:rounded-2xl bg-slate-950/80 border border-slate-800 p-2 md:p-3 backdrop-blur-md">
+               <Box className="text-indigo-500" size={18} />
             </div>
-            <div>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-0.5">Visualización de Pose Acoplada</p>
-              <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-                ESTÁNDAR CIENTÍFICO <span className="text-[10px] font-bold text-slate-500">FORMATO SDF</span>
+            <div className="hidden sm:block">
+              <p className="text-[8px] md:text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-0.5">Visualización de Pose Acoplada</p>
+              <h2 className="text-sm md:text-xl font-black text-white tracking-tight flex items-center gap-2">
+                ESTÁNDAR CIENTÍFICO <span className="hidden md:inline text-[10px] font-bold text-slate-500">FORMATO SDF</span>
               </h2>
             </div>
           </motion.div>
@@ -194,7 +239,7 @@ export default function PokedexPage() {
           <MoleculeViewer3D 
             proteinData={proteinData}
             poseData={poseData}
-            height={window.innerHeight}
+            height={window.innerWidth < 768 ? windowHeight - 64 : windowHeight}
             hotspots={selectedMolecule?.hotspots_hit}
             hotspotsHit={selectedMolecule?.hotspots_hit}
           />
@@ -207,24 +252,24 @@ export default function PokedexPage() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="absolute bottom-8 left-8 right-8 z-10"
+            className="absolute bottom-8 left-4 right-4 md:left-8 md:right-8 z-10"
           >
-            <div className="rounded-[2.5rem] border border-slate-800/50 bg-[#0a0f1d]/60 p-8 backdrop-blur-2xl shadow-2xl overflow-hidden relative group">
+            <div className="rounded-3xl md:rounded-[2.5rem] border border-slate-800/50 bg-[#0a0f1d]/60 p-5 md:p-8 backdrop-blur-2xl shadow-2xl overflow-hidden relative group">
               {/* Background gradient subtle */}
               <div className="absolute -inset-24 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-50 blur-3xl pointer-events-none" />
               
               <div className="relative flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-4">
-                    <span className="bg-indigo-500 text-white text-[9px] font-black px-3 py-1 rounded-full tracking-widest">
+                    <span className="hidden md:inline-block bg-indigo-500 text-white text-[9px] font-black px-3 py-1 rounded-full tracking-widest">
                       DOCKING EXITOSO
                     </span>
-                    <div className="h-1 w-1 rounded-full bg-slate-700" />
-                    <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                    <div className="hidden md:block h-1 w-1 rounded-full bg-slate-700" />
+                    <span className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
                       <Database size={12} /> {selectedMolecule?.target.pdb_id} Pocket
                     </span>
                   </div>
-                  <h3 className="text-4xl font-black text-white tracking-tighter mb-2 group-hover:text-indigo-400 transition-colors">
+                  <h3 className="text-xl md:text-4xl font-black text-white tracking-tighter mb-1 md:mb-2 group-hover:text-indigo-400 transition-colors">
                     {selectedMolecule?.name}
                   </h3>
                   <p className="text-xs font-mono text-slate-500 truncate max-w-lg">
@@ -232,17 +277,17 @@ export default function PokedexPage() {
                   </p>
                 </div>
 
-                <div className="flex items-stretch gap-8">
-                  <div className="flex flex-col justify-center border-l border-slate-800 pl-8">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 text-right">AFINIDAD (ΔG)</p>
-                    <div className="text-4xl font-black text-indigo-400 tabular-nums">
-                      {selectedMolecule?.metrics.affinity.toFixed(2)}
-                      <span className="text-sm font-bold text-slate-600 ml-1 italic">kcal/mol</span>
+                <div className="flex items-stretch gap-4 md:gap-8">
+                  <div className="flex flex-col justify-center border-l border-slate-800 pl-4 md:pl-8">
+                    <p className="text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 md:mb-2 text-right">AFINIDAD (ΔG)</p>
+                    <div className="text-lg md:text-4xl font-black text-indigo-400 tabular-nums">
+                      {selectedMolecule?.metrics.affinity.toFixed(1)}
+                      <span className="hidden md:inline text-sm font-bold text-slate-600 ml-1 italic">kcal/mol</span>
                     </div>
                   </div>
-                  <div className="flex flex-col justify-center border-l border-slate-800 pl-8">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2 text-right">GLOBAL SCORE</p>
-                    <div className="text-4xl font-black text-emerald-400 tabular-nums">
+                  <div className="flex flex-col justify-center border-l border-slate-800 pl-4 md:pl-8">
+                    <p className="text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 md:mb-2 text-right">GLOBAL SCORE</p>
+                    <div className="text-lg md:text-4xl font-black text-emerald-400 tabular-nums">
                       {selectedMolecule?.metrics.score.toFixed(1)}
                     </div>
                   </div>
@@ -254,7 +299,9 @@ export default function PokedexPage() {
       </main>
 
       {/* Right Panel: Ficha de Especie Farmacológica */}
-      <aside className="w-96 border-l border-slate-800/50 bg-[#0a0f1d]/90 p-8 overflow-y-auto custom-scrollbar z-20">
+      <aside className={`w-full md:w-96 border-l border-slate-800/50 bg-[#0a0f1d]/90 p-8 overflow-y-auto custom-scrollbar z-20 ${
+        activeView === 'INFO' ? 'block' : 'hidden md:block'
+      }`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={selectedId}
