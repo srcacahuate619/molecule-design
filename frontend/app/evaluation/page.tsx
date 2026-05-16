@@ -62,7 +62,7 @@ export default function EvaluationPage() {
 
   // --- Derived State ---
   const isTerminal = status?.status === "SUCCESS" || status?.status === "FAILURE";
-  const canEvaluate = !!validation?.is_valid;
+  const canEvaluate = !!validation?.is_valid && target.length >= 4;
 
   const { user } = useAuth();
   const router = useRouter();
@@ -227,6 +227,11 @@ export default function EvaluationPage() {
     setTaskId(null);
     setSuggestions([]);
     try {
+      if (!target || target.length < 4) {
+        setError("Selección inválida: Debes elegir un Objetivo Biológico (Target) del catálogo antes de evaluar.");
+        setBusy(false);
+        return;
+      }
       const limitInfo = await getLimitStatus();
       if (limitInfo.is_limited && limitInfo.remaining <= 0) {
         setError(`Has alcanzado el límite de ${limitInfo.max} evaluaciones gratuitas. Regístrate para continuar diseñando.`);
