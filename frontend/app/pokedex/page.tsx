@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getPokedex, getProteinFile, getPoseFile } from "@/lib/api";
-import { MoleculeViewer3D } from "@/components/MoleculeViewer3D";
-import PokedexCard from "@/components/PokedexCard";
-import MolecularComparison from "@/components/MolecularComparison";
+import { getPokedex, getProteinFile, getPoseFile } from "../../lib/api";
+import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
+import PokedexCard from "../../components/PokedexCard";
+import MolecularComparison from "../../components/MolecularComparison";
 import { Search, ShieldCheck, Activity, Info, BarChart3, ChevronRight, Binary, Database, Box, FlaskConical, AlertCircle } from "lucide-react";
 
 export default function PokedexPage() {
@@ -344,7 +344,7 @@ export default function PokedexPage() {
                 DESCARGAR REPORTE TÉCNICO <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
               <p className="text-[9px] text-center text-slate-600 mt-4 font-bold uppercase tracking-widest">
-                Protocolo de Ingesta MolDesign v4.7.1 - 2026
+                Protocolo de Ingesta MolDesign v4.7.2 - 2026
               </p>
             </div>
           </motion.div>
