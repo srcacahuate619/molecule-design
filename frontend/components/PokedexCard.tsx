@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MoleculeMetadata } from '../lib/types';
+// import { MoleculeMetadata } from '../lib/types';
 import { Microscope, Activity, ShieldCheck, Zap } from 'lucide-react';
 
 interface PokedexCardProps {
