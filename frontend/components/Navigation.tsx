@@ -9,7 +9,7 @@ import { useState } from "react";
 const NAV_ITEMS = [
   { href: "/", label: "Inicio" },
   { href: "/evaluation", label: "Evaluación" },
-  { href: "/moldex", label: "Moldex" },
+  { href: "/moldex", label: "Librería" },
 ];
 
 export function Navigation() {
@@ -25,7 +25,7 @@ export function Navigation() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm">
             M
           </span>
-          Moldex
+          MolDesign
         </Link>
 
         {/* Mobile Menu Button */}

@@ -49,7 +49,7 @@ export default function HomePage() {
       <div className="flex h-[80vh] items-center justify-center">
         <div className="text-center">
           <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-500 border-t-transparent mx-auto" />
-          <p className="text-xs font-black tracking-widest text-surface-500 uppercase">Cargando Moldex AI...</p>
+          <p className="text-xs font-black tracking-widest text-surface-500 uppercase">Cargando MolDesign AI...</p>
         </div>
       </div>
     );
