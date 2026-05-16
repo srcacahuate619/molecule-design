@@ -34,8 +34,8 @@ export default function HomePage() {
   }, []);
 
   const statsDisplay = [
-    { label: "Moléculas Evaluadas", value: stats?.total_molecules.toLocaleString() ?? "...", icon: "🧬" },
-    { label: "Certificaciones", value: stats?.total_certifications.toLocaleString() ?? "...", icon: "🔗" },
+    { label: "Moléculas Evaluadas", value: stats?.total_molecules?.toLocaleString() ?? "...", icon: "🧬" },
+    { label: "Certificaciones", value: stats?.total_certifications?.toLocaleString() ?? "...", icon: "🔗" },
     { label: "Mejor Puntuación", value: stats?.best_score?.toFixed(1) ?? "...", unit: "pts", icon: "🏆" },
     { label: "Comunidad", value: stats?.community_status ?? "Global", icon: "🌍" },
   ];
