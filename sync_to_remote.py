@@ -41,6 +41,8 @@ FILES = [
     "frontend/app/page.tsx",
     "docs/DATA_MANAGEMENT.md",
     "docs/ARCHITECTURE_OVERVIEW.md",
+    "backend/utils/scientific.py",
+    "backend/scripts/update_target_hotspots.py",
 ]
 
 REMOTE_USER = "srcacahuate619"

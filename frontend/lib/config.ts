@@ -8,7 +8,7 @@ const getApiUrl = () => {
   const isVercel = !hostname.includes("localhost") && !hostname.includes("192.168.1");
   
   if (isVercel) {
-    return "https://alter-care-fossil-harbor.trycloudflare.com";
+    return "https://approval-beijing-heavily-planner.trycloudflare.com";
   }
   
   // Si estamos en la red local (ej: 192.168.1.64)
