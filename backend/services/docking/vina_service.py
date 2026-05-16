@@ -221,10 +221,9 @@ async def _run_vina_subprocess(
         stderr=asyncio.subprocess.PIPE,
     )
     try:
-        # Timeout de 5 minutos: una evaluación típica tarda 30-90s.
-        # Si Vina no termina en 5min, algo anda mal (molécula imposible, hang).
+        # Timeout de 10 minutos para soportar ex=32 en GPCRs
         stdout_bytes, stderr_bytes = await asyncio.wait_for(
-            process.communicate(), timeout=300.0
+            process.communicate(), timeout=600.0
         )
     except asyncio.TimeoutError:
         process.kill()
@@ -232,9 +231,10 @@ async def _run_vina_subprocess(
         raise DockingFailed(
             molecule_id="unknown",
             target_pdb_id=target_pdb_id,
-            detail="AutoDock Vina excedió el timeout de 300 segundos. "
+            detail="AutoDock Vina excedió el timeout de 600 segundos. "
                    "La molécula puede ser demasiado grande o compleja para este setup.",
         )
+
     stdout = stdout_bytes.decode("utf-8", errors="replace")
     stderr = stderr_bytes.decode("utf-8", errors="replace")
 

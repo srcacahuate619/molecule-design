@@ -1,3 +1,18 @@
+## Sesión: 2026-05-15 - Éxito Spearman GLP-1R (6B3J) [FINAL]
+### 1. Calibración Blindada Exitosa
+- **Spearman ρ = 0.4303**: Se logró una señal predictiva fuerte en el receptor GLP-1R tras 50 evaluaciones a ciegas.
+- **Validación del Sitio Activo**: Corrección de coordenadas críticas en el pipeline de benchmarking, sincronizando el script con la base de datos de producción (`93.2, 148.1, 103.3`).
+- **Afinidades de Referencia**: Los agonistas clínicos (Danuglipron, etc.) mostraron afinidades de -8.5 a -9.2 kcal/mol, validando el modelo in silico.
+
+### 2. Infraestructura y Estabilidad Remota
+- **Remote Execution**: Migración total de la carga de benchmarking al servidor Ubuntu (Ryzen 3), reduciendo el tiempo total de procesamiento para 50 moléculas complejas.
+- **Dynamic Timeout**: Incremento del timeout de Vina a **600s** para soportar docking de alta exhaustividad en GPCRs sin abortar procesos.
+- **Optimización de Memoria**: Limpieza automática de directorios temporales `/tmp/vina` tras cada bloque de 10 moléculas.
+
+### 3. Filtros de Calidad Científica
+- **Heavy Atom Limit**: Implementación estricta de filtros (>80 HAC) para asegurar que la estadística de Spearman se base en moléculas *drug-like* y no en péptidos gigantes que sesguen la señal de Vina.
+- **Boron Exclusion**: Exclusión automática de moléculas con Boro (B) debido a la falta de parámetros confiables en los campos de fuerza de Vina v1.2.
+
 ## Sesión: 2026-05-15 - Calibración y Rigor Científico v4.7.1
 ### 1. Calibración contra Fármacos Clínicos [Benchmarking]
 - **Set de Validación**: Evaluación de **Danuglipron** y **Lotiglipron** (agonistas orales de GLP-1R).

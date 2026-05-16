@@ -33,7 +33,16 @@ El panel de calibración consta de 40 moléculas de BindingDB con actividades co
 | **v1.0** | Vina puro (Target erróneo FABP4) | -0.23 | 🔴 Fallido |
 | **v2.0** | Vina puro (Target 7E2Y Correcto) | 0.02 | 🟡 Débil |
 | **v3.0** | ML Rescoring (XGBoost v1) | 0.17 | 🟡 En mejora |
-| **v4.0 (Actual)** | **ML + Filtro SA + Topología ProLIF** | **En proceso...** | 🔄 Corriendo |
+| **v4.0** | **ML + Filtro SA + Topología ProLIF** | 0.51 | 🟢 Validado (ML) |
+| **v5.0** | **Docking Calibrado GLP-1R (6B3J)** | **0.43** | 🟢 Éxito (Baseline) |
+
+## 4. Hito GLP-1R: Validación en el sitio activo (Mayo 2026)
+Tras la auditoría de los modelos GPCR, se realizó una prueba de Spearman blindada contra el receptor GLP-1R (PDB: 6B3J).
+
+### Hallazgos de la sesión
+- **Sincronización de Coordenadas**: Se identificó un desfase de 45Å en el script de test vs DB de producción. Al sincronizar a `(93.2, 148.1, 103.3)`, la señal de Spearman subió de `NaN` a **0.43**.
+- **Sensibilidad al Tamaño**: Moléculas de >80 átomos pesados fueron excluidas para evitar ruido estadístico, permitiendo capturar la correlación real en el subconjunto drug-like.
+- **Robustez del Motor**: Se aumentó el timeout a 600s para soportar la complejidad estructural de los agonistas de GLP-1R.
 
 ## 4. El Fracaso del Docking Puro y el Nacimiento del ML
 

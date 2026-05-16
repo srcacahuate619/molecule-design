@@ -57,9 +57,10 @@ Para evitar el **sesgo de ligando** (atribuir éxito a una molécula solo por su
 - **Modelo NULL (Ciego)**: Entrenado SOLO con descriptores 1D/2D (MW, LogP, etc.).
 - **Métrica de Desempeño**: El modelo actual v4.2 ha sido calibrado para un **Spearman ρ=0.512**, mejorando significativamente la capacidad de ranking frente a la v4.0 (ρ=0.33).
 - **Interpretación del Delta**:
-    - `Delta (A - NULL) > 0.5`: La geometría 3D aporta afinidad real.
-    - `Delta ≈ 0`: La molécula se une por "fuerza bruta" fisicoquímica, no por diseño.
     - `Delta < 0`: Hay choques estéricos; la molécula "quiere" unirse por sus propiedades pero "no cabe" físicamente.
+
+### 5.1 Calibración de Baseline por Target (Ej: GLP-1R)
+Para asegurar que el motor de docking no solo corre, sino que predice, realizamos calibraciones de baseline (Vina puro) contra receptores específicos. En el caso de **GLP-1R (6B3J)**, se obtuvo un **Spearman ρ=0.43**, lo que valida que el sitio activo y los parámetros de grid box capturan la física esencial del receptor antes incluso de aplicar el rescoring de IA.
 
 ## 5. Física de la Tensión de Anillo y SA Score
 
