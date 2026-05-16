@@ -69,7 +69,16 @@ Toda la persistencia de archivos moleculares es S3-compatible:
 - **Certificación PDF**: Un motor de reportes basado en `ReportLab` genera documentos científicos que incluyen el ID de transacción de Solana y el desglose de afinidad.
 - **Trazabilidad Interna**: Los nombres de archivos se basan en el **SHA-256** del SMILES canónico.
 
-## 4. Algoritmos de Machine Learning
+## 4. Gestión de Datos y Calidad Molecular
+
+Para garantizar la escalabilidad y relevancia de los resultados, MolDesign utiliza un sistema de **Auto-Purge**:
+- **Filtrado por Score**: Las moléculas con score < 60 que no son guardadas explícitamente se eliminan tras 1 hora.
+- **Detección de Prometedoras**: Solo los "Hits" científicos (> 60) o las moléculas guardadas por usuarios registrados persisten indefinidamente.
+- **Borrado en Cascada**: Se garantiza la integridad mediante `ON DELETE CASCADE` en PostgreSQL.
+
+Para más detalle, ver [DATA_MANAGEMENT.md](./DATA_MANAGEMENT.md).
+
+## 5. Algoritmos de Machine Learning
 
 ### El Modelo XGBoost (v4)
 El "Cerebro" de MolDesign no predice afinidades absolutas, sino que optimiza el **Ranking** (Spearman):

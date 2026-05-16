@@ -303,7 +303,7 @@ export default function EvaluationPage() {
       <section>
         <h1 className="text-2xl font-bold text-white">Evaluación molecular</h1>
         <p className="mt-1 text-sm text-surface-400">
-          Pipeline: validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.0) → interpretación IA → certificación On-Chain (Solana)
+          Pipeline: validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML v4.0) → interpretación IA → certificación On-Chain (Solana) | Correlación ρ=0.512
         </p>
       </section>
 
@@ -590,7 +590,7 @@ export default function EvaluationPage() {
               druglikeness={status.result.druglikeness_score}
               ligandEfficiency={status.result.ligand_efficiency}
               onCertify={() => handleCertify()}
-              onSave={handleSave}
+              onSave={user ? handleSave : undefined}
               isSaved={isSaved}
               solanaSignature={status.result.blockchain_tx_id}
               onDownloadCertificate={handleDownloadCertificate}

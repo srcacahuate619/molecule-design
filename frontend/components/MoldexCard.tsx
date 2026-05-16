@@ -59,12 +59,12 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
         <h3 className="truncate text-sm font-bold text-slate-100">{molecule.name}</h3>
         
         <div className="flex items-center justify-between">
-          <div className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${getQualityColor(molecule.metrics.score)}`}>
+          <div className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${getQualityColor(molecule.metrics?.score || 0)}`}>
             <Zap size={12} fill="currentColor" />
-            {molecule.metrics.score.toFixed(1)}
+            {molecule.metrics?.score?.toFixed(1) || "0.0"}
           </div>
           
-          {molecule.blockchain.certified && (
+          {molecule.blockchain?.certified && (
             <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-400">
               <ShieldCheck size={12} />
               CERTIFIED

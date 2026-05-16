@@ -209,6 +209,7 @@ class MoleculeORM(Base):
         "EvaluationResultORM",
         back_populates="molecule",
         uselist=False,   # one-to-one
+        cascade="all, delete-orphan",
     )
 
 

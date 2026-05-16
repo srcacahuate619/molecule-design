@@ -211,7 +211,7 @@ class Repository:
         await self.db.flush()
         return molecule
 
-    async def get_pokedex_molecules(
+    async def get_moldex_molecules(
         self,
         user_id: uuid.UUID,
         target_pdb_id: str | None = None,
@@ -380,6 +380,16 @@ class Repository:
         
         await self.db.flush()
         return limit.request_count
+
+    async def delete_molecule(self, molecule_id: uuid.UUID) -> bool:
+        """Elimina una molécula y sus resultados asociados (vía CASCADE)."""
+        molecule = await self.db.get(MoleculeORM, molecule_id)
+        if molecule:
+            await self.db.delete(molecule)
+            await self.db.flush()
+            log.info("molécula eliminada por limpieza automática", molecule_id=str(molecule_id))
+            return True
+        return False
 
 
 def get_repository(db: AsyncSession) -> Repository:

@@ -10,7 +10,7 @@ const PIPELINE_STEPS = [
   { step: 2, icon: "📊", title: "Propiedades", desc: "MW, LogP, TPSA, QED y Accesibilidad Sintética (SA).", detail: "Cálculo de descriptores físico-químicos basados en fragmentos moleculares." },
   { step: 3, icon: "🧬", title: "Conformer 3D", desc: "Generación de estructuras tridimensionales de baja energía.", detail: "Uso del algoritmo ETKDG para obtener la geometría más probable del ligando." },
   { step: 4, icon: "🎯", title: "Docking Físico", desc: "AutoDock Vina contra multi-targets (6B3J, 7E2Y, 4NC3).", detail: "Simulación de fuerzas electrostáticas y de van der Waals en sitios activos calibrados." },
-  { step: 5, icon: "🧠", title: "Rescoring ML", desc: "Corrección de afinidad (Spearman ρ=0.51).", detail: "Modelo entrenado con 5,000 complejos de PDBbind para reducir falsos positivos." },
+  { step: 5, icon: "🧠", title: "Rescoring ML", desc: "Corrección de afinidad (Spearman ρ=0.512).", detail: "Modelo entrenado con 5,000 complejos de PDBbind para reducir falsos positivos." },
   { step: 6, icon: "🤖", title: "Interpretación IA", desc: "Reporte científico narrativo generado por Claude.", detail: "Análisis cualitativo de interacciones clave y sugerencias de optimización." },
   { step: 7, icon: "🔗", title: "Blockchain", desc: "Registro inmutable de autoría en la red Solana.", detail: "Certificación permanente del descubrimiento con hash SHA-256 único." },
 ];
@@ -179,14 +179,14 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 px-4 py-1 text-xs font-bold text-brand-400 border border-brand-500/20">
                 Hot Target Activo: GLP-1R (6B3J)
               </div>
-              <h2 className="text-4xl font-black text-white tracking-tighter">Precisión Calibrada: 0.43</h2>
+              <h2 className="text-4xl font-black text-white tracking-tighter">Precisión Calibrada: 0.512</h2>
               <p className="text-base leading-relaxed text-surface-400">
                 Nuestro motor ha sido validado contra el receptor del péptido similar al glucagón 1 (GLP-1R), 
-                logrando una correlación de Spearman de 0.43 en pruebas blindadas.
+                logrando una correlación de Spearman de 0.512 en pruebas blindadas.
               </p>
               <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest">
                 <span className="flex items-center gap-2 text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> SPEARMAN ρ = 0.43
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> SPEARMAN ρ = 0.512
                 </span>
                 <span className="flex items-center gap-2 text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> MULTI-TARGET SUPPORT

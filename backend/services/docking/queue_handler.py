@@ -119,6 +119,11 @@ async def _run_full_evaluation_async(
                     "error": "Synthetic Infeasibility",
                     "sa_score": properties.sa_score
                 }
+            
+            # --- [NUEVO] Programar limpieza automática si el score es bajo ---
+            if breakdown.total_score < 60.0:
+                log.info({"event": "scheduling_cleanup_low_score", "molecule_id": str(molecule.id), "score": breakdown.total_score})
+                cleanup_unsaved_molecule.apply_async(args=[str(molecule.id)], countdown=3600) # 1 hora
 
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,
@@ -240,6 +245,8 @@ async def _run_full_evaluation_async(
                     error_message=f"{type(exc).__name__}: {exc}\nDetail: {detail_str}",
                     celery_task_id=task_id,
                 )
+                # Programar limpieza para fallos inesperados
+                cleanup_unsaved_molecule.apply_async(args=[str(molecule.id)], countdown=3600)
             except Exception as db_exc:
                 log.error(
                     "no se pudo persistir estado FAILED en DB",
@@ -247,6 +254,48 @@ async def _run_full_evaluation_async(
                     db_error=str(db_exc),
                 )
             raise
+
+
+@celery_app.task(name="moldesign.cleanup_unsaved_molecule")
+def cleanup_unsaved_molecule(molecule_id: str):
+    """
+    Tarea de limpieza diferida. 
+    Borra la molécula si no ha sido guardada y tiene un score bajo o falló.
+    """
+    async def _cleanup():
+        async with get_db_session() as db:
+            repository = Repository(db)
+            mol = await repository.get_molecule(UUID(molecule_id))
+            if not mol:
+                return False
+            
+            # Si el usuario ya la guardó explícitamente, NUNCA borrar.
+            if mol.is_saved:
+                log.info({"event": "cleanup_aborted_saved", "molecule_id": molecule_id})
+                return False
+                
+            # Criterios de borrado:
+            # 1. Falló la evaluación
+            # 2. El score final es inferior al umbral de "prometedora" (60.0)
+            should_delete = False
+            if mol.status == MoleculeStatus.FAILED:
+                should_delete = True
+                log.info({"event": "cleanup_reason_failed", "molecule_id": molecule_id})
+            elif mol.evaluation_result and mol.evaluation_result.total_score is not None:
+                if mol.evaluation_result.total_score < 60.0:
+                    should_delete = True
+                    log.info({"event": "cleanup_reason_low_score", "molecule_id": molecule_id, "score": mol.evaluation_result.total_score})
+            
+            if should_delete:
+                success = await repository.delete_molecule(mol.id)
+                await db.commit()
+                return success
+            
+            log.info({"event": "cleanup_skipped_promising", "molecule_id": molecule_id})
+            return False
+
+    loop = _get_celery_loop()
+    return loop.run_until_complete(_cleanup())
 
 
 @celery_app.task(name="moldesign.celery_ping")

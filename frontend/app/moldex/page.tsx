@@ -8,7 +8,7 @@ import MoldexCard from "../../components/MoldexCard";
 import MolecularComparison from "../../components/MolecularComparison";
 import { Search, ShieldCheck, Activity, Info, BarChart3, ChevronRight, Binary, Database, Box, FlaskConical, AlertCircle } from "lucide-react";
 
-export default function PokedexPage() {
+export default function MoldexPage() {
   const [molecules, setMolecules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -108,7 +108,7 @@ export default function PokedexPage() {
       <div className="flex md:hidden items-center justify-between px-6 py-4 bg-[#0a0f1d] border-b border-slate-800/50 z-50">
         <h1 className="text-sm font-black tracking-tighter text-white flex items-center gap-2">
           <FlaskConical size={16} className="text-indigo-500" />
-          POKEDEX <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+          MOLDEX <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
         </h1>
         <div className="flex gap-1">
           {[
@@ -240,8 +240,8 @@ export default function PokedexPage() {
             proteinData={proteinData}
             poseData={poseData}
             height={window.innerWidth < 768 ? windowHeight - 64 : windowHeight}
-            hotspots={selectedMolecule?.hotspots_hit}
-            hotspotsHit={selectedMolecule?.hotspots_hit}
+            hotspots={selectedMolecule?.hotspots_hit || []}
+            hotspotsHit={selectedMolecule?.hotspots_hit || []}
           />
         </div>
 
@@ -266,14 +266,14 @@ export default function PokedexPage() {
                     </span>
                     <div className="hidden md:block h-1 w-1 rounded-full bg-slate-700" />
                     <span className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                      <Database size={12} /> {selectedMolecule?.target.pdb_id} Pocket
+                      <Database size={12} /> {selectedMolecule?.target?.pdb_id || "TARGET"} Pocket
                     </span>
                   </div>
                   <h3 className="text-xl md:text-4xl font-black text-white tracking-tighter mb-1 md:mb-2 group-hover:text-indigo-400 transition-colors">
-                    {selectedMolecule?.name}
+                    {selectedMolecule?.name || "Molécula Desconocida"}
                   </h3>
                   <p className="text-xs font-mono text-slate-500 truncate max-w-lg">
-                    {selectedMolecule?.smiles}
+                    {selectedMolecule?.smiles || "N/A"}
                   </p>
                 </div>
 
@@ -281,14 +281,14 @@ export default function PokedexPage() {
                   <div className="flex flex-col justify-center border-l border-slate-800 pl-4 md:pl-8">
                     <p className="text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 md:mb-2 text-right">AFINIDAD (ΔG)</p>
                     <div className="text-lg md:text-4xl font-black text-indigo-400 tabular-nums">
-                      {selectedMolecule?.metrics.affinity.toFixed(1)}
+                      {selectedMolecule?.metrics?.affinity?.toFixed(1) || "0.0"}
                       <span className="hidden md:inline text-sm font-bold text-slate-600 ml-1 italic">kcal/mol</span>
                     </div>
                   </div>
                   <div className="flex flex-col justify-center border-l border-slate-800 pl-4 md:pl-8">
                     <p className="text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 md:mb-2 text-right">GLOBAL SCORE</p>
                     <div className="text-lg md:text-4xl font-black text-emerald-400 tabular-nums">
-                      {selectedMolecule?.metrics.score.toFixed(1)}
+                      {selectedMolecule?.metrics?.score?.toFixed(1) || "0.0"}
                     </div>
                   </div>
                 </div>
@@ -319,10 +319,10 @@ export default function PokedexPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "LIPOPHILICITY", value: selectedMolecule?.metrics.log_p.toFixed(2), sub: "LogP" },
-                  { label: "MOLECULAR WEIGHT", value: `${selectedMolecule?.metrics.mw.toFixed(1)}`, sub: "Daltons" },
-                  { label: "SURFACE AREA", value: `${selectedMolecule?.metrics.tpsa.toFixed(1)}`, sub: "Å² (TPSA)" },
-                  { label: "POCKET IMPACT", value: `${selectedMolecule?.hotspots_hit.length}`, sub: "Hotspots" },
+                  { label: "LIPOPHILICITY", value: selectedMolecule?.metrics?.log_p?.toFixed(2) || "0.00", sub: "LogP" },
+                  { label: "MOLECULAR WEIGHT", value: `${selectedMolecule?.metrics?.mw?.toFixed(1) || "0.0"}`, sub: "Daltons" },
+                  { label: "SURFACE AREA", value: `${selectedMolecule?.metrics?.tpsa?.toFixed(1) || "0.0"}`, sub: "Å² (TPSA)" },
+                  { label: "POCKET IMPACT", value: `${selectedMolecule?.hotspots_hit?.length || 0}`, sub: "Hotspots" },
                 ].map(stat => (
                   <div key={stat.label} className="rounded-2xl bg-slate-900/50 p-4 border border-slate-800/50 hover:border-slate-700 transition-colors group">
                     <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1 group-hover:text-indigo-400 transition-colors">{stat.label}</p>
@@ -353,7 +353,7 @@ export default function PokedexPage() {
                   </div>
                   <div className="bg-black/40 rounded-xl p-3 mb-4 border border-white/5">
                     <p className="text-[9px] font-mono text-slate-400 break-all leading-relaxed">
-                      {selectedMolecule?.blockchain.tx_signature || "AUTHENTICATING MOLECULE ON-CHAIN..."}
+                      {selectedMolecule?.blockchain?.tx_signature || "AUTHENTICATING MOLECULE ON-CHAIN..."}
                     </p>
                   </div>
                   <button className="w-full flex items-center justify-center gap-2 text-[10px] font-black text-indigo-400 bg-indigo-500/10 py-3 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20">
@@ -376,12 +376,12 @@ export default function PokedexPage() {
                     {selectedMolecule?.target.pdb_id.substring(0, 2)}
                   </div>
                   <div>
-                    <p className="text-sm font-black text-white">{selectedMolecule?.target.pdb_id}</p>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedMolecule?.target.family}</p>
+                    <p className="text-sm font-black text-white">{selectedMolecule?.target?.pdb_id || "N/A"}</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedMolecule?.target?.family || "GPCR"}</p>
                   </div>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed italic">
-                  "El ligando presenta una conformación optimizada en el bolsillo catalítico, interactuando con {selectedMolecule?.hotspots_hit.length} residuos críticos definidos en la ontología del target."
+                  "El ligando presenta una conformación optimizada en el bolsillo catalítico, interactuando con {selectedMolecule?.hotspots_hit?.length || 0} residuos críticos definidos en la ontología del target."
                 </p>
               </div>
             </section>

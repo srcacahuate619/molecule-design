@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.dependencies import get_db, get_current_user
+from api.dependencies import get_db, get_current_user, get_current_user_optional
 from core.models import UserORM
 from db.repository import Repository
 from utils.logger import get_logger
@@ -18,12 +18,15 @@ router = APIRouter(prefix="/moldex", tags=["Moldex"])
 @router.get("", summary="Obtiene el catálogo de moléculas evaluadas (Moldex)")
 async def get_moldex(
     target_pdb_id: str | None = Query(None, description="Filtrar por ID de PDB (ej: 7E2Y)"),
-    current_user: UserORM = Depends(get_current_user),
+    current_user: UserORM | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     repo = Repository(db)
     
-    results = await repo.get_pokedex_molecules(
+    if current_user is None:
+        current_user = await repo.get_or_create_test_user()
+    
+    results = await repo.get_moldex_molecules(
         user_id=current_user.id,
         target_pdb_id=target_pdb_id
     )
