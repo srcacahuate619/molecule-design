@@ -41,6 +41,12 @@ from chem.conformer import generate_conformer
 from chem.properties import calculate_properties, summarize_adme_profile
 from chem.validator import validate_smiles, validate_smiles_or_raise
 from core.database import get_db
+from core.models import MoleculeORM
+import uuid
+from sqlalchemy import select
+from fastapi import Response
+from rdkit.Chem.Draw import rdMolDraw2D
+from rdkit import Chem
 from core.exceptions import (
     ConformerGenerationError,
     InvalidSMILES,
@@ -322,6 +328,59 @@ async def conformer_endpoint(
         had_macrocycle=result["had_macrocycle"],
         molecular_formula=result["molecular_formula"],
         from_cache=False,
+    )
+
+
+@router.get(
+    "/render/{molecule_id}",
+    response_class=Response,
+    summary="Renderiza molécula en 2D",
+    description="Genera un SVG de la molécula usando RDKit de alta calidad.",
+)
+async def render_2d_molecule(
+    molecule_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Genera una representación vectorial (SVG) de la molécula en 2D.
+    Útil para mostrar miniaturas en la Moldex.
+    """
+    bind_context(endpoint="render_2d", molecule_id=str(molecule_id))
+
+    # 1. Buscar molécula por ID para obtener el SMILES
+    stmt = select(MoleculeORM).where(MoleculeORM.id == molecule_id)
+    result = await db.execute(stmt)
+    molecule = result.scalar_one_or_none()
+    
+    if not molecule:
+        log.warning("molécula no encontrada para renderizado", molecule_id=molecule_id)
+        raise HTTPException(status_code=404, detail="Molécula no encontrada")
+        
+    # 2. Crear molécula RDKit
+    mol = Chem.MolFromSmiles(molecule.smiles)
+    if not mol:
+        log.error("SMILES corrupto en base de datos", molecule_id=molecule_id)
+        raise HTTPException(status_code=422, detail="SMILES inválido")
+        
+    # 3. Configurar dibujado SVG de alta calidad
+    d2d = rdMolDraw2D.MolDraw2DSVG(300, 300)
+    options = d2d.drawOptions()
+    options.useBWAtomPalette() # Blanco y negro elegante
+    options.bondLineWidth = 2
+    options.fixedFontSize = 14
+    options.addStereoAnnotation = True
+    
+    # Preparar molécula (calcula coordenadas 2D si no las tiene)
+    Chem.rdDepictor.Compute2DCoords(mol)
+    d2d.DrawMolecule(mol)
+    d2d.FinishDrawing()
+    
+    svg = d2d.GetDrawingText()
+    
+    return Response(
+        content=svg, 
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"} # Cachear 24h
     )
 
 

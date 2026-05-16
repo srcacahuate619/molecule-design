@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-// import { MoleculeMetadata } from '../lib/types';
 import { Microscope, Activity, ShieldCheck, Zap } from 'lucide-react';
+import { API_URL } from '../lib/config';
 
-interface PokedexCardProps {
+interface MoldexCardProps {
   molecule: any;
   onClick: (id: string) => void;
   isSelected: boolean;
@@ -11,7 +11,7 @@ interface PokedexCardProps {
   isComparing: boolean;
 }
 
-const PokedexCard: React.FC<PokedexCardProps> = ({ molecule, onClick, isSelected, onCompareToggle, isComparing }) => {
+const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, onCompareToggle, isComparing }) => {
   const getQualityColor = (score: number) => {
     if (score >= 95) return 'text-yellow-400 border-yellow-500/50 bg-yellow-500/20 shadow-[0_0_10px_rgba(234,179,8,0.3)] font-black italic'; // DORADO (Legendary)
     if (score >= 80) return 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10'; // MORADO (Exceptional)
@@ -37,11 +37,21 @@ const PokedexCard: React.FC<PokedexCardProps> = ({ molecule, onClick, isSelected
         {molecule.target.pdb_id}
       </div>
 
-      <div className="mb-4 flex h-32 items-center justify-center rounded-xl bg-gradient-to-br from-slate-950 to-slate-900 p-2 shadow-inner">
-        {/* Placeholder para la imagen 2D (SMILES render) */}
-        <div className="text-center opacity-30">
-          <Activity size={40} className="mx-auto mb-2 text-indigo-400" />
-          <span className="text-[10px] font-mono">{molecule.smiles_hash.substring(0, 8)}</span>
+      <div className="mb-4 flex h-32 items-center justify-center rounded-xl bg-white p-4 shadow-inner relative overflow-hidden group/img">
+        {/* Render 2D de la molécula real */}
+        <img 
+          src={`${API_URL}/chem/render/${molecule.id}`}
+          alt={molecule.name}
+          className="h-full w-auto object-contain transition-transform duration-500 group-hover/img:scale-110"
+          loading="lazy"
+          onError={(e) => {
+            // Fallback en caso de error de renderizado
+            (e.target as any).style.display = 'none';
+          }}
+        />
+        
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-opacity bg-slate-900/80 backdrop-blur-md px-2 py-1 rounded text-[8px] font-mono text-indigo-400">
+          {molecule.smiles_hash.substring(0, 8)}
         </div>
       </div>
 
@@ -76,7 +86,7 @@ const PokedexCard: React.FC<PokedexCardProps> = ({ molecule, onClick, isSelected
 
       {isSelected && (
         <motion.div 
-          layoutId="pokedex-active-glow"
+          layoutId="moldex-active-glow"
           className="absolute -inset-1 rounded-2xl bg-indigo-500/10 blur-xl -z-10"
         />
       )}
@@ -84,4 +94,4 @@ const PokedexCard: React.FC<PokedexCardProps> = ({ molecule, onClick, isSelected
   );
 };
 
-export default PokedexCard;
+export default MoldexCard;

@@ -13,10 +13,10 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-router = APIRouter(prefix="/pokedex", tags=["Pokedex"])
+router = APIRouter(prefix="/moldex", tags=["Moldex"])
 
-@router.get("", summary="Obtiene el catálogo de moléculas evaluadas (Pokedex)")
-async def get_pokedex(
+@router.get("", summary="Obtiene el catálogo de moléculas evaluadas (Moldex)")
+async def get_moldex(
     target_pdb_id: str | None = Query(None, description="Filtrar por ID de PDB (ej: 7E2Y)"),
     current_user: UserORM = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

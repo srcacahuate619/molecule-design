@@ -240,9 +240,9 @@ export async function saveMolecule(moleculeId: string): Promise<void> {
   await request(`/history/save/${moleculeId}`, { method: "POST" });
 }
 
-export async function getPokedex(targetPdbId?: string): Promise<any> {
+export async function getMoldex(targetPdbId?: string): Promise<any> {
   const query = targetPdbId ? `?target_pdb_id=${targetPdbId}` : "";
-  return request(`/pokedex${query}`);
+  return request(`/moldex${query}`);
 }
 
 export async function getUserStats(): Promise<UserStats> {

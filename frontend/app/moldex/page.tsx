@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getPokedex, getProteinFile, getPoseFile } from "../../lib/api";
+import { getMoldex, getProteinFile, getPoseFile } from "../../lib/api";
 import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
-import PokedexCard from "../../components/PokedexCard";
+import MoldexCard from "../../components/MoldexCard";
 import MolecularComparison from "../../components/MolecularComparison";
 import { Search, ShieldCheck, Activity, Info, BarChart3, ChevronRight, Binary, Database, Box, FlaskConical, AlertCircle } from "lucide-react";
 
@@ -34,7 +34,7 @@ export default function PokedexPage() {
   }, []);
 
   useEffect(() => {
-    getPokedex()
+    getMoldex()
       .then((data) => {
         setMolecules(data.results);
         if (data.results.length > 0) {
@@ -139,7 +139,7 @@ export default function PokedexPage() {
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2">
               <FlaskConical size={20} className="text-indigo-500" />
-              POKEDEX <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+              MOLDEX <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
             </h1>
           </div>
           
@@ -176,7 +176,7 @@ export default function PokedexPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           <AnimatePresence mode="popLayout">
             {filteredMolecules.map((m) => (
-              <PokedexCard 
+              <MoldexCard 
                 key={m.id}
                 molecule={m}
                 isSelected={selectedId === m.id}
