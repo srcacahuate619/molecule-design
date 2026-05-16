@@ -172,5 +172,12 @@ export interface GlobalStats {
   best_molecule_name: string | null;
   best_molecule_smiles: string | null;
   best_user_name: string | null;
+  best_target_pdb: string | null;
+  hot_target: {
+    pdb_id: string;
+    name: string;
+    spearman_rho: number;
+    family: string;
+  } | null;
   community_status: string;
 }

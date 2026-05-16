@@ -34,7 +34,7 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
       {/* Badge de Target */}
       <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-slate-950/80 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-400 border border-slate-700">
         <Microscope size={10} />
-        {molecule.target.pdb_id}
+        {molecule.target?.pdb_id || "N/A"}
       </div>
 
       <div className="mb-4 flex h-32 items-center justify-center rounded-xl bg-white p-4 shadow-inner relative overflow-hidden group/img">

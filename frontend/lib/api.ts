@@ -18,6 +18,8 @@ export interface Target {
   requires_cns: boolean;
   structural_family: string;
   is_hot: boolean;
+  spearman_rho: number | null;
+  calibration_date: string | null;
 }
 
 import { API_URL } from "./config";

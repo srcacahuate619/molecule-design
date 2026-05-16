@@ -22,6 +22,7 @@ from services.docking.vina_service import run_vina_docking
 from services.docking.rescoring_client import get_ml_rescore
 from utils.cache import cache
 from utils.logger import bind_context, get_logger
+from utils.scientific import audit_scientific_quality
 
 log = get_logger(__name__)
 
@@ -120,11 +121,6 @@ async def _run_full_evaluation_async(
                     "sa_score": properties.sa_score
                 }
             
-            # --- [NUEVO] Programar limpieza automática si el score es bajo ---
-            if breakdown.total_score < 60.0:
-                log.info({"event": "scheduling_cleanup_low_score", "molecule_id": str(molecule.id), "score": breakdown.total_score})
-                cleanup_unsaved_molecule.apply_async(args=[str(molecule.id)], countdown=3600) # 1 hora
-
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,
                 properties=properties,
@@ -194,6 +190,23 @@ async def _run_full_evaluation_async(
                 target_hotspots=target.hotspots,
                 affinity_threshold=target.affinity_threshold if target.affinity_threshold is not None else -7.5
             )
+
+            # --- [NUEVO] Programar limpieza automática si el score es bajo ---
+            if breakdown.total_score < 60.0:
+                log.info({"event": "scheduling_cleanup_low_score", "molecule_id": str(molecule.id), "score": breakdown.total_score})
+                cleanup_unsaved_molecule.apply_async(args=[str(molecule.id)], countdown=3600) # 1 hora
+            # --- [NUEVO] Auditoría Científica Profunda ---
+            deep_warnings = audit_scientific_quality(
+                affinity_kcal=docking.best_affinity,
+                heavy_atom_count=properties.heavy_atom_count,
+                log_p=properties.log_p,
+                docking_poses=[p.model_dump() for p in docking.poses],
+                hotspots=target.hotspots,
+                hotspots_hit=docking.hotspots_hit
+            )
+            # Combinamos advertencias técnicas con las científicas de valor añadido
+            docking.scientific_warnings.extend(deep_warnings)
+
             await repository.upsert_evaluation_result(
                 molecule_id=molecule.id,
                 properties=properties,
@@ -358,6 +371,8 @@ async def get_job_status(task_id: str) -> JobStatus:
                     result_payload = EvaluationResultRead.model_validate(evaluation)
                     if evaluation.molecule and evaluation.molecule.target:
                         result_payload.target_hotspots = evaluation.molecule.target.hotspots
+                        result_payload.target_name = evaluation.molecule.target.name
+                        result_payload.target_spearman_rho = evaluation.molecule.target.spearman_rho
     elif async_result.failed():
         error = str(async_result.result)
 

@@ -1,26 +1,30 @@
-﻿# MolDesign AI ðŸ§¬
+# Moldex ðŸ§¬ (formerly MolDesign)
 
-**Plataforma de Descubrimiento FarmacolÃ³gico In Silico con Rescoring por ML, Rigor Industrial y CertificaciÃ³n Blockchain.**
+**Plataforma de Descubrimiento FarmacolÃ³gico In Silico con AuditorÃ­a CientÃ­fica Profunda, Rescoring por ML y CertificaciÃ³n Blockchain.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)]()
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
 [![Solana: Devnet](https://img.shields.io/badge/Blockchain-Solana_Devnet-purple.svg)]()
-[![Spearman Ï: 0.512](https://img.shields.io/badge/Spearman_%CF%81_blind-0.512-brightgreen.svg)]()
+[![Spearman Ï : 0.512](https://img.shields.io/badge/Spearman_%CF%81_blind-0.512-brightgreen.svg)]()
 [![Redocking RMSD: 0.85Ã…](https://img.shields.io/badge/Redocking_RMSD-0.85_Ã…-brightgreen.svg)]()
 
-> *"Democratizando la creaciÃ³n de fÃ¡rmacos mediante el rigor de la ciencia computacional."*
+> *"Democratizando la creaciÃ³n de fÃ¡rmacos mediante el rigor de la ciencia computacional y la transparencia de datos."*
 
-MolDesign es una plataforma *Open Science* que permite a cualquier persona â€” desde un estudiante de quÃ­mica hasta un investigador independiente â€” diseÃ±ar y evaluar molÃ©culas contra blancos biolÃ³gicos reales, utilizando los mismos estÃ¡ndares que la industria farmacÃ©utica. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana, otorgando reconocimiento permanente al **creador in silico**.
+Moldex es una plataforma *Open Science* evolucionada que permite a investigadores y estudiantes diseÃ±ar molÃ©culas contra blancos biolÃ³gicos crÃ­ticos. No solo calcula afinidades; realiza una **auditorÃ­a científica profunda** (LE, LLE, Hotspot Analysis) para validar cada diseño. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana.
 
-### Novedades v4.7.2: Ã‰xito en CalibraciÃ³n GLP-1R
-La plataforma ha alcanzado un nuevo hito de precisiÃ³n cientÃ­fica. Mediante una prueba de Spearman blindada contra el receptor **GLP-1R (6B3J)**, el motor de docking demostrÃ³ una correlaciÃ³n de **0.43**, validando la arquitectura de descubrimiento automÃ¡tico de pockets y hotspots.
+### Novedades v5.2: AuditorÃ­a DinÃ¡mica y Hito PCSK9
+La plataforma ha escalado su motor de anÃ¡lisis para soportar mÃºltiples receptores con feedback contextual:
+- **ValidaciÃ³n PCSK9 (2P4E):** Ã‰xito rotundo con el inhibidor experimental **SBC-115076**, detectando interacciones clave con GLY292, TYR293 y SER294.
+- **Scientific Auditor Engine:** Nuevo motor que traduce mÃ©tricas crudas en advertencias quÃ­micas accionables (Riesgo de Grease Ball, Potencia Insuficiente, Eficiencia de Ligando).
+- **Target Scaling:** Arquitectura lista para la ingesta masiva de proteínas con perfiles de fiabilidad (Spearman Ï ) específicos por blanco.
+- **3D Protagonist UI:** Interfaz rediseñada centrada en la inspección visual de bolsillo y hotspots.
 
 **Highlights Recientes:**
-- **CalibraciÃ³n Blindada:** Ã‰xito en el receptor GLP-1R con Spearman Ï = 0.43 (baseline Vina-only).
+- **ValidaciÃ³n PCSK9:** ConfirmaciÃ³n de Grid Box sin necesidad de redocking explÃ­cito.
+- **CalibraciÃ³n Blindada GLP-1R:** Spearman Ï  = 0.43 (baseline Vina-only).
 - **SincronizaciÃ³n de Grid:** CorrecciÃ³n y validaciÃ³n de coordenadas crÃ­ticas (`93.2, 148.1, 103.3`) para targets GPCR.
-- **Scientific Ingestion:** Descubrimiento automÃ¡tico de pockets basado en ligandos co-cristalizados.
-- **Remote Scaling:** EjecuciÃ³n distribuida en servidor Ryzen 3 (Ubuntu) con soporte para dockings de alta exhaustividad (timeout 600s).
+3 (Ubuntu) con soporte para dockings de alta exhaustividad (timeout 600s).
 
 ---
 

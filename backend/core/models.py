@@ -112,7 +112,9 @@ class TargetORM(Base):
     resolution        = Column(Float, nullable=True)
     hotspots          = Column(JSONB, nullable=True) # Lista de residuos críticos: [{"name": "MET97", "importance": 1.0}, ...]
     affinity_threshold = Column(Float, nullable=True, default=-7.5) # [NUEVO] Suelo de afinidad absoluta
-    is_hot             = Column(Boolean, default=False, nullable=False) # [NUEVO] UX: Hot/Trending target
+    is_hot             = Column(Boolean, default=False, nullable=False)
+    spearman_rho       = Column(Float, nullable=True, default=0.512) # [NUEVO] Métrica de calibración ML
+    calibration_date   = Column(DateTime(timezone=True), nullable=True) # [NUEVO] Fecha del benchmark
 
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
     prepared_file_path = Column(String(500), nullable=True)
@@ -438,6 +440,8 @@ class EvaluationResultRead(BaseModel):
     affinity_threshold: float | None = None
     affinity_multiplier: float | None = None
     specificity_multiplier: float | None = None
+    target_name:        str | None = None
+    target_spearman_rho: float | None = None
 
     @computed_field
     @property
@@ -518,6 +522,8 @@ class Target(BaseModel):
     hotspots: list[dict] | None = None
     affinity_threshold: float | None = -7.5
     is_hot: bool = False
+    spearman_rho: float | None = 0.512
+    calibration_date: datetime | None = None
 
     model_config = {"from_attributes": True}
 

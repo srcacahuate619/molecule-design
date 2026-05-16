@@ -15,6 +15,13 @@ El sistema clasifica automáticamente cada evaluación exitosa basándose en su 
 ### Racional Científico
 En el descubrimiento de fármacos, la gran mayoría de las moléculas evaluadas son "ruido" o falsos positivos con afinidades pobres. Mantener miles de registros de baja calidad dificulta la identificación de verdaderos *leads*. Un score de **60.0** representa un punto de corte donde la molécula muestra una combinación equilibrada de afinidad, ADME y propiedades químicas.
 
+### 3. Capa de Calidad: Scientific Auditor Engine
+A partir de la v5.2, Moldex integra un motor de auditoría post-procesamiento que garantiza la validez de los datos persistidos:
+- **Validación de Eficiencia**: Cálculo dinámico de Ligand Efficiency (LE) y Lipophilic Efficiency (LLE).
+- **Hotspot Audit**: Verificación de contactos con residuos críticos para asegurar especificidad biológica.
+- **Detección de Incertidumbre**: Marcaje de resultados con alta varianza en poses de unión (Binding Uncertainty).
+- **Interpretación Dinámica**: Los resultados no son solo números; se acompañan de advertencias científicas que contextualizan la potencia absoluta frente al target.
+
 ## 2. Proceso de Limpieza Automática (Auto-Purge)
 
 Para evitar la acumulación de "datos inútiles", el pipeline de evaluación (`queue_handler.py`) utiliza tareas diferidas de Celery:

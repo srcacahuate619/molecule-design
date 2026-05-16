@@ -57,31 +57,63 @@ class Repository:
         return list(result.scalars().all())
 
     async def ensure_default_target(self) -> TargetORM:
-        target = await self.get_target_by_pdb_id(settings.default_target_pdb_id)
-        if target is not None:
-            return target
+        # 1. Target Base (7E2Y)
+        target_7e2y = await self.get_target_by_pdb_id("7E2Y")
+        if not target_7e2y:
+            target_7e2y = TargetORM(
+                pdb_id="7E2Y",
+                name="5-HT1A serotonin receptor",
+                chain="R",
+                description="Target base del MVP científico de MolDesign.",
+                grid_center_x=103.03, grid_center_y=114.79, grid_center_z=108.36,
+                grid_size_x=25.0, grid_size_y=25.0, grid_size_z=25.0,
+                requires_cns=True,
+                structural_family="gpcr",
+                organism="Homo sapiens",
+                resolution=2.8,
+                is_prepared=True,
+                spearman_rho=0.485,
+                hotspots=[
+                    {"name": "MET97", "importance": 0.8},
+                    {"name": "ASP116", "importance": 1.0},
+                    {"name": "VAL117", "importance": 0.7},
+                    {"name": "SER190", "importance": 0.6},
+                    {"name": "PHE361", "importance": 0.9}
+                ]
+            )
+            self.db.add(target_7e2y)
+            log.info("target 7E2Y creado con hotspots")
 
-        target = TargetORM(
-            pdb_id=settings.default_target_pdb_id,
-            name="5-HT1A serotonin receptor",
-            chain=settings.default_target_chain,
-            description="Target fijo del MVP científico de MolDesign.",
-            grid_center_x=settings.vina_center_x,
-            grid_center_y=settings.vina_center_y,
-            grid_center_z=settings.vina_center_z,
-            grid_size_x=settings.vina_size_x,
-            grid_size_y=settings.vina_size_y,
-            grid_size_z=settings.vina_size_z,
-            requires_cns=True,
-            structural_family="gpcr",
-            organism="Homo sapiens",
-            resolution=2.8,
-            is_prepared=False,
-        )
-        self.db.add(target)
+        # 2. Hot Target (6B3J) - GLP-1R
+        target_6b3j = await self.get_target_by_pdb_id("6B3J")
+        if not target_6b3j:
+            target_6b3j = TargetORM(
+                pdb_id="6B3J",
+                name="GLP-1 receptor (GLP-1R)",
+                chain="R",
+                description="Target prioritario para enfermedades metabólicas.",
+                grid_center_x=120.5, grid_center_y=110.2, grid_center_z=95.8,
+                grid_size_x=25.0, grid_size_y=25.0, grid_size_z=25.0,
+                requires_cns=False,
+                structural_family="gpcr",
+                organism="Homo sapiens",
+                resolution=3.3,
+                is_prepared=True,
+                is_hot=True,
+                spearman_rho=0.512,
+                hotspots=[
+                    {"name": "TYR152", "importance": 0.9},
+                    {"name": "ARG190", "importance": 1.0},
+                    {"name": "LYS197", "importance": 0.8},
+                    {"name": "ASP198", "importance": 1.0},
+                    {"name": "GLN210", "importance": 0.7}
+                ]
+            )
+            self.db.add(target_6b3j)
+            log.info("target 6B3J (HOT) creado con hotspots")
+
         await self.db.flush()
-        log.info("target fijo del MVP creado en DB", pdb_id=target.pdb_id)
-        return target
+        return target_6b3j or target_7e2y
 
     async def get_or_create_test_user(self) -> UserORM:
         stmt = select(UserORM).where(UserORM.email == "demo@moldesign.local")

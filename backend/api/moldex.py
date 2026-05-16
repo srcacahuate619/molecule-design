@@ -47,6 +47,8 @@ async def get_moldex(
                 "pdb_id": target.pdb_id,
                 "name": target.name,
                 "family": target.structural_family,
+                "hotspots": target.hotspots or [],
+                "spearman_rho": target.spearman_rho,
             },
             "metrics": {
                 "affinity": res.affinity_kcal,
@@ -54,7 +56,10 @@ async def get_moldex(
                 "mw": res.molecular_weight,
                 "tpsa": res.tpsa,
                 "score": res.total_score,
+                "lipinski_pass": res.lipinski_pass,
+                "veber_pass": res.veber_pass,
             },
+            "scientific_warnings": res.scientific_warnings or [],
             "hotspots_hit": res.hotspots_hit or [],
             "blockchain": {
                 "certified": bool(res.blockchain_tx_id),

@@ -4,6 +4,7 @@ import os
 FILES = [
     "backend/api/main.py",
     "backend/api/routers/targets.py",
+    "backend/api/routers/stats.py",
     "backend/core/models.py",
     "backend/db/migrations/001_initial.sql",
     "backend/db/repository.py",
@@ -37,6 +38,9 @@ FILES = [
     "frontend/components/MolecularComparison.tsx",
     "frontend/components/Navigation.tsx",
     "frontend/package.json",
+    "frontend/app/page.tsx",
+    "docs/DATA_MANAGEMENT.md",
+    "docs/ARCHITECTURE_OVERVIEW.md",
 ]
 
 REMOTE_USER = "srcacahuate619"

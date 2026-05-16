@@ -15,6 +15,10 @@ export default function MoldexPage() {
   const [search, setSearch] = useState("");
   const [targetFilter, setTargetFilter] = useState("ALL");
   
+  // Panel States
+  const [showLeftPanel, setShowLeftPanel] = useState(true);
+  const [showRightPanel, setShowRightPanel] = useState(true);
+
   // Comparison state
   const [compareMode, setCompareMode] = useState(false);
   const [selectionForCompare, setSelectionForCompare] = useState<string[]>([]);
@@ -67,15 +71,17 @@ export default function MoldexPage() {
 
   const filteredMolecules = useMemo(() => {
     return molecules.filter(m => {
-      const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || 
-                           m.smiles.includes(search);
-      const matchesTarget = targetFilter === "ALL" || m.target.pdb_id === targetFilter;
+      const name = m.name?.toLowerCase() || "";
+      const smiles = m.smiles || "";
+      const matchesSearch = name.includes(search.toLowerCase()) || 
+                           smiles.includes(search);
+      const matchesTarget = targetFilter === "ALL" || m.target?.pdb_id === targetFilter;
       return matchesSearch && matchesTarget;
     });
   }, [molecules, search, targetFilter]);
 
   const targets = useMemo(() => {
-    const t = new Set(molecules.map(m => m.target.pdb_id));
+    const t = new Set(molecules.map(m => m.target?.pdb_id).filter(Boolean));
     return ["ALL", ...Array.from(t)];
   }, [molecules]);
 
@@ -103,302 +109,297 @@ export default function MoldexPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#05080f] text-slate-300 font-sans selection:bg-indigo-500/30 overflow-hidden md:flex-row">
-      {/* Mobile Navigation Header */}
-      <div className="flex md:hidden items-center justify-between px-6 py-4 bg-[#0a0f1d] border-b border-slate-800/50 z-50">
-        <h1 className="text-sm font-black tracking-tighter text-white flex items-center gap-2">
-          <FlaskConical size={16} className="text-indigo-500" />
-          MOLDEX <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
-        </h1>
-        <div className="flex gap-1">
-          {[
-            { id: 'LIST', icon: <Database size={14} /> },
-            { id: '3D', icon: <Box size={14} /> },
-            { id: 'INFO', icon: <Info size={14} /> }
-          ].map((btn) => (
-            <button
-              key={btn.id}
-              onClick={() => setActiveView(btn.id as any)}
-              className={`p-2 rounded-lg transition-all ${
-                activeView === btn.id 
-                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
-                  : 'bg-slate-900 text-slate-500'
-              }`}
-            >
-              {btn.icon}
-            </button>
-          ))}
-        </div>
+    <div className="relative h-screen w-full bg-[#05080f] text-slate-300 font-sans selection:bg-indigo-500/30 overflow-hidden">
+      
+      {/* 3D Viewport: El Protagonista (Full Background) */}
+      <div className="absolute inset-0 z-0">
+        <MoleculeViewer3D 
+          proteinData={proteinData}
+          poseData={poseData}
+          height={windowHeight}
+          hotspots={(selectedMolecule?.target?.hotspots || []).map((h: any) => h.name)}
+          hotspotsHit={selectedMolecule?.hotspots_hit || []}
+        />
       </div>
 
-      {/* Sidebar: Biblioteca de Especies Moleculares */}
-      <aside className={`w-full md:w-80 flex-col border-r border-slate-800/50 bg-[#0a0f1d]/80 backdrop-blur-xl z-20 ${
-        activeView === 'LIST' ? 'flex' : 'hidden md:flex'
-      }`}>
-        <div className="p-6 border-b border-slate-800/30">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2">
-              <FlaskConical size={20} className="text-indigo-500" />
-              MOLDEX <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+      {/* Capa de Interfaz (Overlays Flotantes) */}
+      <div className="absolute inset-0 z-10 pointer-events-none flex flex-col md:flex-row">
+        
+        {/* Mobile Navigation Header */}
+        <div className="flex md:hidden flex-col bg-[#0a0f1d] border-b border-slate-800/50 z-50 pointer-events-auto">
+          <div className="flex items-center justify-between px-6 py-4">
+            <h1 className="text-sm font-black tracking-tighter text-white flex items-center gap-2">
+              <FlaskConical size={16} className="text-indigo-500" />
+              MOLDEX <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
             </h1>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={14} />
-              <input 
-                type="text"
-                placeholder="Filtrar por nombre o SMILES..."
-                className="w-full rounded-xl bg-slate-900/50 border border-slate-800 py-2.5 pl-10 pr-4 text-xs text-slate-200 outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar">
-              {targets.map(t => (
+            <div className="flex gap-1">
+              {[
+                { id: 'LIST', icon: <Database size={14} /> },
+                { id: '3D', icon: <Box size={14} /> },
+                { id: 'INFO', icon: <Info size={14} /> }
+              ].map((btn) => (
                 <button
-                  key={t}
-                  onClick={() => setTargetFilter(t)}
-                  className={`whitespace-nowrap rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest transition-all border ${
-                    targetFilter === t 
-                      ? 'bg-indigo-500 border-indigo-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]' 
-                      : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+                  key={btn.id}
+                  onClick={() => setActiveView(btn.id as any)}
+                  className={`p-2 rounded-lg transition-all ${
+                    activeView === btn.id 
+                      ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                      : 'bg-slate-900 text-slate-500'
                   }`}
                 >
-                  {t}
+                  {btn.icon}
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-          <AnimatePresence mode="popLayout">
-            {filteredMolecules.map((m) => (
-              <MoldexCard 
-                key={m.id}
-                molecule={m}
-                isSelected={selectedId === m.id}
-                onClick={(id) => {
-                  setSelectedId(id);
-                  if (window.innerWidth < 768) {
-                    setActiveView('3D');
-                  }
-                }}
-                onCompareToggle={() => handleToggleCompare(m.id)}
-                isComparing={selectionForCompare.includes(m.id)}
-              />
-            ))}
-          </AnimatePresence>
-          {filteredMolecules.length === 0 && (
-            <div className="py-20 text-center opacity-20">
-              <AlertCircle size={48} className="mx-auto mb-4" />
-              <p className="text-xs font-bold uppercase tracking-widest">Sin coincidencias</p>
+        {/* Sidebar Left: Biblioteca (Collapsible) */}
+        <motion.aside 
+          initial={false}
+          animate={{ 
+            width: showLeftPanel ? 320 : 0,
+            opacity: showLeftPanel ? 1 : 0,
+            x: showLeftPanel ? 0 : -320
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 35 }}
+          className={`h-full flex-col border-r border-white/5 bg-[#0a0f1d]/40 backdrop-blur-xl pointer-events-auto overflow-hidden hidden md:flex`}
+        >
+          <div className="p-8 border-b border-white/5 min-w-[320px]">
+            <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2 mb-8">
+              <FlaskConical size={24} className="text-indigo-500" />
+              MOLDEX <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+            </h1>
+            
+            <div className="space-y-4">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                <input 
+                  type="text"
+                  placeholder="Buscar molécula..."
+                  className="w-full rounded-2xl bg-black/40 border border-white/10 py-3 pl-10 pr-4 text-xs text-slate-200 outline-none focus:border-indigo-500/50 transition-all"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                {targets.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setTargetFilter(t)}
+                    className={`flex-shrink-0 rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                      targetFilter === t ? 'bg-indigo-500 border-indigo-400 text-white' : 'bg-black/40 border-white/5 text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Main Stage: El Estándar Científico (Docked SDF) */}
-      <main className={`flex-1 relative bg-[#020408] ${
-        activeView === '3D' ? 'block' : 'hidden md:block'
-      }`}>
-        {/* Header HUD */}
-        <div className="absolute top-6 left-6 right-6 flex items-start justify-between z-10 pointer-events-none">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 md:gap-4 pointer-events-auto"
-          >
-            <div className="rounded-xl md:rounded-2xl bg-slate-950/80 border border-slate-800 p-2 md:p-3 backdrop-blur-md">
-               <Box className="text-indigo-500" size={18} />
-            </div>
-            <div className="hidden sm:block">
-              <p className="text-[8px] md:text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-0.5">Visualización de Pose Acoplada</p>
-              <h2 className="text-sm md:text-xl font-black text-white tracking-tight flex items-center gap-2">
-                ESTÁNDAR CIENTÍFICO <span className="hidden md:inline text-[10px] font-bold text-slate-500">FORMATO SDF</span>
-              </h2>
-            </div>
-          </motion.div>
-
-          <div className="flex gap-2 pointer-events-auto">
-            {selectionForCompare.length === 2 && (
-              <button 
-                onClick={() => setCompareMode(true)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-[10px] font-black tracking-widest shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
-              >
-                COMPARAR SELECCIÓN <ChevronRight size={14} />
-              </button>
-            )}
           </div>
-        </div>
 
-        {/* 3D Viewport */}
-        <div className="absolute inset-0">
-          <MoleculeViewer3D 
-            proteinData={proteinData}
-            poseData={poseData}
-            height={window.innerWidth < 768 ? windowHeight - 64 : windowHeight}
-            hotspots={selectedMolecule?.hotspots_hit || []}
-            hotspotsHit={selectedMolecule?.hotspots_hit || []}
-          />
-        </div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar min-w-[320px]">
+            <AnimatePresence mode="popLayout">
+              {filteredMolecules.map((m) => (
+                <MoldexCard 
+                  key={m.id}
+                  molecule={m}
+                  isSelected={selectedId === m.id}
+                  onClick={(id) => {
+                    setSelectedId(id);
+                    if (window.innerWidth < 768) setActiveView('3D');
+                  }}
+                  onCompareToggle={() => handleToggleCompare(m.id)}
+                  isComparing={selectionForCompare.includes(m.id)}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        </motion.aside>
 
-        {/* Info HUD Overlay */}
-        <AnimatePresence mode="wait">
-          <motion.div 
-            key={selectedId}
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="absolute bottom-8 left-4 right-4 md:left-8 md:right-8 z-10"
+        {/* Toggle Left Button */}
+        <div className="hidden md:flex items-center z-50 pointer-events-auto">
+          <button 
+            onClick={() => setShowLeftPanel(!showLeftPanel)}
+            className="h-16 w-6 bg-indigo-600/20 backdrop-blur-md border border-indigo-500/30 rounded-r-xl flex items-center justify-center text-indigo-400 hover:text-white transition-colors shadow-lg"
           >
-            <div className="rounded-3xl md:rounded-[2.5rem] border border-slate-800/50 bg-[#0a0f1d]/60 p-5 md:p-8 backdrop-blur-2xl shadow-2xl overflow-hidden relative group">
-              {/* Background gradient subtle */}
-              <div className="absolute -inset-24 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-50 blur-3xl pointer-events-none" />
-              
-              <div className="relative flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-4 mb-4">
-                    <span className="hidden md:inline-block bg-indigo-500 text-white text-[9px] font-black px-3 py-1 rounded-full tracking-widest">
-                      DOCKING EXITOSO
-                    </span>
-                    <div className="hidden md:block h-1 w-1 rounded-full bg-slate-700" />
-                    <span className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                      <Database size={12} /> {selectedMolecule?.target?.pdb_id || "TARGET"} Pocket
-                    </span>
-                  </div>
-                  <h3 className="text-xl md:text-4xl font-black text-white tracking-tighter mb-1 md:mb-2 group-hover:text-indigo-400 transition-colors">
-                    {selectedMolecule?.name || "Molécula Desconocida"}
-                  </h3>
-                  <p className="text-xs font-mono text-slate-500 truncate max-w-lg">
-                    {selectedMolecule?.smiles || "N/A"}
-                  </p>
-                </div>
+            <ChevronRight size={14} className={`transition-transform ${showLeftPanel ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
 
-                <div className="flex items-stretch gap-4 md:gap-8">
-                  <div className="flex flex-col justify-center border-l border-slate-800 pl-4 md:pl-8">
-                    <p className="text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 md:mb-2 text-right">AFINIDAD (ΔG)</p>
-                    <div className="text-lg md:text-4xl font-black text-indigo-400 tabular-nums">
-                      {selectedMolecule?.metrics?.affinity?.toFixed(1) || "0.0"}
-                      <span className="hidden md:inline text-sm font-bold text-slate-600 ml-1 italic">kcal/mol</span>
+        {/* Espacio Central del Visor */}
+        <div className="flex-1 relative pointer-events-none">
+          {/* HUD Superior */}
+          <div className="absolute top-8 left-8 right-8 flex items-start justify-between">
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 pointer-events-auto">
+              <div className="h-14 w-14 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center backdrop-blur-xl shadow-2xl">
+                 <Box className="text-indigo-500" size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1">PROTAGONISTA 3D</p>
+                <h2 className="text-2xl font-black text-white tracking-tighter">ESTÁNDAR CIENTÍFICO</h2>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* HUD Inferior (Info de Molécula) */}
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={selectedId}
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className="absolute bottom-12 left-12 right-12 pointer-events-auto"
+            >
+              <div className="rounded-[3rem] border border-white/10 bg-black/60 px-10 py-6 backdrop-blur-2xl shadow-2xl max-w-6xl mx-auto flex items-center gap-16">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-4 mb-2">
+                    <span className="bg-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-widest uppercase">Target Pocket</span>
+                    <h3 className="text-3xl font-black text-white tracking-tighter truncate">{selectedMolecule?.name || "Molécula"}</h3>
+                  </div>
+                  <p className="text-sm font-mono text-slate-500 truncate">{selectedMolecule?.smiles}</p>
+                </div>
+                <div className="flex items-center gap-12 border-l border-white/10 pl-12">
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">AFINIDAD</p>
+                    <div className="text-4xl font-black text-indigo-400 tabular-nums">
+                      {selectedMolecule?.metrics?.affinity?.toFixed(1)} <span className="text-sm font-bold text-slate-600">kcal</span>
                     </div>
                   </div>
-                  <div className="flex flex-col justify-center border-l border-slate-800 pl-4 md:pl-8">
-                    <p className="text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 md:mb-2 text-right">GLOBAL SCORE</p>
-                    <div className="text-lg md:text-4xl font-black text-emerald-400 tabular-nums">
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">GLOBAL SCORE</p>
+                    <div className={`text-4xl font-black tabular-nums ${
+                      (selectedMolecule?.metrics?.score || 0) >= 95 ? 'text-yellow-400 italic' :
+                      (selectedMolecule?.metrics?.score || 0) >= 80 ? 'text-fuchsia-400' :
+                      (selectedMolecule?.metrics?.score || 0) >= 60 ? 'text-emerald-400' :
+                      (selectedMolecule?.metrics?.score || 0) >= 40 ? 'text-amber-400' :
+                      'text-rose-400'
+                    }`}>
                       {selectedMolecule?.metrics?.score?.toFixed(1) || "0.0"}
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </main>
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-      {/* Right Panel: Ficha de Especie Farmacológica */}
-      <aside className={`w-full md:w-96 border-l border-slate-800/50 bg-[#0a0f1d]/90 p-8 overflow-y-auto custom-scrollbar z-20 ${
-        activeView === 'INFO' ? 'block' : 'hidden md:block'
-      }`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={selectedId}
-            initial={{ x: 30, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -30, opacity: 0 }}
-            className="space-y-10"
+        {/* Toggle Right Button */}
+        <div className="hidden md:flex items-center z-50 pointer-events-auto">
+          <button 
+            onClick={() => setShowRightPanel(!showRightPanel)}
+            className="h-16 w-6 bg-indigo-600/20 backdrop-blur-md border border-indigo-500/30 rounded-l-xl flex items-center justify-center text-indigo-400 hover:text-white transition-colors shadow-lg"
           >
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-                  <BarChart3 size={14} className="text-indigo-500" /> PERFIL FARMACOCINÉTICO
+            <ChevronRight size={14} className={`transition-transform ${showRightPanel ? '' : 'rotate-180'}`} />
+          </button>
+        </div>
+
+        {/* Sidebar Right: Perfil Farmacocinético (Collapsible) */}
+        <motion.aside 
+          initial={false}
+          animate={{ 
+            width: showRightPanel ? 400 : 0,
+            opacity: showRightPanel ? 1 : 0,
+            x: showRightPanel ? 0 : 400
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 35 }}
+          className={`h-full flex-col border-l border-white/5 bg-[#0a0f1d]/60 backdrop-blur-3xl p-10 overflow-y-auto custom-scrollbar pointer-events-auto hidden md:flex`}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div key={selectedId} initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-10 min-w-[320px]">
+              
+              {/* MÓDULO 1: CONTEXTO DEL TARGET */}
+              <section className="rounded-3xl bg-indigo-500/5 border border-indigo-500/20 p-6">
+                <h4 className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-4">
+                  <Database size={14} /> CONTEXTO DEL TARGET
                 </h4>
-                <div className="h-[1px] flex-1 bg-slate-800 ml-4" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "LIPOPHILICITY", value: selectedMolecule?.metrics?.log_p?.toFixed(2) || "0.00", sub: "LogP" },
-                  { label: "MOLECULAR WEIGHT", value: `${selectedMolecule?.metrics?.mw?.toFixed(1) || "0.0"}`, sub: "Daltons" },
-                  { label: "SURFACE AREA", value: `${selectedMolecule?.metrics?.tpsa?.toFixed(1) || "0.0"}`, sub: "Å² (TPSA)" },
-                  { label: "POCKET IMPACT", value: `${selectedMolecule?.hotspots_hit?.length || 0}`, sub: "Hotspots" },
-                ].map(stat => (
-                  <div key={stat.label} className="rounded-2xl bg-slate-900/50 p-4 border border-slate-800/50 hover:border-slate-700 transition-colors group">
-                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1 group-hover:text-indigo-400 transition-colors">{stat.label}</p>
-                    <div className="flex items-baseline gap-1">
-                      <p className="text-lg font-black text-slate-200">{stat.value}</p>
-                      <p className="text-[9px] font-bold text-slate-600">{stat.sub}</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Proteína Receptora</p>
+                    <p className="text-sm font-black text-white leading-tight">{selectedMolecule?.target?.name || "Sin Nombre"}</p>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <div>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Fiabilidad del Modelo</p>
+                      <p className="text-xs font-mono text-emerald-400">Spearman ρ = {selectedMolecule?.target?.spearman_rho?.toFixed(3) || "N/A"}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                      <ShieldCheck size={18} className="text-emerald-500" />
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-                  <ShieldCheck size={14} className="text-emerald-500" /> CERTIFICACIÓN BLOCKCHAIN
-                </h4>
-                <div className="h-[1px] flex-1 bg-slate-800 ml-4" />
-              </div>
-              <div className="rounded-3xl bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 p-6 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Binary size={64} />
                 </div>
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">VERIFIED ON SOLANA</span>
+              </section>
+
+              {/* MÓDULO 2: AUDITORÍA CIENTÍFICA (DINÁMICO) */}
+              <section>
+                <h4 className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">
+                  <AlertCircle size={16} className="text-amber-500" /> AUDITORÍA CIENTÍFICA
+                </h4>
+                <div className="space-y-3">
+                  {selectedMolecule?.scientific_warnings?.length > 0 ? (
+                    selectedMolecule.scientific_warnings.map((warning: string, i: number) => (
+                      <div key={i} className="flex gap-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-[11px] leading-relaxed text-amber-200/70">
+                        <div className="mt-1 flex-shrink-0 h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        {warning}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-[11px] text-emerald-400/70 italic text-center">
+                      Sin alertas críticas detectadas.
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* MÓDULO 3: PERFIL FARMACOCINÉTICO (INTERPRETADO) */}
+              <section>
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                    <Activity size={16} className="text-indigo-500" /> FARMACOCINÉTICA
+                  </h4>
+                  <div className="flex gap-1">
+                    {selectedMolecule?.metrics?.lipinski_pass && (
+                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">LIPINSKI</span>
+                    )}
+                    {selectedMolecule?.metrics?.veber_pass && (
+                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">VEBER</span>
+                    )}
                   </div>
-                  <div className="bg-black/40 rounded-xl p-3 mb-4 border border-white/5">
-                    <p className="text-[9px] font-mono text-slate-400 break-all leading-relaxed">
-                      {selectedMolecule?.blockchain?.tx_signature || "AUTHENTICATING MOLECULE ON-CHAIN..."}
-                    </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Lipofilia", value: selectedMolecule?.metrics?.log_p?.toFixed(2), unit: "LogP" },
+                    { label: "Masa", value: selectedMolecule?.metrics?.mw?.toFixed(0), unit: "Da" },
+                    { label: "Polaridad", value: selectedMolecule?.metrics?.tpsa?.toFixed(1), unit: "Å²" },
+                    { label: "Hotspots", value: `${selectedMolecule?.hotspots_hit?.length || 0}/${selectedMolecule?.target?.hotspots?.length || 0}`, unit: "HITS" },
+                  ].map(stat => (
+                    <div key={stat.label} className="rounded-2xl bg-black/40 p-4 border border-white/5 group hover:border-indigo-500/30 transition-all">
+                      <p className="text-[8px] font-black text-slate-600 uppercase mb-1 tracking-widest">{stat.label}</p>
+                      <p className="text-lg font-black text-slate-200">{stat.value} <span className="text-[10px] text-slate-600 ml-1">{stat.unit}</span></p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* MÓDULO 4: EVIDENCIA BLOCKCHAIN */}
+              <section>
+                <div className="rounded-[2.5rem] bg-gradient-to-br from-indigo-600/20 to-transparent border border-indigo-500/20 p-8 text-center">
+                  <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-4">Evidencia Digital</p>
+                  <div className="bg-black/60 rounded-xl p-3 mb-6 border border-white/5 font-mono text-[8px] text-slate-500 break-all leading-tight">
+                    {selectedMolecule?.blockchain?.tx_signature || "SYSTEM_AUTHENTICATED_LOCAL"}
                   </div>
-                  <button className="w-full flex items-center justify-center gap-2 text-[10px] font-black text-indigo-400 bg-indigo-500/10 py-3 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20">
-                    EXPLORAR EVIDENCIA <ShieldCheck size={12} />
+                  <button className="w-full text-[10px] font-black text-white bg-indigo-600 py-4 rounded-2xl shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                    <FlaskConical size={14} /> DESCARGAR REPORTE CIENTÍFICO
                   </button>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-                  <Info size={14} className="text-indigo-500" /> ANÁLISIS ESTRUCTURAL
-                </h4>
-                <div className="h-[1px] flex-1 bg-slate-800 ml-4" />
-              </div>
-              <div className="rounded-3xl bg-slate-900/50 p-6 border border-slate-800 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black">
-                    {selectedMolecule?.target.pdb_id.substring(0, 2)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-black text-white">{selectedMolecule?.target?.pdb_id || "N/A"}</p>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedMolecule?.target?.family || "GPCR"}</p>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed italic">
-                  "El ligando presenta una conformación optimizada en el bolsillo catalítico, interactuando con {selectedMolecule?.hotspots_hit?.length || 0} residuos críticos definidos en la ontología del target."
-                </p>
-              </div>
-            </section>
+            </motion.div>
+          </AnimatePresence>
+        </motion.aside>
+      </div>
 
-            <div className="pt-4">
-              <button className="w-full rounded-[1.5rem] bg-indigo-600 py-5 font-black text-white shadow-[0_20px_50px_rgba(79,70,229,0.3)] hover:bg-indigo-500 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 group">
-                DESCARGAR REPORTE TÉCNICO <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-              <p className="text-[9px] text-center text-slate-600 mt-4 font-bold uppercase tracking-widest">
-                Protocolo de Ingesta MolDesign v4.7.2 - 2026
-              </p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </aside>
-
-      {/* Comparison Modal Overlay */}
+      {/* Comparador Modal */}
       {compareMode && selectionForCompare.length === 2 && (
         <MolecularComparison 
           molA={molecules.find(m => m.id === selectionForCompare[0])}

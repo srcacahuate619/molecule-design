@@ -1,10 +1,10 @@
-# Arquitectura de MolDesign 🏗️🌐
+# Arquitectura de Moldex (formerly MolDesign) 🏗️🌐
 
-Este documento describe la arquitectura técnica, el flujo de datos y las decisiones de diseño del ecosistema MolDesign.
+Este documento describe la arquitectura técnica, el flujo de datos y las decisiones de diseño del ecosistema Moldex.
 
-## 1. Pipeline End-to-End (E2E)
+## 1. Pipeline End-to-End (E2E) v5.2
 
-El motor de MolDesign sigue un flujo lineal pero altamente validado para transformar un SMILES en un reporte científico certificado.
+El motor de Moldex sigue un flujo lineal pero altamente validado para transformar un SMILES en un reporte científico certificado con auditoría profunda.
 
 ```mermaid
 graph TD
@@ -17,10 +17,10 @@ graph TD
     G --> H[Docking AutoDock Vina]
     H --> I[Pose Quality Filter]
     I --> J[ML Rescoring XGBoost]
-    J --> K[Análisis de Hotspots & Especificidad]
-    K --> L[Filtro 'Potency Floor' vs Threshold DB]
+    J --> K[Auditoría Científica: LE, LLE & Hotspots]
+    K --> L[Filtro 'Potency Floor' vs Target Threshold]
     L --> M[Scoring Compuesto Final]
-    M --> N[AI Report & Certificación]
+    M --> N[AI Report & Certificación Solana]
 ```
 
 ## 2. Microservicio de ML Rescoring

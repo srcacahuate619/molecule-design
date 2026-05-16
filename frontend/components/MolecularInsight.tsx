@@ -21,7 +21,7 @@ export function MolecularInsight({ result }: Props) {
     insights.push({
       type: "warning",
       title: "Dificultad Sintética Crítica",
-      message: `El SA Score de ${result.sa_score} indica que esta estructura es muy difícil de sintetizar. ${result.sa_reasons?.length ? "Causa principal: " + result.sa_reasons.join(", ") : "Considera simplificar el scaffold."}`
+      message: `El SA Score de ${result.sa_score.toFixed(2)} indica que esta estructura es muy difícil de sintetizar. ${result.sa_reasons?.length ? "Causa principal: " + result.sa_reasons.join(", ") : "Considera simplificar el scaffold."}`
     });
   }
 
@@ -34,15 +34,15 @@ export function MolecularInsight({ result }: Props) {
       insights.push({
         type: "warning",
         title: "Potencia Insuficiente",
-        message: `Aunque tu molécula es eficiente, su afinidad absoluta de ${result.affinity_kcal} kcal/mol es demasiado débil. Para este target, necesitamos al menos ${threshold} kcal/mol para considerar la molécula como un candidato viable.`
+        message: `Aunque tu molécula es eficiente, su afinidad absoluta de ${result.affinity_kcal.toFixed(2)} kcal/mol es demasiado débil. Para este target, necesitamos al menos ${threshold.toFixed(2)} kcal/mol para considerar la molécula como un candidato viable.`
       });
     }
 
     if (result.total_score !== null && result.total_score > 35) {
       insights.push({
         type: "success",
-        title: "Validación Científica v4.2",
-        message: "Los descriptores de interacción (ProLIF) y el modelo ML v4.2 confirman una señal biológica prometedora para el target seleccionado (Spearman ρ=0.512)."
+        title: "Validación Científica",
+        message: `Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el target ${result.target_name || "seleccionado"} (Spearman ρ=${result.target_spearman_rho?.toFixed(3) || "0.512"}).`
       });
     } else if (!isWeak) {
       insights.push({

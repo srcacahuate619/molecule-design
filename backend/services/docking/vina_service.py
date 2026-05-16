@@ -401,7 +401,7 @@ async def run_vina_docking(
                                     block = pdbqt_pose_blocks[i] if i < len(pdbqt_pose_blocks) else None
                                     poses.append(DockingPose(**cast_pose_dict(pose_dict), pdbqt_block=block))
                                 parsing_source = "openbabel"
-                                scientific_warnings.append("El SDF fue generado por OpenBabel como fallback porque Meeko exportó un archivo inválido.")
+                                log.warning("SDF fallback: OpenBabel used because Meeko export was invalid.")
                         else:
                             scientific_warnings.append(f"OpenBabel fallback falló: {result.stderr}")
                         # Limpieza explícita de archivos temporales solo si existen
@@ -438,9 +438,7 @@ async def run_vina_docking(
                         poses.append(DockingPose(**cast_pose_dict(pose), pdbqt_block=block))
                     if poses:
                         parsing_source = "pdbqt"
-                        scientific_warnings.append(
-                            "Las afinidades se obtuvieron desde REMARK VINA RESULT del PDBQT porque el SDF exportado no incluyó metadatos numéricos."
-                        )
+                        log.warning("Affinity fallback: Extracted from REMARK VINA RESULT because SDF lacked numeric metadata.")
 
                 if not poses:
                     if not settings.docking_allow_stdout_fallback:

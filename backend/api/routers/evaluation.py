@@ -216,6 +216,8 @@ async def get_evaluation_result(
     data = EvaluationResultRead.model_validate(result)
     if result.molecule and result.molecule.target:
         data.target_hotspots = result.molecule.target.hotspots
+        data.target_name = result.molecule.target.name
+        data.target_spearman_rho = result.molecule.target.spearman_rho
         
     return data
 

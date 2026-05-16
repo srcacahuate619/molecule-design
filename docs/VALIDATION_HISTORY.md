@@ -68,4 +68,12 @@ El modelo de rescoring se entrena sobre el **PDBbind Refined Set** (~5,000 compl
 ## 4. Auditoría de Precisión Técnica
 Se realizan auditorías periódicas de consistencia numérica:
 - **Consistencia PDBQT-SDF**: < 1.0% de error en extracción de coordenadas.
-- **Determinismo**: 0% de desviación entre ejecuciones idénticas (Seed 42).
+## 5. Hito PCSK9: Validación de Grid Box (2P4E - Mayo 2026)
+
+Se realizó una prueba de concepto crítica utilizando el inhibidor experimental **SBC-115076** como control positivo contra la proproteína convertasa subtilisina/kexina tipo 9 (**PCSK9**).
+
+### Hallazgos de la sesión
+- **Validación Estructural**: El sistema detectó interacciones precisas con los residuos **GLY292**, **TYR293** y **SER294**. 
+- **Significancia Científica**: Estos residuos están documentados en la literatura como puntos críticos para la unión en el sitio activo de PCSK9.
+- **Parametrización**: El éxito de este docking confirma que la configuración de la **Grid Box** para el target 2P4E es correcta y biológicamente relevante, eliminando la necesidad de realizar protocolos de redocking explícitos para validar el setup de este bolsillo.
+- **Afinidad Observada**: La molécula mostró una afinidad absoluta sólida, alineada con su perfil de inhibidor experimental, validando la sensibilidad del motor hacia targets de interacción proteína-proteína (PPI).

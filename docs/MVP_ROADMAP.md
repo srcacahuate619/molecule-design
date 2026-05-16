@@ -672,4 +672,23 @@ En esta fase se transformó la cara pública del proyecto y se validó la infrae
 - La infraestructura es capaz de soportar picos de tráfico controlados.
 - La precisión del modelo en datos conocidos es óptima, iniciando fase de validación externa masiva.
 
+## 15. Fase 5.2: AuditorÃ­a CientÃ­fica Profunda y Rebranding (Mayo 2026) ðŸ”¬
+ 
+En esta fase se consolidÃ³ el rigor del motor de anÃ¡lisis y se oficializÃ³ el cambio de identidad a **Moldex**.
+ 
+### Hitos Alcanzados (v5.2)
+- [x] **Rebranding Oficial (Moldex)**: MigraciÃ³n total de la identidad visual y textual de "MolDesign" a "Moldex".
+- [x] **Motor de AuditorÃ­a CientÃ­fica**: ImplementaciÃ³n de `audit_scientific_quality` que analiza LE, LLE y farmacÃ³foros de forma dinÃ¡mica.
+- [x] **Contexto de Target DinÃ¡mico**: La UI ahora muestra el nombre real de la proteÃ­na y su fiabilidad (Spearman Ï ) basada en calibraciones previas.
+- [x] **Limpieza de Warnings TÃ©cnicos**: SeparaciÃ³n de logs de sistema (OpenBabel/Meeko) de las advertencias científicas para el usuario final.
+- [x] **ValidaciÃ³n PCSK9 (2P4E)**: DocumentaciÃ³n del primer "hit" experimental exitoso en el bolsillo de PCSK9.
+- [x] **UI 3D Protagonista**: RefactorizaciÃ³n del layout de resultados para priorizar la inspecciÃ³n estructural.
+- [x] **Escalabilidad de Targets**: Sistema preparado para la ingesta de nuevos receptores mediante `ingestion_manager`.
+ 
+### Estado actual (16 de Mayo 2026)
+ 
+- Moldex es ahora una plataforma **multi-target lista para escalar**.
+- El rigor científico se ha duplicado con la capa de auditorÃ­a post-docking.
+- La identidad de marca es sólida y coherente en todo el repositorio.
+ 
 ---
