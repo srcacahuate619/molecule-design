@@ -111,16 +111,16 @@ export default function HomePage() {
                       <span className="text-[9px] font-bold uppercase tracking-widest text-surface-500">Diseñador y Receptor</span>
                       <span className="font-bold text-white flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-                        {stats.best_user_name ?? "Anónimo"} 
+                        {stats?.best_user_name ?? "Anónimo"} 
                         <span className="text-brand-500">→</span>
-                        <span className="text-emerald-400">{stats.best_target_pdb ?? "6B3J"}</span>
+                        <span className="text-emerald-400">{stats?.best_target_pdb ?? "6B3J"}</span>
                       </span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-bold uppercase tracking-widest text-surface-500">Estructura Química (SMILES)</span>
                       <div className="relative group/smiles">
                         <code className="block break-all rounded-lg bg-surface-900 p-2 font-mono text-[10px] text-brand-300 border border-brand-500/10">
-                          {stats.best_molecule_name}
+                          {stats?.best_molecule_name}
                         </code>
                         <div className="mt-1 text-[9px] text-surface-600 italic">
                           Copia este SMILES para evaluarlo
