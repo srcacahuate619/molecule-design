@@ -26,6 +26,9 @@ export type EvaluationResult = {
   id: string;
   molecule_id: string;
   smiles_hash: string;
+  target_name: string | null;
+  target_spearman_rho: number | null;
+  target_pdb_id: string | null;
 
   // Docking
   affinity_kcal: number | null;
