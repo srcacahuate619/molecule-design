@@ -72,7 +72,7 @@ class Repository:
                 organism="Homo sapiens",
                 resolution=2.8,
                 is_prepared=True,
-                spearman_rho=0.485,
+                spearman_rho=0.512,
                 hotspots=[
                     {"name": "MET97", "importance": 0.8},
                     {"name": "ASP116", "importance": 1.0},
@@ -100,7 +100,7 @@ class Repository:
                 resolution=3.3,
                 is_prepared=True,
                 is_hot=True,
-                spearman_rho=0.512,
+                spearman_rho=0.485,
                 hotspots=[
                     {"name": "TYR152", "importance": 0.9},
                     {"name": "ARG190", "importance": 1.0},
@@ -111,6 +111,31 @@ class Repository:
             )
             self.db.add(target_6b3j)
             log.info("target 6B3J (HOT) creado con hotspots")
+
+        # 3. PCSK9 Target (2P4E)
+        target_2p4e = await self.get_target_by_pdb_id("2P4E")
+        if not target_2p4e:
+            target_2p4e = TargetORM(
+                pdb_id="2P4E",
+                name="PCSK9 (Proprotein Convertase)",
+                chain="A",
+                description="Inhibición de la interacción PCSK9-LDLR para hipercolesterolemia.",
+                grid_center_x=-14.6, grid_center_y=24.5, grid_center_z=-45.7,
+                grid_size_x=22.0, grid_size_y=22.0, grid_size_z=22.0,
+                requires_cns=False,
+                structural_family="hydrolase",
+                organism="Homo sapiens",
+                resolution=1.97,
+                is_prepared=True,
+                spearman_rho=0.0, # Pendiente de validación sistemática
+                hotspots=[
+                    {"name": "GLY292", "importance": 1.0},
+                    {"name": "TYR293", "importance": 1.0},
+                    {"name": "SER294", "importance": 1.0}
+                ]
+            )
+            self.db.add(target_2p4e)
+            log.info("target 2P4E (PCSK9) creado con hotspots")
 
         await self.db.flush()
         return target_6b3j or target_7e2y

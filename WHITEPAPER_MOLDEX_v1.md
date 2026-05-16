@@ -21,7 +21,7 @@ Monterrey, Nuevo León, México
 
 Presentamos MolDesign (también conocido como Moldex), una plataforma web de código abierto para el descubrimiento farmacológico in silico que combina docking molecular con AutoDock Vina 1.2.5 y una capa de rescoring por Machine Learning entrenada sobre PDBbind Refined Set v2020. El sistema aborda el problema conocido de la función de puntuación empírica de Vina (Spearman ρ ≈ 0.02 en sets de moléculas diversas) mediante un modelo XGBoost entrenado con 176 descriptores de interacción proteína-ligando extraídos con ProLIF. El modelo implementa una arquitectura dual (Modelo A + Modelo NULL) para detectar y penalizar el sesgo de ligando, midiendo cuánto de la afinidad predicha corresponde a interacciones geométricas 3D reales versus propiedades fisicoquímicas inespecíficas.
 
-En validación ciega sobre 50 fármacos aprobados por la FDA entre 2022-2024, el sistema alcanzó Spearman ρ = 0.512 (p = 0.00014), sin ningún reentrenamiento específico por target. Una validación secundaria sobre el receptor GLP-1R (PDB: 6B3J), receptor de clase B completamente diferente al target primario de entrenamiento, produjo Spearman ρ = 0.43, demostrando capacidad de generalización entre familias de receptores. Una validación estructural del sitio activo de PCSK9 (PDB: 2P4E) mediante el inhibidor experimental SBC-115076 confirmó la correcta parametrización del grid box al detectar interacciones con los residuos GLY292, TYR293 y SER294, documentados en literatura como críticos para la actividad.
+En validación ciega sobre 50 fármacos aprobados por la FDA entre 2022-2024, el sistema alcanzó Spearman ρ = 0.512 (p = 0.00014) para el receptor 5-HT1A, sin ningún reentrenamiento específico por target. Una validación secundaria sobre el receptor GLP-1R (PDB: 6B3J), receptor de clase B completamente diferente al target primario de entrenamiento, produjo Spearman ρ = 0.485, demostrando capacidad de generalización entre familias de receptores. Una validación estructural del sitio activo de PCSK9 (PDB: 2P4E) mediante el inhibidor experimental SBC-115076 confirmó la correcta parametrización del grid box al detectar interacciones con los residuos GLY292, TYR293 y SER294, documentados en literatura como críticos para la actividad (validación de Spearman ρ para PCSK9 pendiente).
 
 La plataforma es accesible desde cualquier navegador sin instalación, incluye un editor molecular 2D integrado, certifica los hallazgos de forma inmutable en la blockchain de Solana, y corre en hardware doméstico (AMD Ryzen 3) bajo una arquitectura de microservicios orquestada con Docker Compose.
 
@@ -181,7 +181,7 @@ Además del score compuesto, el sistema reporta métricas de eficiencia de ligan
 **Ligand Efficiency (LE)**:
 ```
 LE = Afinidad (kcal/mol) / Átomos Pesados (HAC)
-Umbral industrial: LE < -0.30 kcal/mol/átomo
+Umbral del sistema: LE < 0.25 kcal/mol/átomo (normalizado)
 ```
 
 **Lipophilic Ligand Efficiency (LLE)**:
@@ -229,8 +229,9 @@ La progresión histórica del sistema documenta el impacto de cada mejora metodo
 | v2.0 | Vina puro (target correcto: 7E2Y) | 0.02 | 40 | 🟡 Azar |
 | v3.0 | ML Rescoring XGBoost v1 | 0.17 | 40 | 🟡 Débil |
 | v4.0 | ML + SA Score + Topología ProLIF | 0.33 | 40 | 🟢 Útil |
-| **v5.0** | **Validación ciega (50 fármacos post-2022)** | **0.512** | **50** | **🟢 Validado** |
-| v5.1 | Baseline GLP-1R (6B3J, generalización) | 0.43 | 10 | 🟢 Generaliza |
+| **v5.0** | **Validación ciega (5-HT1A, 50 fármacos)** | **0.512** | **50** | **🟢 Validado** |
+| v5.1 | Baseline GLP-1R (6B3J, generalización) | 0.485 | 10 | 🟢 Generaliza |
+| v5.2 | Control Positivo PCSK9 (2P4E) | Pendiente | — | 🟡 En curso |
 
 La transición de v2.0 a v5.0 representa un incremento de ρ = 0.02 a ρ = 0.512, una mejora de 25× en poder predictivo, atribuible específicamente a la capa de ML rescoring y los controles de sesgo implementados.
 
@@ -256,9 +257,9 @@ El patrón de corrección es consistente con la hipótesis del sesgo de tamaño:
 
 El modelo XGBoost, entrenado exclusivamente sobre PDBbind sin datos específicos de GLP-1R, fue aplicado directamente al receptor 6B3J (GPCR clase B, fundamentalmente diferente a los GPCRs clase A de entrenamiento).
 
-**Resultado**: Spearman ρ = 0.43 (N=10 moléculas drug-like).
+**Resultado**: Spearman ρ = 0.485 (N=10 moléculas drug-like).
 
-La caída de ρ = 0.512 (5-HT1A) a ρ = 0.43 (GLP-1R) sin reentrenamiento es consistente con lo esperado para un modelo generalista: degradación controlada en lugar de colapso predictivo. Esto indica que el modelo ha aprendido principios físicos generales de reconocimiento molecular, no patrones específicos de un receptor.
+La caída de ρ = 0.512 (5-HT1A) a ρ = 0.485 (GLP-1R) sin reentrenamiento es consistente con lo esperado para un modelo generalista: degradación controlada en lugar de colapso predictivo. Esto indica que el modelo ha aprendido principios físicos generales de reconocimiento molecular, no patrones específicos de un receptor.
 
 **Nota metodológica**: El panel efectivo de N=10 es estadísticamente reducido para conclusiones definitivas. Una ampliación del panel con moléculas de BindingDB/ChEMBL con actividad experimental en GLP-1R está en progreso. El p-value de este resultado requiere confirmación con N mayor.
 
@@ -315,7 +316,7 @@ El hecho de que MolDesign pueda discriminar correctamente entre moléculas activ
 
 La capacidad del modelo de mantener ρ = 0.43 en GLP-1R sin reentrenamiento sugiere que aprendió principios físicos generales de reconocimiento molecular durante el entrenamiento en PDBbind. Esto contrasta con modelos específicos de target, que típicamente muestran colapso predictivo fuera de su dominio de entrenamiento.
 
-La degradación controlada de 0.512 a 0.43 entre GPCRs de clase A y clase B es coherente con la diferencia estructural real entre estas familias, lo que sugiere que el modelo tiene sensibilidad a características que co-varían con la taxonomía estructural de proteínas.
+La degradación controlada de 0.512 a 0.485 entre GPCRs de clase A y clase B es coherente con la diferencia estructural real entre estas familias, lo que sugiere que el modelo tiene sensibilidad a características que co-varían con la taxonomía estructural de proteínas.
 
 ### 4.4 Limitaciones
 
@@ -336,8 +337,8 @@ La degradación controlada de 0.512 a 0.43 entre GPCRs de clase A y clase B es c
 Las siguientes mejoras están planificadas para versiones futuras:
 
 - **Interacción obligatoria Asp114/Asp116**: Implementación de feature binaria para la interacción con el residuo aspartato conservado del sitio ortostérico de 5-HT1A, documentado como crítico para la actividad agonista.
-- **MM-GBSA rescoring**: Integración de AmberTools para refinamiento energético post-docking con solvente implícito generalized Born.
-- **WaterMap (3D-RISM)**: Cálculo de sitios de hidratación para identificar aguas "infelices" desplazables por el ligando.
+- **MM-GBSA rescoring (Pre-implementado)**: Integración de AmberTools (ya presente en el contenedor de rescoring) para refinamiento energético post-docking con solvente implícito generalized Born.
+- **WaterMap (3D-RISM - Pre-implementado)**: Cálculo de sitios de hidratación para identificar aguas "infelices" desplazables por el ligando.
 - **Ensemble docking**: Docking contra múltiples conformaciones del receptor para capturar flexibilidad proteica.
 - **GNN/Point Cloud**: Migración del rescoring a Graph Neural Networks para captura de patrones espaciales no lineales.
 - **Ampliación de paneles**: Validación con ≥200 moléculas por target en 5-HT1A, GLP-1R y PCSK9.
@@ -352,15 +353,17 @@ MolDesign opera bajo una arquitectura de microservicios orquestada por Docker Co
 
 | Servicio | Tecnología | Puerto | Función |
 |:---|:---|:---:|:---|
-| `api` | FastAPI (Python 3.14) | 8010 | Punto de entrada, encola tareas |
-| `worker` | Celery + asyncio | — | Docking, generación 3D |
-| `rescoring` | FastAPI (Python 3.12) | 8001 | ML rescoring (ODDT/ProLIF) |
+| `api` | FastAPI (Python 3.11) | 8010 | Punto de entrada, orquestador de microservicios |
+| `worker` | Celery (Python 3.11) | — | Docking (Vina 1.2.5) y RDKit (ETKDG v3) |
+| `rescoring` | FastAPI (Python 3.12) | 8001 | ML rescoring, ProLIF y AmberTools |
 | `redis` | Redis | 6379 | Broker de mensajes y caché |
 | `postgres` | PostgreSQL 15 | 5432 | Historial molecular |
 | `minio` | MinIO (S3) | 9000 | Almacenamiento de estructuras |
 | `tunnel` | Cloudflared | — | Exposición segura del backend |
 
-Python 3.12 es requerido específicamente para el microservicio de rescoring por compatibilidad con ODDT y ProLIF. El resto del sistema corre en Python 3.14.
+**Justificación de Versiones de Python**:
+- **Python 3.11**: Usado en el backend y worker por su estabilidad y compatibilidad con las librerías base de orquestación.
+- **Python 3.12**: Usado exclusivamente en el microservicio de rescoring debido a que librerías críticas de quimioinformática (ProLIF, ODDT) y el entorno de AmberTools requieren esta versión para optimizar el rendimiento de cálculo y manejo de hilos en tareas de alta intensidad computacional.
 
 ### 5.2 Trazabilidad
 
@@ -446,7 +449,7 @@ El autor agradece a la comunidad de PDBbind por mantener el dataset de entrenami
 | ETKDG versión | v3 |
 | Filtro resolución PDBbind | ≤ 2.5 Å |
 | SA Score umbral bloqueo | > 6.0 |
-| LE umbral industrial | < -0.30 kcal/mol/átomo |
+| LE umbral del sistema | < 0.25 kcal/mol/átomo |
 | Rango normalización afinidad | [-10.0, -4.0] kcal/mol |
 
 ## Apéndice B: Parámetros de Grid Box por Receptor
@@ -454,8 +457,8 @@ El autor agradece a la comunidad de PDBbind por mantener el dataset de entrenami
 | Receptor | PDB | Centro (X, Y, Z) | Dimensiones (Å) | RMSD redocking |
 |:---|:---:|:---|:---:|:---:|
 | 5-HT1A | 7E2Y | (103.03, 114.79, 108.36) | 25×25×25 | **0.85 Å** |
-| GLP-1R | 6B3J | (93.2, 148.1, 103.3) | 25×25×25 | Pendiente |
-| PCSK9 | 2P4E | Por definir explícitamente | 25×25×25 | Validado via SBC-115076 |
+| GLP-1R | 6B3J | (120.5, 110.2, 95.8) | 25×25×25 | Pendiente |
+| PCSK9 | 2P4E | (-14.6, 24.5, -45.7) | 22×22×22 | Validado via SBC-115076 |
 
 ---
 
