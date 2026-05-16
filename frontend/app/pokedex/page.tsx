@@ -45,8 +45,8 @@ export default function PokedexPage() {
       setPoseData(null); // Clear previous pose to show loading
       
       Promise.all([
-        getProteinFile(selectedMolecule.target.pdb_id),
-        getPoseFile(selectedMolecule.smiles_hash, selectedMolecule.target.pdb_id)
+        getProteinFile(selectedMolecule.id),
+        getPoseFile(selectedMolecule.id)
       ]).then(([protein, pose]) => {
         setProteinData(protein);
         setPoseData(pose);
