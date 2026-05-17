@@ -1,5 +1,5 @@
 # docker-compose.yml
-# Desarrollo en servidor Ubuntu (192.168.1.64).
+# Desarrollo en servidor Ubuntu (192.168.100.12).
 # PostgreSQL, Redis y MinIO corren como contenedores del sistema (fuera de esta compose).
 #
 # Puertos ajustados para evitar conflictos con otros servicios del servidor:
@@ -7,8 +7,8 @@
 #   Frontend: 3001 (3000 ocupado por open-webui)
 #
 # Acceso:
-#   Backend API:  http://192.168.1.64:8010/docs
-#   Frontend:     http://192.168.1.64:3001
+#   Backend API:  http://192.168.100.12:8010/docs
+#   Frontend:     http://192.168.100.12:3001
 
 services:
 
@@ -151,7 +151,7 @@ services:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     environment:
-      NEXT_PUBLIC_API_URL: http://192.168.1.64:8010
+      NEXT_PUBLIC_API_URL: http://192.168.100.12:8010
       NODE_ENV: development
     profiles:
       - dev

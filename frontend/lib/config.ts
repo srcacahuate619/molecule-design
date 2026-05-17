@@ -5,14 +5,14 @@ const getApiUrl = () => {
   const { hostname, protocol } = window.location;
   
   // Si estamos en Vercel o similar (no localhost, no IP local)
-  const isVercel = !hostname.includes("localhost") && !hostname.includes("192.168.1");
+  const isVercel = !hostname.includes("localhost") && !hostname.includes("192.168.");
   
   if (isVercel) {
-    return "https://approval-beijing-heavily-planner.trycloudflare.com";
+    return "https://preston-pic-customise-hist.trycloudflare.com";
   }
   
-  // Si estamos en la red local (ej: 192.168.1.64)
-  if (hostname.includes("192.168.1")) {
+  // Si estamos en la red local (ej: 192.168.100.12 o 192.168.1.64)
+  if (hostname.includes("192.168.")) {
     return `http://${hostname}:8010`;
   }
   

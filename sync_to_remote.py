@@ -46,7 +46,7 @@ FILES = [
 ]
 
 REMOTE_USER = "srcacahuate619"
-REMOTE_HOST = "192.168.1.64"
+REMOTE_HOST = "192.168.100.12"
 REMOTE_DIR = "/home/srcacahuate619/molecular-design"
 
 def sync_files():
