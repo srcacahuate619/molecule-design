@@ -43,11 +43,25 @@ FILES = [
     "docs/ARCHITECTURE_OVERVIEW.md",
     "backend/utils/scientific.py",
     "backend/scripts/update_target_hotspots.py",
+    "backend/scripts/sync_vercel.js",
 ]
 
-REMOTE_USER = "srcacahuate619"
-REMOTE_HOST = "192.168.100.12"
-REMOTE_DIR = "/home/srcacahuate619/molecular-design"
+def load_env():
+    env = {}
+    if os.path.exists(".env"):
+        with open(".env", "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    parts = line.split("=", 1)
+                    if len(parts) == 2:
+                        env[parts[0].strip()] = parts[1].strip()
+    return env
+
+env = load_env()
+REMOTE_USER = env.get("REMOTE_USER", "srcacahuate619")
+REMOTE_HOST = env.get("REMOTE_HOST", "192.168.100.12")
+REMOTE_DIR = env.get("REMOTE_DIR", "/home/srcacahuate619/molecular-design")
 
 def sync_files():
     for file_path in FILES:

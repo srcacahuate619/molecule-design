@@ -1,5 +1,5 @@
 # docker-compose.yml
-# Desarrollo en servidor Ubuntu (192.168.100.12).
+# Desarrollo en servidor Ubuntu (Host Local).
 # PostgreSQL, Redis y MinIO corren como contenedores del sistema (fuera de esta compose).
 #
 # Puertos ajustados para evitar conflictos con otros servicios del servidor:
@@ -7,8 +7,8 @@
 #   Frontend: 3001 (3000 ocupado por open-webui)
 #
 # Acceso:
-#   Backend API:  http://192.168.100.12:8010/docs
-#   Frontend:     http://192.168.100.12:3001
+#   Backend API:  http://[SERVER_IP]:8010/docs
+#   Frontend:     http://[SERVER_IP]:3001
 
 services:
 
@@ -58,11 +58,11 @@ services:
       - ./backend/.env
     environment:
       ENVIRONMENT: production
-      DATABASE_URL: postgresql+asyncpg://admin:Johan619.@172.17.0.1:5432/moldesign_db
-      REDIS_URL: redis://172.17.0.1:6379/0
-      MINIO_ENDPOINT: 172.17.0.1:9005
-      MINIO_ACCESS_KEY: admin
-      MINIO_SECRET_KEY: Johan619.
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_SECURE: "false"
       VINA_EXECUTABLE_PATH: /usr/local/bin/vina
       CORS_ORIGINS: '["*"]'
@@ -98,11 +98,11 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://admin:Johan619.@172.17.0.1:5432/moldesign_db
-      REDIS_URL: redis://172.17.0.1:6379/0
-      MINIO_ENDPOINT: 172.17.0.1:9005
-      MINIO_ACCESS_KEY: admin
-      MINIO_SECRET_KEY: Johan619.
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_SECURE: "false"
       VINA_EXECUTABLE_PATH: /usr/local/bin/vina
     volumes:
@@ -127,7 +127,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      REDIS_URL: redis://172.17.0.1:6379/0
+      REDIS_URL: ${REDIS_URL}
     depends_on:
       - worker
     profiles:
@@ -151,7 +151,7 @@ services:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
     environment:
-      NEXT_PUBLIC_API_URL: http://192.168.100.12:8010
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       NODE_ENV: development
     profiles:
       - dev
@@ -186,6 +186,7 @@ services:
     # El script sync_vercel.js ahora usa el token del environment (cargado via env_file)
     command: >
       sh -c "apk add --no-cache curl docker-cli &&
+             npm install -g vercel@29.3.0 &&
              node scripts/sync_vercel.js"
 
 # ─────────────────────────────────────────────

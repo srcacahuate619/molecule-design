@@ -40,17 +40,17 @@ async function sync() {
     for (const env of envs) {
       try {
         console.log(`🧹 Limpiando env ${env}...`);
-        execSync(`npx vercel env rm NEXT_PUBLIC_API_URL ${env} -y --token ${token} --project prj_t8DpzibTj4Zcj3pTohIydld7PcQk`, { stdio: 'ignore' });
+        execSync(`vercel env rm NEXT_PUBLIC_API_URL ${env} -y --token ${token} --project prj_t8DpzibTj4Zcj3pTohIydld7PcQk`, { stdio: 'ignore' });
       } catch (e) {}
     }
     
     console.log(`➕ Agregando nueva URL a todos los entornos...`);
     for (const env of envs) {
-      execSync(`echo "${newUrl}" | npx vercel env add NEXT_PUBLIC_API_URL ${env} --token ${token} --project prj_t8DpzibTj4Zcj3pTohIydld7PcQk`, { stdio: 'inherit' });
+      execSync(`echo "${newUrl}" | vercel env add NEXT_PUBLIC_API_URL ${env} --token ${token} --project prj_t8DpzibTj4Zcj3pTohIydld7PcQk`, { stdio: 'inherit' });
     }
     
     console.log("⚡ Forzando redeploy en Vercel...");
-    execSync(`npx vercel deploy --prod --token ${token} --yes --project prj_t8DpzibTj4Zcj3pTohIydld7PcQk`, { stdio: 'inherit' });
+    execSync(`vercel deploy --prod --token ${token} --yes --project prj_t8DpzibTj4Zcj3pTohIydld7PcQk`, { stdio: 'inherit' });
     
     console.log("✅ Sincronización completada con éxito.");
     process.exit(0);
