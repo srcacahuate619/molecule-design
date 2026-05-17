@@ -44,6 +44,7 @@ FILES = [
     "docs/SCIENTIFIC_FOUNDATION.md",
     "docs/VALIDATION_HISTORY.md",
     "README.md",
+    "WHITEPAPER_MOLDEX_v1.md",
     "backend/utils/scientific.py",
     "backend/scripts/update_target_hotspots.py",
     "backend/scripts/sync_vercel.js",
