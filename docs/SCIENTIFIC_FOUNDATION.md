@@ -15,21 +15,28 @@ Cada molécula pasa por un riguroso proceso de validación antes de ser procesad
 - **SA Score (Accesibilidad Sintética)**: Estimación de qué tan difícil es fabricar la molécula (1 = fácil, 10 = imposible).
 - **Penalización por Tensión de Anillo**: Anillos de 3 y 4 carbonos fusionados (como en el Cubano) disparan el SA Score para reflejar la inestabilidad geométrica.
 
-## 3. Calibración del Scoring y Eficiencia de Ligando
+## 3. Calibración del Scoring y Eficiencia de Ligando (v6.1)
 
-El score final de MolDesign (0-100) no es una simple media, sino un sistema calibrado para penalizar el binding inespecífico.
+El score final de MolDesign (0-100) no es una simple media, sino un sistema calibrado para penalizar el binding inespecífico y equilibrar la biofísica de la unión.
 
-### Ligand Efficiency (LE)
-La afinidad cruda de Vina tiende a favorecer moléculas grandes simplemente por tener más átomos (efecto de superficie). Para corregir esto, usamos la **Eficiencia de Ligando (LE)**:
-- **Fórmula**: `LE = Afinidad (kcal/mol) / Número de Átomos Pesados (HAC)`
-- **Umbral Industrial**: -0.30 kcal/mol/at.
-- **Lógica**: Una molécula con -10 kcal/mol y 50 átomos (LE = -0.20) es menos prometedora que una con -8 kcal/mol y 20 átomos (LE = -0.40). La segunda aprovecha mejor cada interacción atómica.
+### Eficiencia de Ligando Adaptativa al Tamaño (Size-Adaptive LE) [NUEVO v6.1]
+La afinidad cruda de Vina tiende a favorecer moléculas grandes simplemente por tener más átomos (efecto de superficie). Para corregir esto, usamos la **Eficiencia de Ligando (LE)** ($LE = \frac{\Delta G}{N_H}$). Sin embargo, un umbral estático de $-0.30$ castiga de forma injusta a ligandos más grandes porque la densidad de unión biofísica decae fisiológicamente con el tamaño debido a limitaciones estéricas de empaquetamiento.
 
-### Suelo de Afinidad Absoluta (v4.5) [NUEVO]
-Para evitar que moléculas pequeñas pero eficientes (como la serotonina) inflen artificialmente su score sin tener potencia real, introducimos el **Potency Floor**:
-- **Umbral del Target**: Cada receptor tiene un `affinity_threshold` definido en DB (ej: -7.0 para CTLA-4).
-- **Penalización Sigmoidea**: Si la afinidad absoluta es más débil que el umbral, se aplica una penalización drástica mediante una función sigmoidea (k=2.0). 
-- **Filosofía**: La eficiencia (LE) es necesaria, pero la potencia absoluta es obligatoria para ser un candidato a fármaco viable.
+En la versión **v6.1**, implementamos un **punto medio de LE dinámico y adaptativo ($LE_{mid}$)**:
+- **Moléculas pequeñas ($N_H < 15$ átomos pesados)**: $LE_{mid} = -0.38$ kcal/mol/átomo (los fragmentos deben ser altamente eficientes).
+- **Moléculas grandes ($N_H > 45$ átomos pesados)**: $LE_{mid} = -0.20$ kcal/mol/átomo (compuestos maduros toleran menor densidad por acoples hidrofóbicos extendidos).
+- **Moléculas medianas ($15 \le N_H \le 45$)**: Interpolación lineal continua entre $-0.38$ y $-0.20$:
+  $$LE_{mid} = -0.38 + (N_H - 15) \times \frac{0.18}{30}$$
+
+Esto estabiliza el score físico y previene que moléculas nanomolares de alto peso molecular (ej. agonistas peptídicos de GPCRs como GLP-1R) sufran penalizaciones injustas.
+
+### Suelo de Afinidad Absoluta Suave (Soft Boundary Potency Floor) [NUEVO v6.1]
+Para evitar que moléculas pequeñas pero ultra-eficientes (como fragmentos de bajo peso molecular) inflen artificialmente su score sin tener la afinidad total necesaria, aplicamos un **Potency Floor**:
+- **Umbral del Target**: Cada receptor tiene un `affinity_threshold` biológico en base de datos (ej: $-7.5$ kcal/mol para GLP-1R).
+- **Frontera Continua**: Si la afinidad cumple o supera el threshold ($\Delta G \le \text{Threshold}$), **no hay penalización** (factor = $1.0$).
+- **Decaimiento Suave**: Si es más débil ($\Delta G > \text{Threshold}$), se aplica un decaimiento sigmoideo suave normalizado a $1.0$ en la frontera exacta del umbral para evitar saltos y caídas abruptas en la curva de puntuación:
+  $$\text{Potency Factor} = \min\left(1.0, \frac{2.0}{1 + e^{2.0 \times (\Delta G - \text{Threshold})}}\right)$$
+- **Filosofía**: La eficiencia (LE) es necesaria para evitar compuestos gigantes inespecíficos, pero la potencia absoluta es obligatoria para garantizar actividad farmacológica.
 
 ### Reglas Fisicoquímicas Detalladas
 MolDesign evalúa el "Drug-likeness" basándose en tres estándares de la industria:

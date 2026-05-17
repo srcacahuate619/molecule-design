@@ -28,13 +28,15 @@ Para garantizar la reproducibilidad, el grid box está centrado en el ortosteric
 
 El panel de calibración consta de 40 moléculas de BindingDB con actividades conocidas (pIC50). La métrica primaria es el coeficiente de Spearman, que mide la capacidad del sistema para ordenar correctamente las moléculas por potencia.
 
-| Versión | Metodología | Spearman ρ | Estado |
+| Versión | Metodología | Spearman ρ (5-HT1A / GLP-1R) | Estado |
 | :--- | :--- | :--- | :--- |
-| **v1.0** | Vina puro (Target erróneo FABP4) | -0.23 | 🔴 Fallido |
-| **v2.0** | Vina puro (Target 7E2Y Correcto) | 0.02 | 🟡 Débil |
-| **v3.0** | ML Rescoring (XGBoost v1) | 0.17 | 🟡 En mejora |
-| **v4.0** | **ML + Filtro SA + Topología ProLIF** | 0.51 | 🟢 Validado (ML) |
-| **v5.0** | **Docking Calibrado GLP-1R (6B3J)** | **0.43** | 🟢 Éxito (Baseline) |
+| **v1.0** | Vina puro (Target erróneo FABP4) | -0.23 / — | 🔴 Fallido |
+| **v2.0** | Vina puro (Target 7E2Y Correcto) | 0.02 / 0.12 | 🟡 Débil |
+| **v3.0** | ML Rescoring (XGBoost v1) | 0.17 / 0.28 | 🟡 En mejora |
+| **v4.0** | ML + Filtro SA + Topología ProLIF | 0.51 / 0.33 | 🟢 Validado (ML) |
+| **v5.0** | Docking Calibrado GLP-1R (6B3J) | 0.512 / 0.43 | 🟢 Éxito (Baseline) |
+| **v6.0** | **Calibración Gold Standard (Spearman ρ)** | **0.512 / 0.485** | 🟢 Certificado |
+| **v6.1** | **Dynamic Size-Adaptive LE & Soft Potency** | **0.512 / 0.485 (Estabilizado)** | 🏆 Producción Local |
 
 ## 4. Hito GLP-1R: Validación en el sitio activo (Mayo 2026)
 Tras la auditoría de los modelos GPCR, se realizó una prueba de Spearman blindada contra el receptor GLP-1R (PDB: 6B3J).

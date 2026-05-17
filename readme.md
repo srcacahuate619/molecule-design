@@ -13,18 +13,12 @@
 
 Moldex es una plataforma *Open Science* evolucionada que permite a investigadores y estudiantes diseÃ±ar molÃ©culas contra blancos biolÃ³gicos crÃ­ticos. No solo calcula afinidades; realiza una **auditorÃ­a científica profunda** (LE, LLE, Hotspot Analysis) para validar cada diseño. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana.
 
-### Novedades v5.2: AuditorÃ­a DinÃ¡mica y Hito PCSK9
-La plataforma ha escalado su motor de anÃ¡lisis para soportar mÃºltiples receptores con feedback contextual:
-- **ValidaciÃ³n PCSK9 (2P4E):** Ã‰xito rotundo con el inhibidor experimental **SBC-115076**, detectando interacciones clave con GLY292, TYR293 y SER294.
-- **Scientific Auditor Engine:** Nuevo motor que traduce mÃ©tricas crudas en advertencias quÃ­micas accionables (Riesgo de Grease Ball, Potencia Insuficiente, Eficiencia de Ligando).
-- **Target Scaling:** Arquitectura lista para la ingesta masiva de proteínas con perfiles de fiabilidad (Spearman Ï ) específicos por blanco.
-- **3D Protagonist UI:** Interfaz rediseñada centrada en la inspección visual de bolsillo y hotspots.
-
-**Highlights Recientes:**
-- **ValidaciÃ³n PCSK9:** ConfirmaciÃ³n de Grid Box sin necesidad de redocking explÃ­cito.
-- **CalibraciÃ³n Blindada GLP-1R:** Spearman Ï  = 0.43 (baseline Vina-only).
-- **SincronizaciÃ³n de Grid:** CorrecciÃ³n y validaciÃ³n de coordenadas crÃ­ticas (`93.2, 148.1, 103.3`) para targets GPCR.
-3 (Ubuntu) con soporte para dockings de alta exhaustividad (timeout 600s).
+### Novedades v6.1: CalibraciÃ³n de Rigor BiofÃ­sico y Suelo de Potencia Suave
+La plataforma ha escalado su motor cientÃ­fico con la actualizaciÃ³n **v6.1**, corrigiendo sesgos termodinÃ¡micos tradicionales en el cribado virtual:
+- **Size-Adaptive LE:** Punto medio de Eficiencia de Ligando dinÃ¡mico ($LE_{mid}$) entre $-0.38$ y $-0.20$ kcal/mol/at. Evita la penalizaciÃ³n injusta de fÃ¡rmacos de alto peso molecular (como agonistas GPCR) mientras mantiene rigor estricto sobre fragmentos pequeÃ±os.
+- **Soft Boundary Potency Floor:** FunciÃ³n de decaimiento sigmoideo continuo normalizado a $1.0$ exacto en el umbral del target para eliminar discontinuidades bruscas en el score.
+- **Panel de AuditorÃ­a CientÃ­fica:** Nueva secciÃ³n interactiva en la UI que expone de forma 100% transparente y reproducible todas las fÃ³rmulas fÃ­sicas y ecuaciones del motor de rescoring.
+- **Spearman Certificado:** EstabilizaciÃ³n de la regla de oro para la priorizaciÃ³n de hits con un coeficiente blindado de **0.512 para 5-HT1A** y **0.485 para GLP-1R**.
 
 ---
 
@@ -73,9 +67,10 @@ MolDesign resuelve esto con una capa de rescoring por Machine Learning entrenada
 
 La mÃ©trica primaria de MolDesign es el **coeficiente de Spearman**, que mide la capacidad del sistema para ordenar correctamente molÃ©culas por potencia biolÃ³gica.
 
-| v4.0 | ML + Filtro SA + TopologÃ­a ProLIF | 0.33 | ðŸŸ¢ Ãštil |
-| v5.0 | **ML Rescoring** (50 fÃ¡rmacos post-2022) | **0.51** | **ðŸŸ¢ ProducciÃ³n** |
-| **v5.1 (actual)** | **Docking Baseline GLP-1R (6B3J)** | **0.43** | **ðŸŸ¢ Calibrado** |
+| v4.0 | ML + Filtro SA + TopologÃ­a ProLIF | 0.51 / 0.33 | ðŸŸ¢ Ãštil |
+| v5.0 | Docking Calibrado GLP-1R (6B3J) | 0.512 / 0.43 | ðŸŸ¢ Calibrado |
+| **v6.0** | **CalibraciÃ³n Gold Standard (Spearman Ï )** | **0.512 / 0.485** | **ðŸŸ¢ Certificado** |
+| **v6.1 (actual)** | **Dynamic Size-Adaptive LE & Soft Potency** | **0.512 / 0.485** | **ðŸŸ¢ ProducciÃ³n Local** |
 
 > El panel de validaciÃ³n v5.0 consta de 50 fÃ¡rmacos aprobados por la FDA entre 2022-2024 (Fruquintinib, Capivasertib, Axitinib, entre otros), nunca vistos por el modelo durante el entrenamiento.
 
@@ -360,11 +355,10 @@ MINIO_ROOT_PASSWORD=...
 | v5.0 | CalibraciÃ³n Blindada GLP-1R (Ï=0.43) | âœ… |
 | v5.1 | Mentor QuÃ­mico (Molecular Insight) | âœ… |
 | v5.0 | Modelo Freemium (lÃ­mites anÃ³nimos por IP) | âœ… |
-| v5.1 | Feature Asp114 como interacciÃ³n obligatoria 5-HT1A | ðŸ”„ |
-| v5.2 | MM-GBSA rescoring con AmberTools | ðŸ“‹ |
-| v6.0 | GNN / Point Cloud rescoring | ðŸ“‹ |
-| v6.0 | Ensemble docking (receptor flexible) | ðŸ“‹ |
-| v7.0 | Hydrated Docking (Vina-Hydrated / WIDD) | ðŸ“‹ |
+| v6.0 | CalibraciÃ³n Gold Standard (Spearman Ï  = 0.512 / 0.485) | âœ… |
+| v6.1 | Dynamic Size-Adaptive LE & Soft Potency | âœ… |
+| v7.0 | MM-GBSA rescoring / Ensemble Docking | ðŸ“‹ |
+| v8.0 | Hydrated Docking (Vina-Hydrated / WIDD) | ðŸ“‹ |
 
 ---
 

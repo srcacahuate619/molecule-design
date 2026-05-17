@@ -17,7 +17,7 @@ export function ReproducibilityInfo({ result }: Props) {
       </p>
       <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
         <span className="text-surface-400">ML Rescore</span>
-        <span className="text-brand-400 font-semibold">v4.0 {result.target_spearman_rho && `(Spearman ${result.target_spearman_rho.toFixed(3)})`}</span>
+        <span className="text-brand-400 font-semibold">v6.1 {result.target_spearman_rho && `(Spearman ${result.target_spearman_rho.toFixed(3)})`}</span>
         
         {result.vina_version && (
           <>

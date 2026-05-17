@@ -31,17 +31,28 @@ def normalize_affinity(
 
     le = affinity_kcal / heavy_atoms
     
-    # --- Función Sigmoidea para LE ---
-    mid_le = -0.30
+    # --- [CIENCIA DILUCIDADA] LE de referencia decae fisiológicamente con el tamaño ---
+    # Fragmentos pequeños necesitan mayor densidad de energía; ligandos grandes tienen límites de empaquetamiento estérico.
+    if heavy_atoms < 15:
+        mid_le = -0.38
+    elif heavy_atoms > 45:
+        mid_le = -0.20
+    else:
+        # Interpolación lineal entre 15 y 45 átomos pesados
+        mid_le = -0.38 + (heavy_atoms - 15) * (0.18 / 30)
+    
     k_le = 15
     base_score = 100 / (1 + math.exp(k_le * (le - mid_le)))
 
-    # --- PENALIZADOR DE POTENCIA ABSOLUTA [NUEVO] ---
-    # Si la molécula es muy eficiente pero muy débil (fragmento), se le castiga.
-    # Sigmoide centrada en 'threshold' (ej. -7.5) con pendiente k=2.0.
-    # Esto asegura que para ser un "Lead", debe tener potencia real.
-    potency_factor = 1.0 / (1 + math.exp(2.0 * (affinity_kcal - threshold)))
-    base_score *= potency_factor
+    # --- PENALIZADOR DE POTENCIA ABSOLUTA OPTIMIZADO ---
+    # Si la molécula es más débil que el threshold, se aplica un castigo sigmoideo suave.
+    # Si cumple o supera el threshold, no hay penalización (potency_factor = 1.0).
+    if affinity_kcal > threshold:
+        # Sigmoide centrada en threshold con pendiente k=2.0
+        potency_factor = 1.0 / (1 + math.exp(2.0 * (affinity_kcal - threshold)))
+        # Escalamos para evitar discontinuidades bruscas: a la altura del threshold vale 1.0
+        potency_factor = min(1.0, potency_factor * 2.0)
+        base_score *= potency_factor
 
     # --- Factor LLE (Lipophilic Efficiency) ---
     if log_p is not None:
