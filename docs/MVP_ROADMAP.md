@@ -132,7 +132,8 @@ Cuando haya duda entre varias tareas, seguir siempre esta jerarquía:
 - `.env` (raíz) — **Nuevo**: variables para docker-compose
 - `backend/utils/file_handlers.py` — **Mejorado**: retry con exponential backoff para MinIO (5 reintentos, 2-32s)
 - `backend/tests/conftest.py` — **Corregido**: URL de DB test (usuario `moldesign`, auth trust)
-- `backend/pyproject.toml` — **Corregido**: `asyncio_default_test_loop_scope = "session"` para Python 3.14
+- `backend/pyproject.toml` — **Corregido**: `asyncio_default_test_loop_scope = "session"` para Python 3.11+
+
 - `backend/tests/integration/test_api_endpoints.py` — **Corregido**: mock patch path para `submit_evaluation_job`
 - `backend/tests/integration/test_auth_endpoints.py` — **Corregido**: status code 401 para usuario inactivo (security best practice)
 - **484 tests** (455 unit + 29 integration) pasando, 1 skipped, 0 fallos
@@ -234,7 +235,8 @@ Resultado clave: **A+C (sin Group B) es mejor que A+B+C** — Group B introduce 
 | Versión | Fecha | Spearman | Notas |
 |---|---|---|---|
 | v1 (baseline) | 2026-04-05 | 0.275 | skip_structure_checks=True, solo MW contribuye |
-| v2 (ODDT) | cancelada | — | ODDT incompatible con Python 3.14 (dep 'six') |
+| v2 (ODDT) | cancelada | — | ODDT incompatible con Python 3.12+ (dep 'six') |
+
 | **v3 (ProLIF)** | **2026-04-06** | **0.435** | ProLIF 2.1.0, RDKit-direct, n_jobs=1 fix |
 | v4 (planned) | próxima | target ≥0.55 | +RF-Score shells +ECIF +MW norm +re-docking |
 

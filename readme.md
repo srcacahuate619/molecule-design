@@ -239,7 +239,8 @@ Basado en el algoritmo Ertl & Schuffenhauer (RDKit), reforzado con penalizacione
 ```
 moldesign_net (bridge)
 â”‚
-â”œâ”€â”€ api (FastAPI, Python 3.14, :8010)
+├── api (FastAPI, Python 3.11, :8010)
+
 â”‚     â””â”€â”€ Punto de entrada. Encola tareas en Redis.
 â”‚
 â”œâ”€â”€ worker (Celery + asyncio pool)

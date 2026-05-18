@@ -43,7 +43,8 @@ MolDesign utiliza una arquitectura de microservicios orquestada por **Docker Com
 
 ### Red Interna (moldesign_net)
 Los servicios se comunican mediante una red bridge interna:
-- **`api` (FastAPI)**: Punto de entrada, corre en Python 3.14. Se comunica con Redis para encolar tareas.
+- **`api` (FastAPI)**: Punto de entrada, corre en Python 3.11. Se comunica con Redis para encolar tareas.
+
 - **`worker` (Celery)**: Consume de Redis, ejecuta Vina y genera archivos 3D.
 - **`rescoring` (FastAPI)**: Microservicio en Python 3.12 (necesario para ODDT/ProLIF). Expone el endpoint `POST /rescore`.
 - **`tunnel` (Cloudflared)**: Crea un túnel seguro hacia `api:8000`, permitiendo que el servidor local sea accesible sin abrir puertos en el router.
