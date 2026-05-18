@@ -1,17 +1,18 @@
-# Moldex ðŸ§¬ (formerly MolDesign)
+# MolDesign IA 🧪 (con Módulo Moldex)
 
-**Plataforma de Descubrimiento FarmacolÃ³gico In Silico con AuditorÃ­a CientÃ­fica Profunda, Rescoring por ML y CertificaciÃ³n Blockchain.**
+**Plataforma de Descubrimiento Farmacológico In Silico con Auditoría Científica Profunda, Rescoring por ML y Certificación Blockchain.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)]()
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
 [![Solana: Devnet](https://img.shields.io/badge/Blockchain-Solana_Devnet-purple.svg)]()
-[![Spearman Ï : 0.512](https://img.shields.io/badge/Spearman_%CF%81_blind-0.512-brightgreen.svg)]()
-[![Redocking RMSD: 0.85Ã…](https://img.shields.io/badge/Redocking_RMSD-0.85_Ã…-brightgreen.svg)]()
+[![Spearman ρ: 0.512](https://img.shields.io/badge/Spearman_%CF%81_blind-0.512-brightgreen.svg)]()
+[![Redocking RMSD: 0.85Å](https://img.shields.io/badge/Redocking_RMSD-0.85_Å-brightgreen.svg)]()
 
-> *"Democratizando la creaciÃ³n de fÃ¡rmacos mediante el rigor de la ciencia computacional y la transparencia de datos."*
+> *"Democratizando la creación de fármacos mediante el rigor de la ciencia computacional y la transparencia de datos."*
 
-Moldex es una plataforma *Open Science* evolucionada que permite a investigadores y estudiantes diseÃ±ar molÃ©culas contra blancos biolÃ³gicos crÃ­ticos. No solo calcula afinidades; realiza una **auditorÃ­a científica profunda** (LE, LLE, Hotspot Analysis) para validar cada diseño. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana.
+**MolDesign IA** es una plataforma *Open Science* evolucionada que permite a investigadores y estudiantes diseñar moléculas contra blancos biológicos críticos. No solo calcula afinidades; realiza una **auditoría científica profunda** (LE, LLE, Hotspot Analysis) para validar cada diseño, integrando el módulo **Moldex** como su interfaz de registro e inmutabilidad histórica. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana.
+
 
 ### Novedades v6.1: CalibraciÃ³n de Rigor BiofÃ­sico y Suelo de Potencia Suave
 La plataforma ha escalado su motor cientÃ­fico con la actualizaciÃ³n **v6.1**, corrigiendo sesgos termodinÃ¡micos tradicionales en el cribado virtual:

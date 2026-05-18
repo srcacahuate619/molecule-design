@@ -19,7 +19,8 @@ Monterrey, Nuevo León, México
 
 ## Resumen
 
-Presentamos MolDesign (también conocido como Moldex), una plataforma web de código abierto para el descubrimiento farmacológico in silico que combina docking molecular con AutoDock Vina 1.2.5 y una capa de rescoring por Machine Learning entrenada sobre PDBbind Refined Set v2020. El sistema aborda el problema conocido de la función de puntuación empírica de Vina (Spearman ρ ≈ 0.02 en sets de moléculas diversas) mediante un modelo XGBoost entrenado con 176 descriptores de interacción proteína-ligando extraídos con ProLIF. El modelo implementa una arquitectura dual (Modelo A + Modelo NULL) para detectar y penalizar el sesgo de ligando, midiendo cuánto de la afinidad predicha corresponde a interacciones geométricas 3D reales versus propiedades fisicoquímicas inespecíficas.
+Presentamos MolDesign IA, una plataforma web de código abierto para el descubrimiento farmacológico in silico que combina docking molecular con AutoDock Vina 1.2.5 y una capa de rescoring por Machine Learning entrenada sobre PDBbind Refined Set v2020. La plataforma incorpora el módulo **Moldex** como su interfaz de registro, trazabilidad e inmutabilidad de hallazgos moleculares. El sistema aborda el problema conocido de la función de puntuación empírica de Vina (Spearman ρ ≈ 0.02 en sets de moléculas diversas) mediante un modelo XGBoost entrenado con 176 descriptores de interacción proteína-ligando extraídos con ProLIF. El modelo implementa una arquitectura dual (Modelo A + Modelo NULL) para detectar y penalizar el sesgo de ligando, midiendo cuánto de la afinidad predicha corresponde a interacciones geométricas 3D reales versus propiedades fisicoquímicas inespecíficas.
+
 
 En validación ciega sobre 50 fármacos aprobados por la FDA entre 2022-2024, el sistema alcanzó Spearman ρ = 0.512 (p = 0.00014) para el receptor 5-HT1A, sin ningún reentrenamiento específico por target. Una validación secundaria sobre el receptor GLP-1R (PDB: 6B3J), receptor de clase G de clase B completamente diferente al target primario de entrenamiento, produjo Spearman ρ = 0.485. Es fundamental destacar que este panel de GLP-1R (N=10 moléculas drug-like) es estadísticamente reducido y representa un análisis preliminar que requiere confirmación con sets muestrales ampliados (un benchmark global expandido con N=50 por target se encuentra actualmente en ejecución activa para blindar estas métricas). Una validación estructural del sitio activo de PCSK9 (PDB: 2P4E) mediante el inhibidor experimental SBC-115076 confirmó la correcta parametrización del grid box al detectar interacciones con los residuos GLY292, TYR293 y SER294, documentados en literatura como críticos para la actividad (validación de Spearman ρ para PCSK9 pendiente).
 
@@ -163,7 +164,8 @@ Para cada molécula evaluada, se calcula su distancia de Mahalanobis respecto al
 
 ### 2.5 Score Compuesto y Calibración Biofísica (v6.1)
 
-El score final de MolDesign (conocido comercialmente como Moldex) implementa un motor multidimensional biofísicamente calibrado. A diferencia de las medias lineales genéricas, la arquitectura **v6.1** modula dinámicamente la influencia de cada descriptor físico para reflejar la complementariedad molecular real, penalizando el binding inespecífico y el sesgo de tamaño.
+El score final de MolDesign IA (que incorpora el módulo de registro auditado **Moldex**) implementa un motor multidimensional biofísicamente calibrado.
+ A diferencia de las medias lineales genéricas, la arquitectura **v6.1** modula dinámicamente la influencia de cada descriptor físico para reflejar la complementariedad molecular real, penalizando el binding inespecífico y el sesgo de tamaño.
 
 #### 2.5.1 Formulación Matemática del Score Compuesto
 
@@ -360,11 +362,11 @@ El pipeline completo (docking + ML rescoring + scoring + reporte) se ejecuta en 
 
 ### 4.1 Comparación con el Estado del Arte
 
-Para contextualizar el desempeño y el valor de MolDesign (Moldex), es fundamental contrastar tanto su capacidad predictiva como su arquitectura funcional con las plataformas académicas y comerciales líderes de la industria.
+Para contextualizar el desempeño y el valor de MolDesign IA, es fundamental contrastar tanto su capacidad predictiva como su arquitectura funcional con las plataformas académicas y comerciales líderes de la industria.
 
 #### 4.1.1 Desempeño Predictivo (Spearman ρ)
 
-El valor de Spearman ρ = 0.512 obtenido por Moldex en validación ciega representa una mejora drástica respecto a las herramientas de docking convencionales y se sitúa en el rango superior de las herramientas de rescoring comerciales:
+El valor de Spearman ρ = 0.512 obtenido por MolDesign IA en validación ciega representa una mejora drástica respecto a las herramientas de docking convencionales y se sitúa en el rango superior de las herramientas de rescoring comerciales:
 
 | Sistema | Spearman ρ (Promedio Blind Set) | Costo Anual | Requisitos de Infraestructura |
 |:---|:---:|:---:|:---|
@@ -373,13 +375,13 @@ El valor de Spearman ρ = 0.512 obtenido por Moldex en validación ciega represe
 | **MolModa** (Vina API) | 0.02 - 0.15 | Gratuito | Web (Servidor básico) |
 | **GNINA** (CNN Rescoring) | 0.35 - 0.42 | Gratuito | Servidor con GPU dedicado |
 | **Glide SP** (Schrödinger) | 0.35 - 0.45 | ~$50,000 USD | Estación de trabajo / Licencia restrictiva |
-| **Moldex (MolDesign v6.1)** | **0.512 (5-HT1A) / 0.485 (GLP-1R)** | **Gratuito** | **Web / Despliegue Docker ligero** |
+| **MolDesign IA (v6.1)** | **0.512 (5-HT1A) / 0.485 (GLP-1R)** | **Gratuito** | **Web / Despliegue Docker ligero** |
 
 #### 4.1.2 Comparativa de Funcionalidades Científicas
 
-Un revisor de literatura medicinal preguntará inmediatamente: *¿por qué los químicos medicinales deberían preferir Moldex frente a servidores web de docking ya establecidos?* La respuesta yace en la integración integral de filtros de diseño y la auditoría transparente:
+Un revisor de literatura medicinal preguntará inmediatamente: *¿por qué los químicos medicinales deberían preferir MolDesign IA frente a servidores web de docking ya establecidos?* La respuesta yace en la integración integral de filtros de diseño y la auditoría transparente:
 
-| Característica / Feature | SwissDock | MolModa | Webina | **Moldex (MolDesign)** | Glide SP (Schrödinger) |
+| Característica / Feature | SwissDock | MolModa | Webina | **MolDesign IA** | Glide SP (Schrödinger) |
 |:---|:---:|:---:|:---:|:---:|:---:|
 | **Docking en Navegador (Vina)** | Sí | Sí | Sí | **Sí** | Sí (Local con Suite) |
 | **ML Rescoring** | No | No | No | **Sí (ProLIF + XGBoost)** | Sí (Glide Score empírico) |
@@ -391,7 +393,8 @@ Un revisor de literatura medicinal preguntará inmediatamente: *¿por qué los q
 | **Certificación Blockchain** | No | No | No | **Sí (Solana Devnet CC0)**| No |
 | **Código Abierto y Libre** | No | Sí | Sí | **Sí (Licencia MIT)** | No (Código cerrado) |
 
-Es importante destacar que aunque estas comparaciones son rigurosas, el panel de 50 fármacos post-2022 de Moldex no ha sido corrido bajo las mismas condiciones exactas de parametrización en servidores ajenos como SwissDock debido a la falta de APIs de automatización en dichos servicios web públicos, lo cual se documenta como una limitación metodológica de control ciego.
+Es importante destacar que aunque estas comparaciones son rigurosas, el panel de 50 fármacos post-2022 de MolDesign IA no ha sido corrido bajo las mismas condiciones exactas de parametrización en servidores ajenos como SwissDock debido a la falta de APIs de automatización en dichos servicios web públicos, lo cual se documenta como una limitación metodológica de control ciego.
+
 
 
 ### 4.2 El Problema de PCSK9 como Molécula Pequeña
