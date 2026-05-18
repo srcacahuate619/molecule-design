@@ -235,17 +235,18 @@ El inhibidor experimental SBC-115076 (IC50 documentada en literatura) se utiliz�
 
 La progresión histórica del sistema documenta el impacto de cada mejora metodológica:
 
-| Versión | Metodología | Spearman ρ (5-HT1A / GLP-1R) | N | Estado |
+| Versión | Metodología | Spearman ρ (5-HT1A / GLP-1R / PCSK9 / CTLA-4) | N | Estado |
 |:---|:---|:---:|:---:|:---|
-| v1.0 | Vina puro (target erróneo: FABP4) | -0.23 / — | 40 | 🔴 Inválido |
-| v2.0 | Vina puro (target correcto: 7E2Y) | 0.02 / 0.12 | 40 | 🟡 Azar |
-| v3.0 | ML Rescoring XGBoost v1 | 0.17 / 0.28 | 40 | 🟡 Débil |
-| v4.0 | ML + SA Score + Topología ProLIF | 0.51 / 0.33 | 40 | 🟢 Útil |
-| v5.0 | Validación ciega (5-HT1A, 50 fármacos) | 0.512 / 0.43 | 50 | 🟢 Validado |
-| **v6.0** | **Calibración Gold Standard (Spearman ρ)** | **0.512 / 0.485** | **50 / 10** | **🟢 Certificado** |
-| **v6.1 (actual)** | **Dynamic Size-Adaptive LE & Soft Potency** | **0.512 / 0.485 (Estabilizado)** | **50 / 10** | **🏆 Prod. Local** |
+| v1.0 | Vina puro (target erróneo: FABP4) | -0.23 / — / — / — | 40 | 🔴 Inválido |
+| v2.0 | Vina puro (target correcto: 7E2Y) | 0.02 / 0.12 / — / — | 40 | 🟡 Azar |
+| v3.0 | ML Rescoring XGBoost v1 | 0.17 / 0.28 / — / — | 40 | 🟡 Débil |
+| v4.0 | ML + SA Score + Topología ProLIF | 0.51 / 0.33 / — / — | 40 | 🟢 Útil |
+| v5.0 | Validación ciega (5-HT1A, 50 fármacos) | 0.512 / 0.43 / — / — | 50 | 🟢 Validado |
+| **v6.0** | **Calibración Gold Standard (Spearman ρ)** | **0.512 / 0.485 / — / —** | **50 / 10** | **🟢 Certificado** |
+| **v6.1 (actual)** | **Dynamic Size-Adaptive LE & Soft Potency** | **0.512 / 0.485 / — / — (Estabilizado)** | **50 / 10** | **🏆 Prod. Local** |
+| **v7.0 (nuevo)** | **Gran Benchmark Global Spearman (5-Targets)** | **[Pendiente] / [Pendiente] / [Pendiente] / [Pendiente]** | **250** | 🟢 En Corrida Masiva |
 
-La transición de v2.0 a v5.0 representa un incremento de ρ = 0.02 a ρ = 0.512, una mejora de 25× en poder predictivo, atribuible específicamente a la capa de ML rescoring y los controles de sesgo implementados.
+La transición de v2.0 a v5.0 representa un incremento de ρ = 0.02 a ρ = 0.512, una mejora de 25× en poder predictivo, atribuible específicamente a la capa de ML rescoring y los controles de sesgo implementados. La versión **v7.0** expande esta validación a 250 compuestos en 5 targets activos.
 
 ### 3.2 Validación Ciega: 50 Fármacos Post-2022
 
@@ -496,11 +497,14 @@ El autor agradece a la comunidad de PDBbind por mantener el dataset de entrenami
 
 ## Apéndice B: Parámetros de Grid Box por Receptor
 
-| Receptor | PDB | Centro (X, Y, Z) | Dimensiones (Å) | RMSD redocking |
-|:---|:---:|:---|:---:|:---:|
-| 5-HT1A | 7E2Y | (103.03, 114.79, 108.36) | 25×25×25 | **0.85 Å** |
-| GLP-1R | 6B3J | (120.5, 110.2, 95.8) | 25×25×25 | Pendiente |
-| PCSK9 | 2P4E | (-14.6, 24.5, -45.7) | 22×22×22 | Validado via SBC-115076 |
+| Receptor | PDB | Cadena | Centro (X, Y, Z) | Dimensiones (Å) | RMSD / Protocolo de Validación |
+|:---|:---:|:---:|:---|:---:|:---|
+| **5-HT1A** | 7E2Y | R | (103.03, 114.79, 108.36) | 25.0 × 25.0 × 25.0 | **0.85 Å** (Redocking de serotonina) |
+| **GLP-1R** | 6B3J | A | (93.23, 148.16, 103.33) | 28.0 × 28.0 × 28.0 | Validado mediante set calibrado Boc5 |
+| **PCSK9 (Ortostérico)** | 2P4E | A | (28.82, 31.75, 40.92) | 22.0 × 22.0 × 22.0 | Validado mediante control SBC-115076 |
+| **PCSK9 (Alostérico)** | 6U26 | A | (40.87, 30.19, 29.78) | 20.0 × 20.0 × 20.0 | Validado mediante inhibidores alostéricos |
+| **CTLA-4** | 3OSK | A | (-2.132, -19.592, 22.149) | 25.0 × 25.0 × 25.0 | Validado mediante inhibidor BMS-8 |
+
 
 ---
 

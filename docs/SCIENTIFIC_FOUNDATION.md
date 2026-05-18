@@ -69,6 +69,37 @@ Para evitar el **sesgo de ligando** (atribuir éxito a una molécula solo por su
 ### 5.1 Calibración de Baseline por Target (Ej: GLP-1R)
 Para asegurar que el motor de docking no solo corre, sino que predice, realizamos calibraciones de baseline (Vina puro) contra receptores específicos. En el caso de **GLP-1R (6B3J)**, se obtuvo un **Spearman ρ=0.43**, lo que valida que el sitio activo y los parámetros de grid box capturan la física esencial del receptor antes incluso de aplicar el rescoring de IA.
 
+### 5.2 Framework Masivo de Validación Global Spearman (v7.0)
+
+Para blindar la validez científica y auditable del software antes de su publicación en el preprint, implementamos el **Framework de Validación Global Spearman (v7.0)**. Este evalúa de forma ciega 250 complejos proteína-ligando post-2022.
+
+#### Formulación Matemática del Ranking de Potencia
+
+El motor evalúa el orden relativo de predicción contra la afinidad experimental del compuesto utilizando la correlación de rangos de Spearman ($\rho$):
+
+$$\rho = 1 - \frac{6 \sum_{i=1}^n d_i^2}{n(n^2 - 1)}$$
+
+Donde:
+*   $d_i = \text{rg}(X_i) - \text{rg}(Y_i)$ es la diferencia entre los rangos de la afinidad molecular estimada por la IA ($X_i$) y el valor experimental de pValue ($Y_i$).
+*   $n = 50$ compuestos evaluados por cada diana farmacológica.
+*   El $p$-value se calcula mediante una distribución $t$ de Student de dos colas con $n-2$ grados de libertad para certificar significancia estadística ($p < 0.05$).
+
+#### Error Absoluto Medio (MAE)
+
+Para medir la desviación absoluta en unidades de afinidad logarítmica (pValue), calculamos el MAE:
+
+$$\text{MAE} = \frac{1}{n} \sum_{i=1}^n \left| pK_i^{\text{exp}} - pK_i^{\text{pred}} \right|$$
+
+Donde $pK_i = -\log_{10}(\text{Afinidad en Molar})$. Un MAE $< 1.5$ unidades logarítmicas se define como el umbral de éxito biofísico.
+
+#### Protocolo de Reproducibilidad Estricta
+
+Para garantizar la reproducibilidad matemática e industrial de cada pose y docking:
+1.  **Semilla Determinista**: Semilla aleatoria estricta `--seed 42` para AutoDock Vina en cada corrida.
+2.  **Exhaustividad Constante**: `--exhaustiveness 8` y `--num_modes 9` fijados en la API para asegurar exploración exhaustiva del espacio conformacional tridimensional.
+3.  **Aislamiento Térmico**: Concurrencia restringida a 1 hilo de Celery worker, asegurando la reproducibilidad libre de ruidos por fluctuaciones de CPU.
+
+
 ## 5. Física de la Tensión de Anillo y SA Score
 
 El **SA Score (Synthetic Accessibility)** se calcula mediante un algoritmo de fragmentación de RDKit (Ertl & Schuffenhauer), pero en MolDesign v4 lo hemos endurecido:

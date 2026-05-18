@@ -7,6 +7,7 @@ FILES = [
     "backend/api/routers/stats.py",
     "backend/core/models.py",
     "backend/db/migrations/001_initial.sql",
+    "backend/db/migrations/create_benchmark_table.sql",
     "backend/db/repository.py",
     "backend/scoring/engine.py",
     "backend/scoring/normalizer.py",
@@ -47,6 +48,9 @@ FILES = [
     "WHITEPAPER_MOLDEX_v1.md",
     "backend/utils/scientific.py",
     "backend/scripts/update_target_hotspots.py",
+    "backend/scripts/prepare_all_five_targets.py",
+    "backend/scripts/fetch_spearman_datasets.py",
+    "backend/scripts/run_global_spearman_benchmark.py",
     "backend/scripts/sync_vercel.js",
 ]
 
