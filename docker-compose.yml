@@ -156,38 +156,18 @@ services:
     profiles:
       - dev
 
-  tunnel:
-    image: cloudflare/cloudflared
-    container_name: moldesign_tunnel
+  # ─────────────────────────────────────────────
+  # NGROK TUNNEL — Túnel estático para la API
+  # ─────────────────────────────────────────────
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: moldesign_ngrok
     restart: unless-stopped
-    command: tunnel --url http://api:8000
+    environment:
+      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+    command: "http --url=${NGROK_URL} api:8000"
     depends_on:
       - api
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-
-  # ─────────────────────────────────────────────
-  # TUNNEL SYNC — Automatización de Vercel
-  # ─────────────────────────────────────────────
-  tunnel-sync:
-    image: node:20-alpine
-    container_name: moldesign_tunnel_sync
-    restart: on-failure
-    depends_on:
-      - tunnel
-    env_file:
-      - ./backend/.env
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./backend:/app
-    working_dir: /app
-    # El script sync_vercel.js ahora usa el token del environment (cargado via env_file)
-    command: >
-      sh -c "apk add --no-cache curl docker-cli &&
-             npm install -g vercel@29.3.0 &&
-             node scripts/sync_vercel.js"
 
 # ─────────────────────────────────────────────
 # VOLÚMENES
