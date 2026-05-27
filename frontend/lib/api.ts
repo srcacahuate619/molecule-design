@@ -90,6 +90,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
       ...getAuthHeaders(),
       ...(init?.headers || {}),
     },
@@ -175,7 +176,10 @@ export async function getAiReport(moleculeId: string): Promise<string | null> {
 export async function getPoseFile(moleculeId: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_URL}/evaluation/files/poses/${moleculeId}`, {
-      headers: getAuthHeaders(),
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+        ...getAuthHeaders()
+      },
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -192,7 +196,10 @@ export async function getPoseFile(moleculeId: string): Promise<string | null> {
 export async function getProteinFile(moleculeId: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_URL}/evaluation/files/protein/${moleculeId}`, {
-      headers: getAuthHeaders(),
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+        ...getAuthHeaders()
+      },
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -209,7 +216,10 @@ export async function getProteinFile(moleculeId: string): Promise<string | null>
 export async function getComplexFile(moleculeId: string): Promise<string | null> {
   try {
     const res = await fetch(`${API_URL}/evaluation/files/complex/${moleculeId}`, {
-      headers: getAuthHeaders(),
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+        ...getAuthHeaders()
+      },
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -297,7 +307,10 @@ export async function downloadCertificate(moleculeId: string): Promise<void> {
 
   const response = await fetch(url, {
     method: "GET",
-    headers,
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+      ...headers
+    },
   });
 
   if (!response.ok) {
