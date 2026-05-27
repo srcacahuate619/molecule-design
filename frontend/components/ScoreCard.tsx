@@ -142,6 +142,14 @@ export function ScoreCard({
             Certificar en Solana
           </button>
         ) : null}
+        
+        {!onSave && !onCertify && !solanaSignature && (
+          <div className="w-full text-center rounded-lg border border-brand-500/20 bg-surface-950/50 p-3 shadow-inner">
+            <p className="text-xs text-surface-300">
+              Para <strong className="text-white">guardar</strong> el diseño y <strong className="text-brand-400">certificarlo en Solana</strong>, necesitas <a href="/login" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 font-bold">iniciar sesión</a>.
+            </p>
+          </div>
+        )}
       </div>
 
       <ScoreBar label="Afinidad" value={affinity} weight="45%" color="#3b82f6" />

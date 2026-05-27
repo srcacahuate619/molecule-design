@@ -589,7 +589,7 @@ export default function EvaluationPage() {
               adme={status.result.adme_score}
               druglikeness={status.result.druglikeness_score}
               ligandEfficiency={status.result.ligand_efficiency}
-              onCertify={() => handleCertify()}
+              onCertify={user ? () => handleCertify() : undefined}
               onSave={user ? handleSave : undefined}
               isSaved={isSaved}
               solanaSignature={status.result.blockchain_tx_id}
