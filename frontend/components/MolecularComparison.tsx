@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { getPoseFile, getProteinFile } from '../lib/api';
+import { MoleculeViewer3D } from './MoleculeViewer3D';
 import { motion } from 'framer-motion';
 import { Microscope, ArrowLeftRight, Zap, Info } from 'lucide-react';
 
@@ -9,6 +11,20 @@ interface ComparisonProps {
 }
 
 const MolecularComparison: React.FC<ComparisonProps> = ({ molA, molB, onClose }) => {
+  const [dataA, setDataA] = useState<{pose: string | null, prot: string | null}>({pose: null, prot: null});
+  const [dataB, setDataB] = useState<{pose: string | null, prot: string | null}>({pose: null, prot: null});
+
+  useEffect(() => {
+    if (molA) {
+      Promise.all([getPoseFile(molA.id), getProteinFile(molA.id)])
+        .then(([pose, prot]) => setDataA({pose, prot}));
+    }
+    if (molB) {
+      Promise.all([getPoseFile(molB.id), getProteinFile(molB.id)])
+        .then(([pose, prot]) => setDataB({pose, prot}));
+    }
+  }, [molA, molB]);
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -31,10 +47,13 @@ const MolecularComparison: React.FC<ComparisonProps> = ({ molA, molB, onClose })
           {/* Molécula A */}
           <div className="space-y-6">
             <div className="h-64 rounded-2xl bg-slate-950 border border-slate-800 p-4">
-               {/* Visor 3D A placeholder */}
-               <div className="flex h-full items-center justify-center text-slate-700 font-bold uppercase tracking-widest text-xs">
-                 [ Visor 3D: {molA?.name || "Mol A"} ]
-               </div>
+               <MoleculeViewer3D 
+                 poseData={dataA.pose || undefined} 
+                 proteinData={dataA.prot || undefined} 
+                 height={240} 
+                 hotspots={molA?.target?.hotspots?.map((h:any) => h.name) || []}
+                 hotspotsHit={molA?.hotspots_hit || []}
+               />
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-white">{molA?.name || "Mol A"}</h3>
@@ -50,10 +69,13 @@ const MolecularComparison: React.FC<ComparisonProps> = ({ molA, molB, onClose })
           {/* Molécula B */}
           <div className="space-y-6">
             <div className="h-64 rounded-2xl bg-slate-950 border border-slate-800 p-4">
-               {/* Visor 3D B placeholder */}
-               <div className="flex h-full items-center justify-center text-slate-700 font-bold uppercase tracking-widest text-xs">
-                 [ Visor 3D: {molB?.name || "Mol B"} ]
-               </div>
+               <MoleculeViewer3D 
+                 poseData={dataB.pose || undefined} 
+                 proteinData={dataB.prot || undefined} 
+                 height={240}
+                 hotspots={molB?.target?.hotspots?.map((h:any) => h.name) || []}
+                 hotspotsHit={molB?.hotspots_hit || []}
+               />
             </div>
             <div className="space-y-2 text-right">
               <h3 className="text-xl font-bold text-white">{molB?.name || "Mol B"}</h3>

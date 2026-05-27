@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Microscope, Activity, ShieldCheck, Zap } from 'lucide-react';
 import { API_URL } from '../lib/config';
@@ -12,6 +12,20 @@ interface MoldexCardProps {
 }
 
 const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, onCompareToggle, isComparing }) => {
+  const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
+  
+  useEffect(() => {
+    fetch(`${API_URL}/chem/render/${molecule.id}`, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Image fetch failed");
+      return res.blob();
+    })
+    .then(blob => setImgSrc(URL.createObjectURL(blob)))
+    .catch(() => setImgSrc(""));
+  }, [molecule.id]);
+
   const getQualityColor = (score: number) => {
     if (score >= 95) return 'text-yellow-400 border-yellow-500/50 bg-yellow-500/20 shadow-[0_0_10px_rgba(234,179,8,0.3)] font-black italic'; // DORADO (Legendary)
     if (score >= 80) return 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10'; // MORADO (Exceptional)
@@ -40,7 +54,7 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
       <div className="mb-4 flex h-32 items-center justify-center rounded-xl bg-white p-4 shadow-inner relative overflow-hidden group/img">
         {/* Render 2D de la molécula real */}
         <img 
-          src={`${API_URL}/chem/render/${molecule.id}`}
+          src={imgSrc || `${API_URL}/chem/render/${molecule.id}`}
           alt={molecule.name}
           className="h-full w-auto object-contain transition-transform duration-500 group-hover/img:scale-110"
           loading="lazy"
