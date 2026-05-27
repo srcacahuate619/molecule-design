@@ -86,9 +86,13 @@ export default function MoldexPage() {
   }, [molecules]);
 
   const handleToggleCompare = (id: string) => {
-    setSelectionForCompare(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id].slice(-2)
-    );
+    setSelectionForCompare(prev => {
+      const next = prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id].slice(-2);
+      if (next.length === 2) {
+        setTimeout(() => setCompareMode(true), 0);
+      }
+      return next;
+    });
   };
 
   if (loading) {
@@ -404,7 +408,7 @@ export default function MoldexPage() {
         <MolecularComparison 
           molA={molecules.find(m => m.id === selectionForCompare[0])}
           molB={molecules.find(m => m.id === selectionForCompare[1])}
-          onClose={() => setCompareMode(false)}
+          onClose={() => { setCompareMode(false); setSelectionForCompare([]); }}
         />
       )}
     </div>
