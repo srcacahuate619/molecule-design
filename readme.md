@@ -1,39 +1,34 @@
-# MolDesign IA 🧪 (con Módulo Moldex)
+# MolDesign AI 🧬
 
-**Plataforma de Descubrimiento Farmacológico In Silico con Auditoría Científica Profunda, Rescoring por ML y Certificación Blockchain.**
+**Plataforma de Descubrimiento Farmacológico In Silico — Docking Físico · ML Rescoring · Certificación Blockchain**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)]()
+[![Python: 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)]()
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
 [![Solana: Devnet](https://img.shields.io/badge/Blockchain-Solana_Devnet-purple.svg)]()
-[![Spearman ρ: 0.512](https://img.shields.io/badge/Spearman_%CF%81_blind-0.512-brightgreen.svg)]()
-[![Redocking RMSD: 0.85Å](https://img.shields.io/badge/Redocking_RMSD-0.85_%C3%85-brightgreen.svg)]()
+[![Spearman ρ: 0.33](https://img.shields.io/badge/Spearman_%CF%81_blind-0.33-brightgreen.svg)]()
+[![ML Features: 176](https://img.shields.io/badge/XGBoost_features-176-orange.svg)]()
 
-> *"Democratizando la creación de fármacos mediante el rigor de la ciencia computacional y la transparencia de datos."*
+> *"Democratizando el diseño de fármacos mediante rigor científico, transparencia total y registro inmutable de autoría."*
 
-**MolDesign IA** es una plataforma *Open Science* evolucionada que permite a investigadores y estudiantes diseñar moléculas contra blancos biológicos críticos. No solo calcula afinidades; realiza una **auditoría científica profunda** (LE, LLE, Hotspot Analysis) para validar cada diseño, integrando el módulo **Moldex** como su interfaz de registro e inmutabilidad histórica. Cada hallazgo queda certificado de forma inmutable en la blockchain de Solana.
+**MolDesign AI** es una plataforma *Open Science* para el cribado virtual de moléculas contra blancos biológicos de relevancia terapéutica. Combina un pipeline de **docking físico real** (AutoDock Vina), **rescoring por Machine Learning** (XGBoost, 176 features 3D), **auditoría científica profunda** (LE, LLE, Hotspot Analysis) y **certificación inmutable de autoría** en la blockchain de Solana. Los resultados completos se exportan como **Reporte Científico PDF** generado automáticamente.
 
-
-### Novedades v6.1: Calibración de Rigor Biofísico y Suelo de Potencia Suave
-La plataforma ha escalado su motor científico con la actualización **v6.1**, corrigiendo sesgos termodinámicos tradicionales en el cribado virtual:
-- **Size-Adaptive LE:** Punto medio de Eficiencia de Ligando dinámico ($LE_{mid}$) entre $-0.38$ y $-0.20$ kcal/mol/at. Evita la penalización injusta de fármacos de alto peso molecular (como agonistas GPCR) mientras mantiene rigor estricto sobre fragmentos pequeños.
-- **Soft Boundary Potency Floor:** Función de decaimiento sigmoideo continuo normalizado a $1.0$ exacto en el umbral del target para eliminar discontinuidades bruscas en el score.
-- **Panel de Auditoría Científica:** Nueva sección interactiva en la UI que expone de forma 100% transparente y reproducible todas las fórmulas físicas y ecuaciones del motor de rescoring.
-- **Spearman Certificado:** Estabilización de la regla de oro para la priorización de hits con un coeficiente blindado de **0.512 para 5-HT1A** y **0.485 para GLP-1R**.
+El módulo **Moldex** sirve como la interfaz principal de evaluación y registro histórico de moléculas.
 
 ---
 
 ## Índice
 
 - [¿Por qué MolDesign?](#por-qué-moldesign)
-- [Validación Científica](#validación-científica)
-- [Pipeline E2E](#pipeline-e2e)
+- [Receptores Disponibles](#receptores-disponibles)
+- [Pipeline Completo](#pipeline-completo)
 - [Motor de ML Rescoring](#motor-de-ml-rescoring)
-- [Fundamentos Científicos](#fundamentos-científicos)
+- [Validación Científica](#validación-científica)
+- [Reporte Científico PDF](#reporte-científico-pdf)
 - [Arquitectura del Sistema](#arquitectura-del-sistema)
 - [Instalación](#instalación)
-- [Configuración del Entorno](#configuración-del-entorno)
-- [Roadmap](#roadmap)
+- [Variables de Entorno](#variables-de-entorno)
+- [Roadmap Técnico](#roadmap-técnico)
 - [Filosofía](#filosofía)
 - [Autor](#autor)
 - [Licencia](#licencia)
@@ -42,194 +37,198 @@ La plataforma ha escalado su motor científico con la actualización **v6.1**, c
 
 ## ¿Por qué MolDesign?
 
-El docking molecular con AutoDock Vina es el estándar de la industria para predecir la geometría del encaje proteína-ligando. Sin embargo, su función de puntuación empírica tiene un problema conocido y documentado: **Spearman ρ ≈ 0.02 en sets de moléculas diversas**. Vina es excelente prediciendo *dónde* se une una molécula, pero pobre prediciendo *cuánto*.
+AutoDock Vina es el estándar industrial para predecir *dónde* se une una molécula a un receptor. Su limitación conocida: **Spearman ρ ≈ 0.02** en sets de moléculas diversas al predecir *cuánto* se une. Es excelente en geometría, pobre en termodinámica.
 
-MolDesign resuelve esto con una capa de rescoring por Machine Learning entrenada sobre PDBbind 2020, que corrige las afinidades de Vina basándose en interacciones geométricas 3D reales. El resultado es un sistema con **Spearman ρ = 0.512 en validación ciega**, comparable a herramientas comerciales de decenas de miles de dólares por licencia.
+MolDesign resuelve esto con:
 
-### Lo que nos diferencia de SwissDock, MolModa y Webina
+1. **ML Rescoring sobre PDBbind 2020**: XGBoost entrenado con 3,019 complejos proteína-ligando, 176 features que capturan interacciones geométricas 3D reales (shell counts, ECIF-lite, ProLIF).
+2. **Control dual Modelo A + NULL**: Detecta si la afinidad proviene de encaje geométrico específico o de propiedades fisicoquímicas brutas.
+3. **Score compuesto auditable**: Ponderación documentada Afinidad 45% + ADME 30% + Drug-likeness 25%.
+4. **Dominio de aplicabilidad**: Distancia de Mahalanobis — degrada la confianza si la molécula está fuera del espacio químico de entrenamiento, en lugar de extrapolar ciegamente.
+
+### Comparativa con herramientas públicas
 
 | Feature | SwissDock | MolModa | Webina | **MolDesign** |
 |:---|:---:|:---:|:---:|:---:|
-| Docking Vina en navegador | ✅ | ✅ | ✅ | ✅ |
-| ML Rescoring | ❌ | ❌ | ❌ | ✅ |
+| Docking Vina real | ✅ | ✅ | ✅ | ✅ |
+| ML Rescoring 3D | ❌ | ❌ | ❌ | ✅ |
 | Score compuesto ADME + Afinidad | ❌ | ❌ | ❌ | ✅ |
-| Control de sesgo de ligando (Modelo NULL) | ❌ | ❌ | ❌ | ✅ |
-| Ligand Efficiency como filtro | ❌ | ❌ | ❌ | ✅ |
-| Editor molecular 2D integrado | ✅ | ❌ | ❌ | ✅ |
+| Control sesgo (Modelo NULL) | ❌ | ❌ | ❌ | ✅ |
+| Ligand Efficiency + LLE | ❌ | ❌ | ❌ | ✅ |
+| Análisis de Hotspots (residuos clave) | ❌ | ❌ | ❌ | ✅ |
+| Reporte PDF científico automático | ❌ | ❌ | ❌ | ✅ |
 | Certificación de autoría blockchain | ❌ | ❌ | ❌ | ✅ |
-| Gamificación y comunidad | ❌ | ❌ | ❌ | ✅ |
+| Visor 3D interactivo (mapa de cargas, H-bonds) | ❌ | ✅ | ❌ | ✅ |
+| Multi-target (varios receptores) | ❌ | ❌ | ❌ | ✅ |
 | Open Source | ❌ | ✅ | ✅ | ✅ |
 
 ---
 
-## Validación Científica
+## Receptores Disponibles
 
-### Evolución del Coeficiente de Spearman (ρ)
+La plataforma soporta múltiples targets, cada uno con su grid box calibrado individualmente y hotspots definidos desde estructuras cristalográficas del PDB:
 
-La métrica primaria de MolDesign es el **coeficiente de Spearman**, que mide la capacidad del sistema para ordenar correctamente moléculas por potencia biológica.
+| Receptor | PDB ID | Relevancia Terapéutica | Método Cristalográfico |
+|:---|:---:|:---|:---:|
+| **5-HT1A Serotonin Receptor** | 7E2Y | Ansiedad, depresión, esquizofrenia | Cryo-EM, 3.0 Å |
+| **GLP-1 Receptor** | 6B3J | Diabetes tipo 2, obesidad | Cryo-EM |
+| **PCSK9** | 2P4E | Hipercolesterolemia, ECV | X-ray |
+| **PCSK9 (Alostérico)** | 6U26 | Sitio alostérico alternativo | X-ray |
+| **CTLA-4** | 3OSK | Inmuno-oncología, checkpoint | X-ray |
 
-| v4.0 | ML + Filtro SA + Topología ProLIF | 0.51 / 0.33 | 🟢 Útil |
-| v5.0 | Docking Calibrado GLP-1R (6B3J) | 0.512 / 0.43 | 🟢 Calibrado |
-| **v6.0** | **Calibración Gold Standard (Spearman ρ)** | **0.512 / 0.485** | **🟢 Certificado** |
-| **v6.1 (actual)** | **Dynamic Size-Adaptive LE & Soft Potency** | **0.512 / 0.485** | **🟢 Producción Local** |
-
-> El panel de validación v5.0 consta de 50 fármacos aprobados por la FDA entre 2022-2024 (Fruquintinib, Capivasertib, Axitinib, entre otros), nunca vistos por el modelo durante el entrenamiento.
-
-### Setup del Receptor (7E2Y)
-
-| Parámetro | Valor |
-|:---|:---|
-| Target | Serotonin 1A Receptor (5-HT1A) |
-| PDB ID | 7E2Y |
-| Método | Cryo-EM |
-| Resolución | 3.0 Å |
-| Referencia | Xu et al., 2021 |
-| Centro grid (X, Y, Z) | (103.03, 114.79, 108.36) |
-| Dimensiones grid | 25.0 × 25.0 × 25.0 Å |
-| Redocking RMSD | **0.85 Å** (umbral industrial: < 2.0 Å) |
+Nuevos receptores se integran mediante el pipeline de ingestión automática: `insert_target_{pdb_id}.py` + PDBQT preparado.
 
 ---
 
-## Pipeline E2E
+## Pipeline Completo
 
 ```
-SMILES / Editor 2D
+SMILES / Editor Molecular 2D (Ketcher)
         │
         ▼
-┌─────────────────────┐
-│  Validación RDKit   │  ← Valencia química, SMILES canónico
-│  SA Score + Tensión │  ← Penalización: ciclopropanos +1.5, ciclobutanos +1.0
-│  Umbral: SA ≤ 6.0   │  ← Bloqueo temprano antes de gastar cómputo
-└────────┬────────────┘
-         │ válido
-         ▼
-┌─────────────────────┐
-│  Propiedades ADME   │  ← RDKit: MW, LogP, TPSA, QED, Lipinski, Veber
-└────────┬────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│  Generación 3D      │  ← ETKDG v3 (conformero bioactivo)
-└────────┬────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│  Docking AutoDock   │  ← Vina 1.2.5, seed=42 (reproducible)
-│  Vina 1.2.5         │
-└────────┬────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│  Pose Quality Filter│  ← 3 checks: contención grid, contacto < 4Å, enterramiento
-└────────┬────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│  ML Rescoring       │  ← XGBoost v5 + ProLIF (176 features)
-│  Modelo A + NULL    │  ← Delta de especificidad: ¿afinidad real o sesgo?
-│  Dominio Mahalanobis│  ← Degrada confianza si molécula es fuera de dominio
-└────────┬────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│  Score Compuesto    │  ← Afinidad 45% + ADME 30% + Drug-likeness 25%
-│  (0–100)            │
-└────────┬────────────┘
-         │
-         ▼
-┌─────────────────────┐
-│  Reporte IA         │  ← Gemini / Claude (interpretación, no invención)
-│  Certificación      │  ← Hash SHA-256 → Solana Devnet (inmutable)
-│  PDF Científico     │  ← ReportLab con ID de transacción blockchain
-└─────────────────────┘
+┌─────────────────────────────────┐
+│  Validación Química (RDKit)     │  ← Valencias, SMILES canónico, quiralidad
+│  SA Score + Tensión de Anillo   │  ← Ciclopropanos +1.5, ciclobutanos +1.0
+│  Filtros: Lipinski + Veber      │  ← Bloqueo antes de gastar cómputo
+│  Umbral de bloqueo: SA > 6.0    │
+└────────────┬────────────────────┘
+             │ válido
+             ▼
+┌─────────────────────────────────┐
+│  Propiedades ADME (RDKit)       │  ← MW, LogP, TPSA, QED, HBD, HBA,
+│                                 │     RotBonds, RingCount, HeavyAtomCount
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│  Generación Conformero 3D       │  ← ETKDG v3 (geometría bioactiva de baja energía)
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│  Docking AutoDock Vina 1.2.5    │  ← seed=42 (reproducible), grid box por receptor
+│  (Celery Worker, asíncrono)     │  ← ~15-20s de cómputo real en servidor
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│  Filtro de Calidad de Pose      │  ← Contención en grid, contacto < 4Å,
+│                                 │     factor de enterramiento
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│  ML Rescoring (XGBoost v4)      │  ← 176 features: shell counts (3D) +
+│  Modelo A (3D) + NULL (1D/2D)   │     ECIF-lite + ProLIF fingerprints
+│  Dominio de Applicabilidad      │  ← Mahalanobis p99 = 7.2365
+│  Delta de Especificidad         │  ← A − NULL: ¿binding real o bruto?
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│  Auditoría Científica           │  ← Ligand Efficiency (LE), LLE
+│  Análisis de Hotspots           │  ← Residuos activos < 4Å hit/miss
+│  Score Compuesto (0–100)        │  ← 45% Afinidad + 30% ADME + 25% QED
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│  Interpretación IA (Gemini)     │  ← Solo interpreta; nunca inventa números
+│  Certificación Blockchain       │  ← SHA-256 → Solana Devnet (tx permanente)
+│  Reporte Científico PDF         │  ← Descripción del receptor (PDB+UniProt+ES),
+│                                 │     todas las métricas calculadas, firma blockchain
+└─────────────────────────────────┘
 ```
+
+> **Nota de latencia**: El System Monitor muestra ~48ms de respuesta de API (tiempo de lectura de PostgreSQL/Redis). El tiempo de cómputo real del docking es 15–20s en el worker de Celery. Los parámetros del grid box para cada receptor están en `docs/HOTSPOTS_SYSTEM.md`.
 
 ---
 
 ## Motor de ML Rescoring
-
-### El Problema que Resuelve
-
-Vina usa una función de puntuación empírica que no captura efectos de solvatación ni entropía de forma precisa. Detectamos dos sesgos críticos:
-
-- **Sesgo de tamaño**: Moléculas grandes puntúan mejor simplemente por "llenar el bolsillo", independientemente de la calidad de sus interacciones.
-- **Sesgo de ligando**: Moléculas lipofílicas puntúan bien por propiedades fisicoquímicas, no por encaje geométrico específico.
 
 ### Arquitectura Dual: Modelo A + Modelo NULL
 
 ```
 Pose de docking
       │
-      ├──► Modelo A (Full 3D)     → Score basado en interacciones proteína-ligando
+      ├──► Modelo A (Full 3D)    → Score basado en interacciones P-L reales
       │         H-bonds, π-stacking, contactos hidrofóbicos (ProLIF)
+      │         Shell counts átomo-átomo en capas 3Å / 6Å / 12Å
+      │         ECIF-lite: fingerprints de pares electroquímicos
       │
-      └──► Modelo NULL (Ciego)    → Score basado SOLO en descriptores 1D/2D
+      └──► Modelo NULL (Ciego)   → Score basado SOLO en descriptores 1D/2D
                 MW, LogP, TPSA (sin geometría 3D)
 
 Delta = Score_A − Score_NULL
 
-  Delta > +0.5  →  Afinidad real por encaje geométrico específico ✅
-  Delta ≈ 0     →  Binding por fuerza bruta fisicoquímica ⚠️
-  Delta < 0     →  Choques estéricos; la molécula no cabe físicamente ❌
+  Delta > +0.5  →  Binding real por encaje geométrico específico ✅
+  Delta ≈ 0     →  Binding por propiedades fisicoquímicas brutas  ⚠️
+  Delta < 0     →  Choques estéricos; la molécula no cabe          ❌
 ```
 
-### Features del Modelo XGBoost (176 total)
+### Features (176 total)
 
-| Grupo | Features | Descripción |
+| Grupo | Cantidad | Descripción |
 |:---|:---:|:---|
-| `shell_counts` | 3×N | Contactos átomo-átomo en capas 3Å, 6Å, 12Å |
-| `ecif_lite` | N | Interaction fingerprints por tipo electroquímico |
+| `shell_counts` (RF-Score) | 96 | Contactos C-C, C-N, C-O, etc. en capas de 3/6/12 Å |
+| `ecif_lite` | 56 | Interaction fingerprints por tipo electroquímico a 6Å |
 | `physchem` | 3 | MW, LogP, TPSA normalizados |
+| `vina_raw` | 21 | Componentes internos de la función de score de Vina |
 
-**Función de pérdida**: `rank:pairwise` (LambdaMART). El modelo optimiza *ranking relativo*, no valores absolutos, siendo robusto ante ruido en las afinidades experimentales.
+**Función de pérdida**: `rank:pairwise` (LambdaMART). Optimiza ranking relativo, robusto ante ruido en afinidades experimentales.
 
-**Dataset de entrenamiento**: PDBbind Refined Set v2020 (~5,000 complejos), filtrado a resolución ≤ 2.5 Å.
+**Dataset**: PDBbind Refined Set v2020 · 3,019 complejos · resolución ≤ 2.5 Å · scaffold-split reproducible (seed=42).
 
-**Cross-validation interna**: Spearman 0.601 ± 0.04. **Holdout set**: 0.527.
+### Métricas del Modelo Entrenado
 
-### Dominio de Aplicabilidad
-
-Si una molécula es demasiado distinta al espacio químico de PDBbind (distancia de Mahalanobis fuera del umbral), el sistema **degrada automáticamente la confianza del ML** en lugar de extrapolación ciega. La incertidumbre es comunicada explícitamente al usuario.
+| Métrica | Valor |
+|:---|:---|
+| Spearman CV (interno) | **0.601 ± 0.040** |
+| Spearman Holdout (scaffold-split) | **0.527** |
+| Spearman Validación Ciega (panel externo 40 moléculas) | **0.33** (p < 0.05) |
+| Vina solo (mismo panel) | -0.14 |
+| NDCG@10 CV | **0.609 ± 0.065** |
+| RMSE CV | **2.031 ± 0.098** kcal/mol |
+| Top SHAP features | shell_C_C_8_12, mw, ecif_O_acc_C, ecif_C_aro_O |
 
 ---
 
-## Fundamentos Científicos
+## Validación Científica
 
-### Guardrails Innegociables
+### Receptor 5-HT1A (7E2Y)
 
-- **Sin alucinación**: La IA solo interpreta resultados calculados. Nunca genera ni modifica scores.
-- **Trazabilidad total**: Cada número tiene fuente (Vina, XGBoost, RDKit) y versión de herramienta.
-- **Reproducibilidad**: `seed=42` en todos los cálculos estocásticos. El mismo SMILES + receptor = mismo resultado siempre.
+| Parámetro | Valor |
+|:---|:---|
+| Target | Serotonin 1A Receptor (5-HT1A) |
+| PDB ID | 7E2Y |
+| Método | Cryo-EM · 3.0 Å |
+| Referencia | Xu et al., 2021 |
+| Centro grid (X, Y, Z) | (103.03, 114.79, 108.36) |
+| Dimensiones grid | 25.0 × 25.0 × 25.0 Å |
+| Hotspots definidos | ASP116, VAL117, SER190, PHE361 |
+| Redocking RMSD | **0.85 Å** (umbral industrial: < 2.0 Å ✅) |
 
-### Score Compuesto (0–100)
+### Evolución del Spearman ρ
 
-No es una media simple. Es un sistema calibrado para penalizar binding inespecífico:
+| Versión | Descripción | ρ (interno/externo) |
+|:---|:---|:---:|
+| v1 baseline | Solo MW | 0.275 / — |
+| v3 ProLIF | ProLIF 2.1.0, RDKit-direct | 0.435 / — |
+| v4 (actual) | +RF-Score shells + ECIF + MW norm | 0.601 / **0.33** |
+| v5 (Fase 6.1) | +GNINA CNN rescoring 3D | *target: 0.50–0.65* |
 
-```
-Score = 0.45 × Afinidad_norm + 0.30 × ADME_norm + 0.25 × Druglikeness_norm
-```
+El coeficiente de validación ciega (**ρ = 0.33**, p < 0.05) fue calculado sobre un panel de 40 moléculas con actividad experimental medida en 5-HT1A, **nunca vistas por el modelo durante el entrenamiento**. Vina sola en el mismo panel: ρ = −0.14.
 
-**Afinidad normalizada**: Rango calibrado [-10.0, -4.0] kcal/mol con corrección por Ligand Efficiency.
+---
 
-**ADME**: Lipinski (MW < 500, LogP < 5, HBD < 5, HBA < 10) + Veber (RotBonds ≤ 10, TPSA ≤ 140 Å²) + filtro CNS específico para 5-HT1A (TPSA < 90 Å²).
+## Reporte Científico PDF
 
-**Drug-likeness**: QED (Quantitative Estimate of Drug-likeness) via RDKit.
+Al completar una evaluación, el usuario puede descargar un reporte PDF que incluye:
 
-### Ligand Efficiency (LE)
-
-```
-LE = Afinidad (kcal/mol) / Átomos Pesados (HAC)
-```
-
-Umbral industrial: **-0.30 kcal/mol/átomo**. Evita que moléculas grandes inflen artificialmente el score por volumen.
-
-### Filtro de Accesibilidad Sintética (SA Score)
-
-Basado en el algoritmo Ertl & Schuffenhauer (RDKit), reforzado con penalizaciones propias:
-
-- Ciclopropanos fusionados: +1.5 al SA Score
-- Ciclobutanos fusionados: +1.0 al SA Score
-- Umbral de bloqueo: SA > 6.0 → evaluación abortada antes del docking
+- **Descripción del receptor**: Generada automáticamente desde PDB → UniProt → traducida al español con `deep-translator`. Sin tokens de pago ni modelos de lenguaje externos. Funciona para cualquier receptor del PDB.
+- **Todas las métricas calculadas**: Afinidad Vina, ML score, LE, LLE, QED, SA, ADME completo, hotspots hit/miss, especificidad, score compuesto con breakdown por componente.
+- **Firma blockchain**: Hash SHA-256 + ID de transacción en Solana Devnet.
+- **Aviso de limitaciones metodológicas**: Proteína rígida, dominio de aplicabilidad, incertidumbre del modelo.
 
 ---
 
@@ -238,55 +237,56 @@ Basado en el algoritmo Ertl & Schuffenhauer (RDKit), reforzado con penalizacione
 ### Microservicios (Docker Compose)
 
 ```
-moldesign_net (bridge)
+├── moldesign_api      (FastAPI, Python 3.11, :8010)
+│     └── Punto de entrada. Autenticación JWT. Encola tareas en Redis (Celery).
 │
-├── api (FastAPI, Python 3.11, :8010)
-
-│     └── Punto de entrada. Encola tareas en Redis.
+├── moldesign_worker   (Celery + asyncio, mismo código que API)
+│     └── Consume de Redis. Ejecuta Vina, ProLIF, XGBoost, Blockchain, PDF.
 │
-├── worker (Celery + asyncio pool)
-│     └── Consume de Redis. Ejecuta Vina, genera SDF/PDBQT.
+├── moldesign_rescoring (FastAPI, Python 3.12, :8001)
+│     └── Microservicio ML independiente (Python 3.12 requerido por ProLIF).
 │
-├── rescoring (FastAPI, Python 3.12, :8001)
-│     └── Microservicio ML. ODDT + ProLIF + XGBoost.
-│         Python 3.12 requerido por compatibilidad ODDT/ProLIF.
+├── moldesign_frontend (Node 20 Alpine, Next.js 14, :3001)
+│     └── UI React. Modo dev con hot-reload en contenedor Docker.
 │
-├── redis (broker + backend, db:0)
-│
-├── postgres (historial molecular)
-│
-├── minio (almacenamiento S3-compatible)
-│     ├── bucket: molecules  (SDF, PDB preparados)
-│     └── bucket: docking    (PDBQT raw, poses optimizadas)
-│
-└── tunnel (Cloudflared)
-      └── Expone api:8000 sin abrir puertos. Subdominio cifrado.
+├── redis              Broker Celery + caché de resultados
+├── postgres           Historial molecular, usuarios, targets, evaluaciones
+├── minio              Almacenamiento S3-compatible (SDF, PDBQT, poses)
+└── ngrok              Túnel seguro para exponer la API al frontend en Vercel
 ```
 
-### Despliegue Híbrido
+### Despliegue Actual
 
 ```
 Usuario (navegador)
       │
       ▼
-Vercel (Next.js 14)           ← Frontend global, baja latencia
-      │  NEXT_PUBLIC_API_URL
+Vercel (Next.js 14)          ← Frontend global
+      │  NEXT_PUBLIC_API_URL  
       ▼
-Cloudflare Tunnel              ← Puente cifrado, sin IP estática
+ngrok tunnel                 ← Túnel cifrado sin IP estática
       │
       ▼
-Home Lab (Ubuntu, Ryzen 3)     ← Backend, docking, ML, GPU
+Ubuntu Server (Ryzen 3)      ← Backend + Celery + ML + Blockchain + PDF
       │
-      └── tunnel-sync (sidecar)
-            └── Detecta cambio de URL del túnel → actualiza
-                NEXT_PUBLIC_API_URL en Vercel via API automáticamente
+      └── Docker Compose (API + Worker + Rescoring + Redis + PostgreSQL + MinIO)
 ```
 
-**Rendimiento validado**: ~17s por evaluación completa (docking + rescoring + scoring) bajo carga de 10 usuarios simultáneos.
+**Rendimiento**: ~17s por evaluación completa bajo carga de 10 usuarios simultáneos.
 
-### Trazabilidad de Archivos
+### Nombrado de Moléculas (Target-Based)
 
-Los nombres de archivos se basan en el **SHA-256 del SMILES canónico**, garantizando que dos evaluaciones de la misma molécula siempre referencien los mismos archivos y que el caché sea determinista.
+```
+MDX-{PDB_ID}-{SMILES_HASH[:4]}
+Ejemplo: MDX-7E2Y-a3f1
+```
+
+### Trazabilidad
+
+- Cada número tiene fuente explícita: `Vina 1.2.5`, `XGBoost v4`, `RDKit 2024`.
+- `seed=42` en todos los cálculos estocásticos → mismo SMILES + receptor = mismo resultado siempre.
+- Archivos nombrados por SHA-256 del SMILES canónico → caché determinista.
+- Cada evaluación certificada tiene `blockchain_tx_id` permanente en Solana Devnet.
 
 ---
 
@@ -295,9 +295,9 @@ Los nombres de archivos se basan en el **SHA-256 del SMILES canónico**, garanti
 ### Requisitos
 
 - Docker y Docker Compose
-- 4+ núcleos CPU (recomendado para docking paralelo)
+- 4+ núcleos CPU (recomendado para docking)
 - 8 GB RAM mínimo
-- Claves de API: Gemini (Google), Vercel Token, Solana Wallet (Devnet)
+- AutoDock Vina 1.2.5 (incluido en el Dockerfile del backend)
 
 ### Docker (recomendado)
 
@@ -305,19 +305,20 @@ Los nombres de archivos se basan en el **SHA-256 del SMILES canónico**, garanti
 git clone https://github.com/srcacahuate619/molecule-design.git
 cd molecule-design
 cp .env.example .env
-# Edita .env con tus claves
-docker compose up --build -d
+# Editar .env con tus claves
+docker compose --profile dev up --build -d
 ```
 
-Esto levanta: API (`:8010`), Rescoring (`:8001`), Worker Celery, Redis, PostgreSQL, MinIO y Tunnel.
+Levanta: API (`:8010`) · Rescoring (`:8001`) · Worker Celery · Frontend (`:3001`) · Redis · PostgreSQL · MinIO · ngrok.
 
-### Manual
+### Manual (desarrollo local)
 
 ```bash
 # Backend
 cd backend
-pip install -r requirements.txt
-uvicorn api.main:app --port 8010
+pip install micromamba  # o conda
+micromamba env create -f environment.yml
+uvicorn api.main:app --port 8000
 
 # Frontend
 cd frontend
@@ -327,81 +328,84 @@ npm run dev
 
 ---
 
-## Configuración del Entorno
+## Variables de Entorno
 
 ```env
-# IA
-GEMINI_API_KEY=...
-ANTHROPIC_API_KEY=...        # Para módulo de interpretación Claude
+# Base de datos
+DATABASE_URL=postgresql://user:password@host/moldesign
 
-# Blockchain
-SOLANA_PRIVATE_KEY=...       # Wallet Devnet para certificación
+# Redis (broker Celery)
+REDIS_URL=redis://localhost:6379/0
 
-# Infraestructura
-VERCEL_TOKEN=...             # Para tunnel-sync automático
-VERCEL_PROJECT_ID=...
-DATABASE_URL=postgresql://...
-MINIO_ROOT_USER=...
-MINIO_ROOT_PASSWORD=...
+# MinIO (almacenamiento de archivos moleculares)
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=...
+MINIO_SECRET_KEY=...
+
+# IA (interpretación de resultados)
+GEMINI_API_KEY=...           # Gemini para reportes narrativos
+ANTHROPIC_API_KEY=...        # Claude (alternativo)
+
+# Blockchain (certificación de autoría)
+SOLANA_PRIVATE_KEY=...       # Wallet Devnet en formato base58
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:8010
 ```
 
 ---
 
-## Roadmap
+## Roadmap Técnico
 
 | Fase | Feature | Estado |
 |:---|:---|:---:|
-| v4.7 | Scientific Ingestion Pipeline (PDB -> PDBQT auto) | ✅ |
-| v4.7 | Multitarget Jerárquico (Humanos / Patógenos) | ✅ |
-| v5.0 | Validación ciega 50 fármacos post-2022 (ρ=0.51) | ✅ |
-| v5.0 | Calibración Blindada GLP-1R (ρ=0.43) | ✅ |
-| v5.1 | Mentor Químico (Molecular Insight) | ✅ |
-| v5.0 | Modelo Freemium (límites anónimos por IP) | ✅ |
-| v6.0 | Calibración Gold Standard (Spearman ρ = 0.512 / 0.485) | ✅ |
-| v6.1 | Dynamic Size-Adaptive LE & Soft Potency | ✅ |
-| v7.0 | MM-GBSA rescoring / Ensemble Docking | 📋 |
-| v8.0 | Hydrated Docking (Vina-Hydrated / WIDD) | 📋 |
+| v4.0 | Pipeline E2E: Vina + XGBoost + ADME + Blockchain | ✅ |
+| v4.7 | Multi-target + pipeline de ingestión automática de PDB | ✅ |
+| v5.0 | Validación ciega 40 moléculas · ρ=0.33 vs Vina ρ=−0.14 | ✅ |
+| v5.1 | Mentor Químico (MolecularInsight) · Árbol evolutivo | ✅ |
+| v5.2 | Rebranding Moldex · Auditoría científica profunda (LE, LLE) | ✅ |
+| v6.0 | PDF Científico automático · Descripción dinámica UniProt/PDB | ✅ |
+| v6.1 | Integración GNINA (rescoring 3D CNN) | 📋 |
+| v6.2 | 3D-RISM desolvatación (AmberTools) | 📋 |
+| v6.3 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
+
+Ver detalles técnicos en [`docs/MVP_ROADMAP.md`](docs/MVP_ROADMAP.md) — Sección 16 (Fase 6.0).
 
 ---
 
 ## Filosofía
 
-MolDesign se rige por el principio de **Rigor sobre Simulación**. No buscamos que los números se vean bien, sino que sean físicamente defendibles.
+MolDesign se rige por el principio de **Rigor sobre Simulación**. No buscamos que los números se vean impresionantes; buscamos que sean físicamente defendibles y científicamente honestos.
 
-La industria farmacéutica invierte décadas y miles de millones en descubrir un fármaco. La mayor parte de ese costo está en la fase de screening inicial, identificando qué moléculas merecen atención experimental. MolDesign democratiza exactamente esa fase.
+- **Sin alucinación**: La IA solo interpreta los números que el pipeline calculó. Nunca los genera ni modifica.
+- **Limitaciones visibles**: El sistema muestra explícitamente advertencias sobre proteína rígida, dominio de aplicabilidad y naturaleza in silico de los resultados.
+- **Open Science**: Todos los hallazgos certificados quedan bajo licencia CC0 (dominio público). El conocimiento es libre; la autoría es inmutable.
 
-Al certificar cada hallazgo en Solana, garantizamos que:
-
-1. El autor in silico tiene prueba irrefutable y permanente de su descubrimiento.
-2. El conocimiento es libre (CC0), permitiendo que la humanidad avance más rápido que los intereses comerciales.
-
-**El próximo fármaco puede venir de cualquier lugar. MolDesign existe para que eso sea posible.**
+> *El próximo fármaco puede venir de cualquier lugar. MolDesign existe para que eso sea posible.*
 
 ---
 
 ## Citar este proyecto
 
-Si usas MolDesign en tu investigación, por favor cítalo como:
-
 ```
 Amezcua, J. (2026). MolDesign AI: Plataforma de Descubrimiento Farmacológico In Silico
-con ML Rescoring y Certificación Blockchain. GitHub.
+con ML Rescoring y Certificación Blockchain.
 https://github.com/srcacahuate619/molecule-design
-Spearman ρ = 0.512 (validación ciega, 50 fármacos post-2022, p=0.00014)
+Spearman ρ = 0.33 (validación ciega, 40 moléculas 5-HT1A, p < 0.05)
 ```
 
 ---
 
 ## Autor
 
-**Johan Amezcua**
-Ingeniero en Software · UVEG · Monterrey, México
-📧 [26000885@es.uveg.edu.mx](mailto:26000885@es.uveg.edu.mx)
+**Johan Amezcua**  
+Ingeniero en Software · UVEG · Monterrey, México  
+📧 [26000885@es.uveg.edu.mx](mailto:26000885@es.uveg.edu.mx)  
 🌐 [molecule-design.vercel.app](https://molecule-design.vercel.app)
 
 ---
 
 ## Licencia
 
-Código fuente bajo licencia **MIT**.
+Código fuente bajo licencia **MIT**.  
 Descubrimientos certificados por los usuarios bajo **Creative Commons Zero (CC0)** — dominio público universal.
