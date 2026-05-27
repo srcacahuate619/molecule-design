@@ -61,7 +61,7 @@ async def get_limit_status(
     ip_address = get_real_ip(req)
     limit = await repository.get_anonymous_limit(ip_address)
 
-    MAX_REQUESTS = 10 if ip_address == "192.168.1.71" else 2
+    MAX_REQUESTS = 2
     count = limit.request_count if limit else 0
 
     return {

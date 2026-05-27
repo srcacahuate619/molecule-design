@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     database_url: PostgresDsn = Field(
         ...,
         description="URL de la base de datos PostgreSQL. "
-                    "Ejemplo: postgresql+asyncpg://user:pass@192.168.1.64:5432/db",
+                    "Ejemplo: postgresql+asyncpg://user:pass@localhost:5432/db",
     )
     db_pool_size: int = Field(default=10, ge=1, le=50)
     db_max_overflow: int = Field(default=20, ge=0, le=100)
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     # ── Redis ────────────────────────────────────────────────────────────────
 
     redis_url: RedisDsn = Field(
-        default="redis://192.168.1.64:6379/0",
+        default="redis://localhost:6379/0",
         description="URL de conexión a Redis.",
     )
     # TTL del cache de docking: 24 horas.
@@ -65,7 +65,7 @@ class Settings(BaseSettings):
 
     # ── MinIO / S3 ───────────────────────────────────────────────────────────
 
-    minio_endpoint: str = "192.168.1.64:9005"
+    minio_endpoint: str = "localhost:9005"
     minio_access_key: str = Field(..., min_length=3)
     minio_secret_key: str = Field(..., min_length=8)
     minio_bucket_poses: str = "docking-poses"
@@ -207,7 +207,7 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-haiku-4-5-20251001"
 
     # ── Local AI (LM Studio) ────────────────────────────────────────────────
-    lmstudio_url: str = "http://192.168.1.71:1234"
+    lmstudio_url: str = "http://localhost:1234"
     lmstudio_model: str = "local-model"
 
     # ── Autenticación ────────────────────────────────────────────────────────
@@ -224,8 +224,6 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:5173",
-        "http://192.168.1.64:3000",
-        "http://192.168.1.64:3001",
         "https://molecule-design.vercel.app"
     ]
 

@@ -8,12 +8,14 @@ from pathlib import Path
 sys.path.append(os.path.join(os.getcwd(), "backend"))
 
 # Configurar entorno para el servidor local/remoto
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://admin:Johan619.@192.168.1.64:5432/moldesign_db"
-os.environ["MINIO_ACCESS_KEY"] = "admin"
-os.environ["MINIO_SECRET_KEY"] = "Johan619."
-os.environ["MINIO_ENDPOINT"] = "192.168.1.64:9005"
-os.environ["REDIS_URL"] = "redis://192.168.1.64:6379/0"
-os.environ["SECRET_KEY"] = "a" * 64
+# IMPORTANTE: define estas variables en tu .env o como variables de entorno
+# antes de ejecutar este script. No hardcodees credenciales aquí.
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://admin:your_db_password@localhost:5432/moldesign_db")
+os.environ.setdefault("MINIO_ACCESS_KEY", "admin")
+os.environ.setdefault("MINIO_SECRET_KEY", "your_minio_password")
+os.environ.setdefault("MINIO_ENDPOINT", "localhost:9005")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("SECRET_KEY", "a" * 64)
 
 from core.config import get_settings
 from scripts.calibrate_external_panel import run_calibration
