@@ -7,7 +7,7 @@
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
 [![Solana: Devnet](https://img.shields.io/badge/Blockchain-Solana_Devnet-purple.svg)]()
 [![Spearman ρ: 0.512](https://img.shields.io/badge/Spearman_%CF%81_blind-0.512-brightgreen.svg)]()
-[![Redocking RMSD: 0.85Å](https://img.shields.io/badge/Redocking_RMSD-0.85_Å-brightgreen.svg)]()
+[![Redocking RMSD: 0.85Å](https://img.shields.io/badge/Redocking_RMSD-0.85_%C3%85-brightgreen.svg)]()
 
 > *"Democratizando la creación de fármacos mediante el rigor de la ciencia computacional y la transparencia de datos."*
 
