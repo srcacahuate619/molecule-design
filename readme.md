@@ -42,9 +42,9 @@ La plataforma ha escalado su motor científico con la actualización **v6.1**, c
 
 ## ¿Por qué MolDesign?
 
-El docking molecular con AutoDock Vina es el estándar de la industria para predecir la geometría del encaje proteína-ligando. Sin embargo, su función de puntuación empírica tiene un problema conocido y documentado: **Spearman Ï ≈ 0.02 en sets de moléculas diversas**. Vina es excelente prediciendo *dónde* se une una molécula, pero pobre prediciendo *cuánto*.
+El docking molecular con AutoDock Vina es el estándar de la industria para predecir la geometría del encaje proteína-ligando. Sin embargo, su función de puntuación empírica tiene un problema conocido y documentado: **Spearman ρ ≈ 0.02 en sets de moléculas diversas**. Vina es excelente prediciendo *dónde* se une una molécula, pero pobre prediciendo *cuánto*.
 
-MolDesign resuelve esto con una capa de rescoring por Machine Learning entrenada sobre PDBbind 2020, que corrige las afinidades de Vina basándose en interacciones geométricas 3D reales. El resultado es un sistema con **Spearman Ï = 0.512 en validación ciega**, comparable a herramientas comerciales de decenas de miles de dólares por licencia.
+MolDesign resuelve esto con una capa de rescoring por Machine Learning entrenada sobre PDBbind 2020, que corrige las afinidades de Vina basándose en interacciones geométricas 3D reales. El resultado es un sistema con **Spearman ρ = 0.512 en validación ciega**, comparable a herramientas comerciales de decenas de miles de dólares por licencia.
 
 ### Lo que nos diferencia de SwissDock, MolModa y Webina
 
@@ -64,7 +64,7 @@ MolDesign resuelve esto con una capa de rescoring por Machine Learning entrenada
 
 ## Validación Científica
 
-### Evolución del Coeficiente de Spearman (Ï)
+### Evolución del Coeficiente de Spearman (ρ)
 
 La métrica primaria de MolDesign es el **coeficiente de Spearman**, que mide la capacidad del sistema para ordenar correctamente moléculas por potencia biológica.
 
@@ -82,11 +82,11 @@ La métrica primaria de MolDesign es el **coeficiente de Spearman**, que mide la
 | Target | Serotonin 1A Receptor (5-HT1A) |
 | PDB ID | 7E2Y |
 | Método | Cryo-EM |
-| Resolución | 3.0 í… |
+| Resolución | 3.0 Å |
 | Referencia | Xu et al., 2021 |
 | Centro grid (X, Y, Z) | (103.03, 114.79, 108.36) |
-| Dimensiones grid | 25.0 í— 25.0 í— 25.0 í… |
-| Redocking RMSD | **0.85 í…** (umbral industrial: < 2.0 í…) |
+| Dimensiones grid | 25.0 í— 25.0 í— 25.0 Å |
+| Redocking RMSD | **0.85 Å** (umbral industrial: < 2.0 Å) |
 
 ---
 
@@ -94,54 +94,54 @@ La métrica primaria de MolDesign es el **coeficiente de Spearman**, que mide la
 
 ```
 SMILES / Editor 2D
-        â”‚
-        â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Validación RDKit   â”‚  ← Valencia química, SMILES canónico
-â”‚  SA Score + Tensión â”‚  ← Penalización: ciclopropanos +1.5, ciclobutanos +1.0
-â”‚  Umbral: SA ≤ 6.0   â”‚  ← Bloqueo temprano antes de gastar cómputo
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚ válido
-         â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Propiedades ADME   â”‚  ← RDKit: MW, LogP, TPSA, QED, Lipinski, Veber
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚
-         â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Generación 3D      â”‚  ← ETKDG v3 (conformero bioactivo)
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚
-         â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Docking AutoDock   â”‚  ← Vina 1.2.5, seed=42 (reproducible)
-â”‚  Vina 1.2.5         â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚
-         â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Pose Quality Filterâ”‚  ← 3 checks: contención grid, contacto < 4í…, enterramiento
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚
-         â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  ML Rescoring       â”‚  ← XGBoost v5 + ProLIF (176 features)
-â”‚  Modelo A + NULL    â”‚  ← Delta de especificidad: ¿afinidad real o sesgo?
-â”‚  Dominio Mahalanobisâ”‚  ← Degrada confianza si molécula es fuera de dominio
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚
-         â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Score Compuesto    â”‚  ← Afinidad 45% + ADME 30% + Drug-likeness 25%
-â”‚  (0–100)            â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-         â”‚
-         â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  Reporte IA         â”‚  ← Gemini / Claude (interpretación, no invención)
-â”‚  Certificación      â”‚  ← Hash SHA-256 → Solana Devnet (inmutable)
-â”‚  PDF Científico     â”‚  ← ReportLab con ID de transacción blockchain
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+        │
+        ▼
+┌─────────────────────┐
+│  Validación RDKit   │  ← Valencia química, SMILES canónico
+│  SA Score + Tensión │  ← Penalización: ciclopropanos +1.5, ciclobutanos +1.0
+│  Umbral: SA ≤ 6.0   │  ← Bloqueo temprano antes de gastar cómputo
+└────────┬────────────┘
+         │ válido
+         ▼
+┌─────────────────────┐
+│  Propiedades ADME   │  ← RDKit: MW, LogP, TPSA, QED, Lipinski, Veber
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Generación 3D      │  ← ETKDG v3 (conformero bioactivo)
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Docking AutoDock   │  ← Vina 1.2.5, seed=42 (reproducible)
+│  Vina 1.2.5         │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Pose Quality Filter│  ← 3 checks: contención grid, contacto < 4Å, enterramiento
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  ML Rescoring       │  ← XGBoost v5 + ProLIF (176 features)
+│  Modelo A + NULL    │  ← Delta de especificidad: ¿afinidad real o sesgo?
+│  Dominio Mahalanobis│  ← Degrada confianza si molécula es fuera de dominio
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Score Compuesto    │  ← Afinidad 45% + ADME 30% + Drug-likeness 25%
+│  (0–100)            │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Reporte IA         │  ← Gemini / Claude (interpretación, no invención)
+│  Certificación      │  ← Hash SHA-256 → Solana Devnet (inmutable)
+│  PDF Científico     │  ← ReportLab con ID de transacción blockchain
+└─────────────────────┘
 ```
 
 ---
@@ -159,11 +159,11 @@ Vina usa una función de puntuación empírica que no captura efectos de solvata
 
 ```
 Pose de docking
-      â”‚
-      â”œâ”€â”€â–º Modelo A (Full 3D)     → Score basado en interacciones proteína-ligando
-      â”‚         H-bonds, Ï€-stacking, contactos hidrofóbicos (ProLIF)
-      â”‚
-      â””â”€â”€â–º Modelo NULL (Ciego)    → Score basado SOLO en descriptores 1D/2D
+      │
+      ├──► Modelo A (Full 3D)     → Score basado en interacciones proteína-ligando
+      │         H-bonds, Ï€-stacking, contactos hidrofóbicos (ProLIF)
+      │
+      └──► Modelo NULL (Ciego)    → Score basado SOLO en descriptores 1D/2D
                 MW, LogP, TPSA (sin geometría 3D)
 
 Delta = Score_A âˆ’ Score_NULL
@@ -177,13 +177,13 @@ Delta = Score_A âˆ’ Score_NULL
 
 | Grupo | Features | Descripción |
 |:---|:---:|:---|
-| `shell_counts` | 3í—N | Contactos átomo-átomo en capas 3í…, 6í…, 12í… |
+| `shell_counts` | 3í—N | Contactos átomo-átomo en capas 3Å, 6Å, 12Å |
 | `ecif_lite` | N | Interaction fingerprints por tipo electroquímico |
 | `physchem` | 3 | MW, LogP, TPSA normalizados |
 
 **Función de pérdida**: `rank:pairwise` (LambdaMART). El modelo optimiza *ranking relativo*, no valores absolutos, siendo robusto ante ruido en las afinidades experimentales.
 
-**Dataset de entrenamiento**: PDBbind Refined Set v2020 (~5,000 complejos), filtrado a resolución ≤ 2.5 í….
+**Dataset de entrenamiento**: PDBbind Refined Set v2020 (~5,000 complejos), filtrado a resolución ≤ 2.5 Å.
 
 **Cross-validation interna**: Spearman 0.601 ± 0.04. **Holdout set**: 0.527.
 
@@ -211,7 +211,7 @@ Score = 0.45 í— Afinidad_norm + 0.30 í— ADME_norm + 0.25 í— Druglikenes
 
 **Afinidad normalizada**: Rango calibrado [-10.0, -4.0] kcal/mol con corrección por Ligand Efficiency.
 
-**ADME**: Lipinski (MW < 500, LogP < 5, HBD < 5, HBA < 10) + Veber (RotBonds ≤ 10, TPSA ≤ 140 í…²) + filtro CNS específico para 5-HT1A (TPSA < 90 í…²).
+**ADME**: Lipinski (MW < 500, LogP < 5, HBD < 5, HBA < 10) + Veber (RotBonds ≤ 10, TPSA ≤ 140 Å²) + filtro CNS específico para 5-HT1A (TPSA < 90 Å²).
 
 **Drug-likeness**: QED (Quantitative Estimate of Drug-likeness) via RDKit.
 
@@ -239,46 +239,46 @@ Basado en el algoritmo Ertl & Schuffenhauer (RDKit), reforzado con penalizacione
 
 ```
 moldesign_net (bridge)
-â”‚
+│
 ├── api (FastAPI, Python 3.11, :8010)
 
-â”‚     â””â”€â”€ Punto de entrada. Encola tareas en Redis.
-â”‚
-â”œâ”€â”€ worker (Celery + asyncio pool)
-â”‚     â””â”€â”€ Consume de Redis. Ejecuta Vina, genera SDF/PDBQT.
-â”‚
-â”œâ”€â”€ rescoring (FastAPI, Python 3.12, :8001)
-â”‚     â””â”€â”€ Microservicio ML. ODDT + ProLIF + XGBoost.
-â”‚         Python 3.12 requerido por compatibilidad ODDT/ProLIF.
-â”‚
-â”œâ”€â”€ redis (broker + backend, db:0)
-â”‚
-â”œâ”€â”€ postgres (historial molecular)
-â”‚
-â”œâ”€â”€ minio (almacenamiento S3-compatible)
-â”‚     â”œâ”€â”€ bucket: molecules  (SDF, PDB preparados)
-â”‚     â””â”€â”€ bucket: docking    (PDBQT raw, poses optimizadas)
-â”‚
-â””â”€â”€ tunnel (Cloudflared)
-      â””â”€â”€ Expone api:8000 sin abrir puertos. Subdominio cifrado.
+│     └── Punto de entrada. Encola tareas en Redis.
+│
+├── worker (Celery + asyncio pool)
+│     └── Consume de Redis. Ejecuta Vina, genera SDF/PDBQT.
+│
+├── rescoring (FastAPI, Python 3.12, :8001)
+│     └── Microservicio ML. ODDT + ProLIF + XGBoost.
+│         Python 3.12 requerido por compatibilidad ODDT/ProLIF.
+│
+├── redis (broker + backend, db:0)
+│
+├── postgres (historial molecular)
+│
+├── minio (almacenamiento S3-compatible)
+│     ├── bucket: molecules  (SDF, PDB preparados)
+│     └── bucket: docking    (PDBQT raw, poses optimizadas)
+│
+└── tunnel (Cloudflared)
+      └── Expone api:8000 sin abrir puertos. Subdominio cifrado.
 ```
 
 ### Despliegue Híbrido
 
 ```
 Usuario (navegador)
-      â”‚
-      â–¼
+      │
+      ▼
 Vercel (Next.js 14)           ← Frontend global, baja latencia
-      â”‚  NEXT_PUBLIC_API_URL
-      â–¼
+      │  NEXT_PUBLIC_API_URL
+      ▼
 Cloudflare Tunnel              ← Puente cifrado, sin IP estática
-      â”‚
-      â–¼
+      │
+      ▼
 Home Lab (Ubuntu, Ryzen 3)     ← Backend, docking, ML, GPU
-      â”‚
-      â””â”€â”€ tunnel-sync (sidecar)
-            â””â”€â”€ Detecta cambio de URL del túnel → actualiza
+      │
+      └── tunnel-sync (sidecar)
+            └── Detecta cambio de URL del túnel → actualiza
                 NEXT_PUBLIC_API_URL en Vercel via API automáticamente
 ```
 
@@ -353,8 +353,8 @@ MINIO_ROOT_PASSWORD=...
 |:---|:---|:---:|
 | v4.7 | Scientific Ingestion Pipeline (PDB -> PDBQT auto) | ✅ |
 | v4.7 | Multitarget Jerárquico (Humanos / Patógenos) | ✅ |
-| v5.0 | Validación ciega 50 fármacos post-2022 (Ï=0.51) | ✅ |
-| v5.0 | Calibración Blindada GLP-1R (Ï=0.43) | ✅ |
+| v5.0 | Validación ciega 50 fármacos post-2022 (ρ=0.51) | ✅ |
+| v5.0 | Calibración Blindada GLP-1R (ρ=0.43) | ✅ |
 | v5.1 | Mentor Químico (Molecular Insight) | ✅ |
 | v5.0 | Modelo Freemium (límites anónimos por IP) | ✅ |
 | v6.0 | Calibración Gold Standard (Spearman ρ = 0.512 / 0.485) | ✅ |
@@ -387,7 +387,7 @@ Si usas MolDesign en tu investigación, por favor cítalo como:
 Amezcua, J. (2026). MolDesign AI: Plataforma de Descubrimiento Farmacológico In Silico
 con ML Rescoring y Certificación Blockchain. GitHub.
 https://github.com/srcacahuate619/molecule-design
-Spearman Ï = 0.512 (validación ciega, 50 fármacos post-2022, p=0.00014)
+Spearman ρ = 0.512 (validación ciega, 50 fármacos post-2022, p=0.00014)
 ```
 
 ---
