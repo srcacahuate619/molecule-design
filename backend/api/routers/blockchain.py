@@ -22,6 +22,7 @@ from core.models import BlockchainRecord, MoleculeORM, EvaluationResultORM, User
 from api.dependencies import get_current_user
 from services.blockchain.certifier import certify_molecule_async
 from services.blockchain.pdf_generator import generate_certificate_pdf
+from services.blockchain.target_info import fetch_and_translate_target_info
 
 
 router = APIRouter(prefix="/blockchain", tags=["blockchain"])
@@ -170,6 +171,13 @@ async def get_certificate(molecule_id: uuid.UUID, db: AsyncSession = Depends(get
     )
     if not evaluation:
         raise HTTPException(status_code=400, detail="La molécula no ha sido evaluada")
+        
+    if mol.target and not mol.target.description:
+        description = await fetch_and_translate_target_info(mol.target.pdb_id)
+        mol.target.description = description
+        await db.commit()
+        # Refresh mol to ensure it has the description
+        await db.refresh(mol)
         
     target_name = mol.target.name if mol.target else "7E2Y (5-HT1A)"
     pdf_buf = generate_certificate_pdf(mol, evaluation, target_name)

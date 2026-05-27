@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getMoldex, getProteinFile, getPoseFile, certifyMolecule } from "../../lib/api";
+import { API_URL } from "../../lib/config";
 import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
 import MoldexCard from "../../components/MoldexCard";
 import MolecularComparison from "../../components/MolecularComparison";
@@ -445,9 +446,13 @@ export default function MoldexPage() {
                     </>
                   )}
                   
-                  <button className="w-full text-[10px] font-black text-slate-400 bg-slate-800/50 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                  <a 
+                    href={`${API_URL}/blockchain/certificate/${selectedId}`}
+                    download
+                    className="w-full text-[10px] font-black text-slate-400 bg-slate-800/50 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                  >
                     DESCARGAR REPORTE CIENTÍFICO
-                  </button>
+                  </a>
                 </div>
               </section>
 
