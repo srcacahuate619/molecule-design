@@ -8,11 +8,12 @@ type Props = {
   height?: number;
   hotspots?: string[]; // ej. ["MET99", "TYR100"]
   hotspotsHit?: string[]; // ej. ["MET99"]
+  hideLegend?: boolean;
 };
 
 type ViewMode = "standard" | "surface" | "charges";
 
-export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots = [], hotspotsHit = [] }: Props) {
+export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots = [], hotspotsHit = [], hideLegend = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef    = useRef<any>(null);
 
@@ -210,20 +211,22 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
         )}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-6 px-4 py-3 bg-surface-950/40 rounded-xl border border-surface-800/50 backdrop-blur-sm">
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-[#00ff00] shadow-[0_0_8px_#00ff00]" />
-          <span className="text-[10px] font-bold text-surface-200 uppercase tracking-wider">Impacto Crítico (&lt; 3.5Å + Polar)</span>
+      {!hideLegend && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-6 px-4 py-3 bg-surface-950/40 rounded-xl border border-surface-800/50 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-[#00ff00] shadow-[0_0_8px_#00ff00]" />
+            <span className="text-[10px] font-bold text-surface-200 uppercase tracking-wider">Impacto Crítico (&lt; 3.5Å + Polar)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-[#10b981] opacity-60" />
+            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Contacto Proximidad (&lt; 5.0Å)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-[#ff00ff]" />
+            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Sin Interacción (&gt; 5.0Å)</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-[#10b981] opacity-60" />
-          <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Contacto Proximidad (&lt; 5.0Å)</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-[#ff00ff]" />
-          <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Sin Interacción (&gt; 5.0Å)</span>
-        </div>
-      </div>
+      )}
     </>
   );
 }
