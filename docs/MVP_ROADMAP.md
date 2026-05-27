@@ -695,3 +695,137 @@ En esta fase se consolidó el rigor del motor de análisis y se oficializó el c
 - La identidad de marca es sólida y coherente en todo el repositorio.
  
 ---
+
+## 16. Fase 6.0: Pipeline de Scoring en Cascada — Hacia la Física Real (2026 Q3) 🔬⚗️
+
+> **Fecha de diseño:** 2026-05-27  
+> **Motivación:** Auditoría científica externa señaló que el docking con proteína rígida es la principal limitación técnica del sistema. Esta fase implementa un pipeline multi-nivel que combina velocidad con rigor físico progresivo.
+
+---
+
+### Contexto y Problema a Resolver
+
+El pipeline actual (Vina + XGBoost) trata la proteína como un cuerpo rígido. Esto es una aproximación estándar en el campo pero introduce un error sistemático: en la realidad, el receptor se deforma para acomodar al ligando (inducción de ajuste conformacional). Un experto que audite el sistema identificará esto como la limitación metodológica más importante.
+
+**La solución NO es un único modelo más sofisticado**, sino un **funnel de filtrado progresivo** que va de barato/rápido a caro/preciso, descartando candidatos en cada nivel para no desperdiciar cómputo.
+
+---
+
+### Arquitectura del Pipeline de Cascada
+
+```
+NIVEL 0 — Entrada (actual, < 1s)
+  └── Validación SMILES + ADME + QED + SA Score
+      → Corte duro: Lipinski + Veber + SA < 6
+      → Descarta ~30% de moléculas trivialmente malas
+
+NIVEL 1 — Docking Físico + ML Rescoring (actual, ~17s)
+  └── AutoDock Vina + XGBoost v4 (176 features: shells + ECIF + ADME)
+      → Corte: composite_score < 20
+      → Descarta ~60% de candidatos débiles
+      → OUTPUT: affinity_kcal, hotspots_hit, specificity_score
+
+NIVEL 2 — Rescoring 3D por GNN (NUEVO, ~60s)
+  └── GNINA: CNN/GNN sobre voxels del sitio activo (3D real)
+      → Captura complementariedad de forma que XGBoost no puede ver
+      → Corte: gnina_score < umbral_calibrado
+      → Descarta ~50% de los que pasaron Nivel 1
+      → OUTPUT: pose refinada, CNNscore, CNNaffinity
+
+NIVEL 3 — Energía de Desolvatación 3D-RISM (NUEVO, ~10 min)
+  └── AmberTools 3D-RISM: teoría de ecuación integral para agua explícita
+      → Calcula la penalización termodinámica por desolvatación real
+      → Solo para candidatos que pasaron Nivel 2 (< 5% del total)
+      → OUTPUT: ΔGsolv, corrección a affinity_kcal
+
+NIVEL 4 — Flexibilidad Proteica (FUTURO, investigación)
+  └── Ensemble docking: múltiples conformaciones del receptor extraídas de MD
+      → Elimina el supuesto de proteína rígida
+      → Requiere: GROMACS/AMBER + ~2h por receptor
+      → Solo para candidatos finalistas (top 3-5 moléculas por target)
+```
+
+---
+
+### Fase 6.1 — Integración de GNINA (Nivel 2)
+
+**¿Por qué GNINA y no SchNet/DimeNet?**
+
+SchNet y DimeNet son excelentes predictores de propiedades de moléculas aisladas (energías cuánticas, QM9). Sin embargo, **no modelan la interacción proteína-ligando**. GNINA fue diseñado específicamente para eso: aplica redes neuronales convolucionales sobre la representación 3D voxelizada del bolsillo de unión, capturando complementariedad geométrica real.
+
+| Modelo | Diseñado para | ¿Modela P-L? |
+|---|---|---|
+| SchNet/DimeNet | Propiedades moleculares (QM) | ❌ No directamente |
+| **GNINA** | Rescoring de poses de docking | ✅ Sí, diseño explícito |
+| PIGNet | Fuerzas físicas P-L interpretables | ✅ Muy interpretable |
+| TankBind | Docking + scoring simultáneo | ✅ Sin Vina previo |
+
+**Hitos de implementación:**
+- [ ] Integrar binario de GNINA en imagen Docker del worker
+- [ ] Crear `backend/services/rescoring/gnina_service.py`
+- [ ] Calibrar umbral de corte sobre holdout de PDBbind (validación ciega)
+- [ ] Exponer `gnina_cnn_score` y `gnina_cnn_affinity` en `evaluation_results`
+- [ ] Mostrar en PDF del reporte científico
+
+**Criterio de aceptación:**
+- Spearman de GNINA en holdout PDBbind ≥ 0.65
+- Tiempo de inferencia < 90s por molécula en el servidor Ubuntu actual
+
+---
+
+### Fase 6.2 — 3D-RISM para Energía de Desolvatación (Nivel 3)
+
+**¿Por qué 3D-RISM?**
+
+AutoDock Vina modela el agua implícitamente con una función de solvatación empírica muy simplificada. 3D-RISM resuelve ecuaciones de teoría de líquidos para calcular la distribución probabilística de moléculas de agua alrededor del complejo, dando una corrección termodinámica rigurosa a la energía libre de unión.
+
+Esto es especialmente crítico para bolsillos con aguas cristalográficas estructurales (como CTLA-4) y ligandos con grupos polares que compiten con el agua.
+
+**Hitos de implementación:**
+- [ ] Instalar AmberTools (gratuito) en entorno Docker del worker
+- [ ] Crear `backend/services/rism/rism_service.py`
+- [ ] Parametrizar campo de fuerza GAFF2 para cada ligando nuevo
+- [ ] Validar corrección ΔGsolv contra datos experimentales ITC de PDBbind
+- [ ] Integrar en PDF como "Corrección Termodinámica Avanzada"
+
+**Criterio de aceptación:**
+- Completar análisis 3D-RISM en < 15 min para moléculas < 500 Da
+- Correlación ΔGsolv vs ΔGexp (ITC) Pearson ≥ 0.50
+
+---
+
+### Fase 6.3 — Flexibilidad Proteica (Nivel 4, investigación)
+
+Esta fase es de **investigación a largo plazo**. Se documenta para alineación de visión.
+
+**Opciones técnicas evaluadas:**
+1. **Ensemble docking**: Extraer 10-20 conformaciones del receptor de una simulación de MD de 100ns con GROMACS.
+2. **AutoDock-GPU + residuos flexibles**: Definir residuos del sitio activo como flexibles en Vina (ya soportado nativamente, pero costoso).
+3. **DiffDock**: Modelo de diffusion con cierta capacidad de modelar flexibilidad implícitamente.
+
+**Prerequisito:** El servidor Ubuntu requeriría GPU dedicada (mínimo RTX 3060) para tiempos razonables.
+
+---
+
+### Impacto Esperado en Métricas Científicas
+
+| Nivel | Herramienta | Spearman esperado | Tiempo |
+|---|---|---|---|
+| **Actual** | Vina + XGBoost | **0.33 (validado)** | ~17s |
+| +GNINA | Rescoring 3D CNN | 0.50–0.65 | ~60s |
+| +3D-RISM | +ΔGsolv corregido | 0.60–0.70 | ~10 min |
+| +Ensemble | Flexibilidad proteica | 0.70–0.80 | ~2h |
+
+---
+
+### Respuesta Oficial a la Crítica de los 48ms
+
+> *"El tiempo de 48ms mostrado en el System Monitor refleja el tiempo de respuesta de la API al recuperar un resultado ya calculado de PostgreSQL/Redis. El cómputo de docking real ocurre de forma asíncrona en el worker de Celery y tarda entre 15-20 segundos para Vina (exhaustiveness=8, grid box precalibrado por receptor). Los parámetros exactos del grid box para cada receptor están documentados en `docs/HOTSPOTS_SYSTEM.md`. El pipeline en cascada de Fase 6.0 expondrá de forma transparente los tiempos reales de cómputo de cada nivel."*
+
+---
+
+### Estado de la Fase 6.0
+
+- [ ] **6.1** — GNINA Rescoring 3D *(próxima prioridad técnica)*
+- [ ] **6.2** — 3D-RISM Desolvatación *(requiere 6.1 completada)*
+- [ ] **6.3** — Flexibilidad Proteica *(investigación, requiere GPU dedicada)*
