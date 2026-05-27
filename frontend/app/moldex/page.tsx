@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMoldex, getProteinFile, getPoseFile } from "../../lib/api";
+import { getMoldex, getProteinFile, getPoseFile, certifyMolecule } from "../../lib/api";
 import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
 import MoldexCard from "../../components/MoldexCard";
 import MolecularComparison from "../../components/MolecularComparison";
@@ -29,6 +29,32 @@ export default function MoldexPage() {
   const [loading3D, setLoading3D] = useState(false);
   const [activeView, setActiveView] = useState<'LIST' | '3D' | 'INFO'>('LIST');
   const [windowHeight, setWindowHeight] = useState(1000);
+  const [certifying, setCertifying] = useState(false);
+
+  const handleCertify = async () => {
+    if (!selectedId) return;
+    try {
+      setCertifying(true);
+      const res = await certifyMolecule(selectedId);
+      setMolecules(prev => prev.map(m => {
+        if (m.id === selectedId) {
+          return {
+            ...m,
+            blockchain: {
+              ...m.blockchain,
+              certified: true,
+              tx_signature: res.signature
+            }
+          };
+        }
+        return m;
+      }));
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setCertifying(false);
+    }
+  };
 
   useEffect(() => {
     setWindowHeight(window.innerHeight);
@@ -389,11 +415,38 @@ export default function MoldexPage() {
               <section>
                 <div className="rounded-[2.5rem] bg-gradient-to-br from-indigo-600/20 to-transparent border border-indigo-500/20 p-8 text-center">
                   <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-4">Evidencia Digital</p>
-                  <div className="bg-black/60 rounded-xl p-3 mb-6 border border-white/5 font-mono text-[8px] text-slate-500 break-all leading-tight">
-                    {selectedMolecule?.blockchain?.tx_signature || "SYSTEM_AUTHENTICATED_LOCAL"}
-                  </div>
-                  <button className="w-full text-[10px] font-black text-white bg-indigo-600 py-4 rounded-2xl shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
-                    <FlaskConical size={14} /> DESCARGAR REPORTE CIENTÍFICO
+                  
+                  {selectedMolecule?.blockchain?.tx_signature ? (
+                    <>
+                      <div className="bg-black/60 rounded-xl p-3 mb-6 border border-white/5 font-mono text-[8px] text-slate-500 break-all leading-tight">
+                        {selectedMolecule.blockchain.tx_signature}
+                      </div>
+                      <a 
+                        href={`https://explorer.solana.com/tx/${selectedMolecule.blockchain.tx_signature}?cluster=devnet`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full text-[10px] font-black text-white bg-indigo-600 py-4 rounded-2xl shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 transition-all uppercase tracking-widest flex items-center justify-center gap-2 mb-3"
+                      >
+                        <FlaskConical size={14} /> VERIFICAR EN SOLANA
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-black/60 rounded-xl p-3 mb-6 border border-white/5 font-mono text-[8px] text-slate-500 break-all leading-tight">
+                        SYSTEM_AUTHENTICATED_LOCAL
+                      </div>
+                      <button 
+                        onClick={handleCertify}
+                        disabled={certifying}
+                        className={`w-full text-[10px] font-black text-white bg-gradient-to-r from-[#9945FF] to-[#14F195] py-4 rounded-2xl shadow-xl shadow-[#14F195]/20 hover:opacity-90 transition-all uppercase tracking-widest flex items-center justify-center gap-2 mb-3 ${certifying ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <Database size={14} /> {certifying ? 'CERTIFICANDO...' : 'CERTIFICAR EN SOLANA'}
+                      </button>
+                    </>
+                  )}
+                  
+                  <button className="w-full text-[10px] font-black text-slate-400 bg-slate-800/50 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                    DESCARGAR REPORTE CIENTÍFICO
                   </button>
                 </div>
               </section>

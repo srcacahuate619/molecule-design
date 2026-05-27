@@ -9,7 +9,7 @@ from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -72,27 +72,56 @@ async def certify_molecule(
                 message="Esta molécula ya cuenta con una certificación activa"
             )
 
-        # Create blockchain record
-        record = BlockchainRecord(
-            smiles_hash=mol.smiles_hash,
-            total_score=evaluation.total_score or 0.0,
-            target_pdb_id=mol.target.pdb_id if mol.target else "7E2Y",
-            user_wallet=request.user_wallet or current_user.email,
-            timestamp=datetime.utcnow()
+        # 1. Check globally if any other user has already certified this SMILES + Target
+        stmt_existing = (
+            select(EvaluationResultORM.blockchain_tx_id)
+            .join(MoleculeORM, MoleculeORM.id == EvaluationResultORM.molecule_id)
+            .where(MoleculeORM.smiles_hash == mol.smiles_hash)
+            .where(MoleculeORM.target_id == mol.target_id)
+            .where(EvaluationResultORM.blockchain_tx_id.isnot(None))
+            .limit(1)
         )
+        existing_tx = await db.scalar(stmt_existing)
 
-        # Certify on blockchain
-        signature = await certify_molecule_async(record, record.user_wallet)
+        if existing_tx:
+            # Another user already certified it! Just link it.
+            signature = existing_tx
+            message = "Esta molécula ya había sido certificada previamente por otro investigador. Hemos enlazado la evidencia global."
+        else:
+            # Create new blockchain record
+            record = BlockchainRecord(
+                smiles_hash=mol.smiles_hash,
+                total_score=evaluation.total_score or 0.0,
+                target_pdb_id=mol.target.pdb_id if mol.target else "7E2Y",
+                user_wallet=request.user_wallet or current_user.email,
+                timestamp=datetime.utcnow()
+            )
 
-        # IMPORTANT: Auto-save the molecule when certifying as requested by user
-        evaluation.blockchain_tx_id = signature
+            # Certify on blockchain
+            signature = await certify_molecule_async(record, record.user_wallet)
+            message = "Molécula certificada y guardada exitosamente en tu historial"
+
+        # 2. Sync signature to ALL evaluations of this SMILES + Target globally
+        stmt_subquery = (
+            select(MoleculeORM.id)
+            .where(MoleculeORM.smiles_hash == mol.smiles_hash)
+            .where(MoleculeORM.target_id == mol.target_id)
+        )
+        stmt_update = (
+            update(EvaluationResultORM)
+            .where(EvaluationResultORM.molecule_id.in_(stmt_subquery))
+            .values(blockchain_tx_id=signature)
+        )
+        await db.execute(stmt_update)
+        
+        # Ensure current molecule is marked as saved
         mol.is_saved = True
         
         await db.commit()
 
         return CertificationResponse(
             signature=signature,
-            message="Molécula certificada y guardada exitosamente en tu historial"
+            message=message
         )
 
     except TransactionFailedError as e:
