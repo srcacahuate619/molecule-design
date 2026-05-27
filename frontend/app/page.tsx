@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getGlobalStats } from "../lib/api";
 import { GlobalStats } from "../lib/types";
@@ -71,9 +72,16 @@ export default function HomePage() {
             </span>
             Next-Gen Molecular Pipeline
           </div>
-          <h1 className="mb-6 text-5xl font-black tracking-tighter text-white md:text-7xl">
-            Mol<span className="bg-gradient-to-r from-brand-400 to-emerald-400 bg-clip-text text-transparent">Design</span> AI
-          </h1>
+          <div className="mb-6 flex justify-center">
+            <Image
+              src="/logo-full.png"
+              alt="MolDesign AI Logo"
+              width={600}
+              height={200}
+              priority
+              className="w-full max-w-[500px] object-contain drop-shadow-[0_0_30px_rgba(var(--brand-500-rgb),0.3)] hover:scale-105 transition-transform duration-500"
+            />
+          </div>
           <p className="mb-10 max-w-2xl text-lg font-medium leading-relaxed text-surface-400">
             Descubrimiento de fármacos con rigor industrial. Combinamos <span className="text-white">docking físico</span>,
             <span className="text-white"> machine learning</span> y <span className="text-white">blockchain</span> para acelerar la quimioinformática.

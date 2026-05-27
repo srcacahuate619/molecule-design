@@ -120,11 +120,19 @@ def generate_certificate_pdf(mol: MoleculeORM, eval_result: EvaluationResultORM,
     # DOCKING & INTERACTION SECTION
     story.append(Paragraph("Interacción Molecular y Docking (AutoDock Vina)", section_title_style))
     
+    le = None
+    if eval_result.affinity_kcal is not None and eval_result.heavy_atom_count and eval_result.heavy_atom_count > 0:
+        le = eval_result.affinity_kcal / eval_result.heavy_atom_count
+        
+    lle = None
+    if eval_result.affinity_kcal is not None and eval_result.log_p is not None:
+        lle = -eval_result.affinity_kcal - eval_result.log_p
+
     dock_data = [
-        ["Afinidad (Energía de Unión)", f"{eval_result.affinity_kcal:.2f} kcal/mol"],
+        ["Afinidad (Energía de Unión)", f"{eval_result.affinity_kcal:.2f} kcal/mol" if eval_result.affinity_kcal is not None else "N/A"],
         ["Score de Especificidad", f"{eval_result.specificity_score:.2f} / 100" if eval_result.specificity_score is not None else "N/A"],
-        ["Eficiencia de Ligando (LE)", f"{eval_result.ligand_efficiency:.3f}" if eval_result.ligand_efficiency else "N/A"],
-        ["Eficiencia Lipofílica (LLE)", f"{eval_result.ligand_lipophilicity_efficiency:.3f}" if hasattr(eval_result, 'ligand_lipophilicity_efficiency') and eval_result.ligand_lipophilicity_efficiency else "N/A"]
+        ["Eficiencia de Ligando (LE)", f"{le:.3f}" if le is not None else "N/A"],
+        ["Eficiencia Lipofílica (LLE)", f"{lle:.3f}" if lle is not None else "N/A"]
     ]
     
     dock_table = Table(dock_data, colWidths=[200, 290])
