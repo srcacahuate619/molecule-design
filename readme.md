@@ -359,8 +359,8 @@ MINIO_ROOT_PASSWORD=...
 | v5.0 | Modelo Freemium (límites anónimos por IP) | ✅ |
 | v6.0 | Calibración Gold Standard (Spearman ρ = 0.512 / 0.485) | ✅ |
 | v6.1 | Dynamic Size-Adaptive LE & Soft Potency | ✅ |
-| v7.0 | MM-GBSA rescoring / Ensemble Docking | ðŸ“‹ |
-| v8.0 | Hydrated Docking (Vina-Hydrated / WIDD) | ðŸ“‹ |
+| v7.0 | MM-GBSA rescoring / Ensemble Docking | 📋 |
+| v8.0 | Hydrated Docking (Vina-Hydrated / WIDD) | 📋 |
 
 ---
 
@@ -396,8 +396,8 @@ Spearman ρ = 0.512 (validación ciega, 50 fármacos post-2022, p=0.00014)
 
 **Johan Amezcua**
 Ingeniero en Software · UVEG · Monterrey, México
-ðŸ“§ [26000885@es.uveg.edu.mx](mailto:26000885@es.uveg.edu.mx)
-ðŸŒ [molecule-design.vercel.app](https://molecule-design.vercel.app)
+📧 [26000885@es.uveg.edu.mx](mailto:26000885@es.uveg.edu.mx)
+🌐 [molecule-design.vercel.app](https://molecule-design.vercel.app)
 
 ---
 

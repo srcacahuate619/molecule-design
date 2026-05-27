@@ -675,7 +675,7 @@ En esta fase se transformó la cara pública del proyecto y se validó la infrae
 - La infraestructura es capaz de soportar picos de tráfico controlados.
 - La precisión del modelo en datos conocidos es óptima, iniciando fase de validación externa masiva.
 
-## 15. Fase 5.2: Auditoría Científica Profunda y Rebranding (Mayo 2026) ðŸ”¬
+## 15. Fase 5.2: Auditoría Científica Profunda y Rebranding (Mayo 2026) 🔬
  
 En esta fase se consolidó el rigor del motor de análisis y se oficializó el cambio de identidad a **Moldex**.
  
