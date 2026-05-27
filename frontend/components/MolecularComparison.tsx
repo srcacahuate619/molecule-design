@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import { getPoseFile, getProteinFile } from '../lib/api';
 import { MoleculeViewer3D } from './MoleculeViewer3D';
@@ -25,6 +26,14 @@ const MolecularComparison: React.FC<ComparisonProps> = ({ molA, molB, onClose })
     }
   }, [molA, molB]);
 
+  const targetBasedNameA = `MDX-${molA?.target?.pdb_id || "UKN"}-${molA?.smiles_hash?.substring(0,4)?.toUpperCase() || "XXXX"}`;
+  const isDefaultNameA = !molA?.name || molA.name.startsWith("Ligando ");
+  const displayNameA = isDefaultNameA ? targetBasedNameA : molA.name;
+
+  const targetBasedNameB = `MDX-${molB?.target?.pdb_id || "UKN"}-${molB?.smiles_hash?.substring(0,4)?.toUpperCase() || "XXXX"}`;
+  const isDefaultNameB = !molB?.name || molB.name.startsWith("Ligando ");
+  const displayNameB = isDefaultNameB ? targetBasedNameB : molB.name;
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -46,17 +55,18 @@ const MolecularComparison: React.FC<ComparisonProps> = ({ molA, molB, onClose })
         <div className="grid grid-cols-2 gap-12">
           {/* Molécula A */}
           <div className="space-y-6">
-            <div className="h-64 rounded-2xl bg-slate-950 border border-slate-800 p-4">
+            <div className="rounded-2xl bg-slate-950 border border-slate-800 p-2 overflow-hidden">
                <MoleculeViewer3D 
                  poseData={dataA.pose || undefined} 
                  proteinData={dataA.prot || undefined} 
-                 height={240} 
+                 height={260} 
                  hotspots={molA?.target?.hotspots?.map((h:any) => h.name) || []}
                  hotspotsHit={molA?.hotspots_hit || []}
+                 hideLegend={true}
                />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">{molA?.name || "Mol A"}</h3>
+              <h3 className="text-xl font-bold text-white">{displayNameA}</h3>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 text-indigo-400 font-black">
                   <Zap size={14} fill="currentColor" /> {molA?.metrics?.affinity?.toFixed(2) || "0.00"}
@@ -68,17 +78,18 @@ const MolecularComparison: React.FC<ComparisonProps> = ({ molA, molB, onClose })
 
           {/* Molécula B */}
           <div className="space-y-6">
-            <div className="h-64 rounded-2xl bg-slate-950 border border-slate-800 p-4">
+            <div className="rounded-2xl bg-slate-950 border border-slate-800 p-2 overflow-hidden">
                <MoleculeViewer3D 
                  poseData={dataB.pose || undefined} 
                  proteinData={dataB.prot || undefined} 
-                 height={240}
+                 height={260}
                  hotspots={molB?.target?.hotspots?.map((h:any) => h.name) || []}
                  hotspotsHit={molB?.hotspots_hit || []}
+                 hideLegend={true}
                />
             </div>
             <div className="space-y-2 text-right">
-              <h3 className="text-xl font-bold text-white">{molB?.name || "Mol B"}</h3>
+              <h3 className="text-xl font-bold text-white">{displayNameB}</h3>
               <div className="flex items-center gap-4 justify-end">
                 <div className="text-xs text-slate-500 font-bold uppercase">{molB?.target?.pdb_id || "TARGET"}</div>
                 <div className="flex items-center gap-1 text-emerald-400 font-black">
@@ -95,9 +106,9 @@ const MolecularComparison: React.FC<ComparisonProps> = ({ molA, molB, onClose })
             <thead className="bg-slate-800/50 text-[10px] font-bold uppercase tracking-widest text-slate-500">
               <tr>
                 <th className="px-6 py-3">PROPIEDAD</th>
-                <th className="px-6 py-3 text-center">{molA?.smiles_hash?.substring(0,8) || "A"}</th>
+                <th className="px-6 py-3 text-center">{targetBasedNameA}</th>
                 <th className="px-6 py-3 text-center">DIFERENCIA</th>
-                <th className="px-6 py-3 text-center">{molB?.smiles_hash?.substring(0,8) || "B"}</th>
+                <th className="px-6 py-3 text-center">{targetBasedNameB}</th>
               </tr>
             </thead>
             <tbody className="text-slate-300 font-mono text-xs">
