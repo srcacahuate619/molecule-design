@@ -85,7 +85,7 @@ La métrica primaria de MolDesign es el **coeficiente de Spearman**, que mide la
 | Resolución | 3.0 Å |
 | Referencia | Xu et al., 2021 |
 | Centro grid (X, Y, Z) | (103.03, 114.79, 108.36) |
-| Dimensiones grid | 25.0 í— 25.0 í— 25.0 Å |
+| Dimensiones grid | 25.0 × 25.0 × 25.0 Å |
 | Redocking RMSD | **0.85 Å** (umbral industrial: < 2.0 Å) |
 
 ---
@@ -177,7 +177,7 @@ Delta = Score_A âˆ’ Score_NULL
 
 | Grupo | Features | Descripción |
 |:---|:---:|:---|
-| `shell_counts` | 3í—N | Contactos átomo-átomo en capas 3Å, 6Å, 12Å |
+| `shell_counts` | 3×N | Contactos átomo-átomo en capas 3Å, 6Å, 12Å |
 | `ecif_lite` | N | Interaction fingerprints por tipo electroquímico |
 | `physchem` | 3 | MW, LogP, TPSA normalizados |
 
@@ -206,7 +206,7 @@ Si una molécula es demasiado distinta al espacio químico de PDBbind (distancia
 No es una media simple. Es un sistema calibrado para penalizar binding inespecífico:
 
 ```
-Score = 0.45 í— Afinidad_norm + 0.30 í— ADME_norm + 0.25 í— Druglikeness_norm
+Score = 0.45 × Afinidad_norm + 0.30 × ADME_norm + 0.25 × Druglikeness_norm
 ```
 
 **Afinidad normalizada**: Rango calibrado [-10.0, -4.0] kcal/mol con corrección por Ligand Efficiency.
