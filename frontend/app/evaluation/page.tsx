@@ -67,11 +67,11 @@ export default function EvaluationPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (customName?: string) => {
     if (!status?.result?.molecule_id) return;
     try {
       setBusy(true);
-      await saveMolecule(status.result.molecule_id);
+      await saveMolecule(status.result.molecule_id, customName);
       setIsSaved(true);
     } catch (err) {
       setError((err as Error).message);

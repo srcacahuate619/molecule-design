@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 type ScoreBarProps = {
   label: string;
   value: number | null;
@@ -36,7 +38,7 @@ type ScoreCardProps = {
   druglikeness: number | null;
   ligandEfficiency?: number | null;
   onCertify?: () => void;
-  onSave?: () => void;
+  onSave?: (customName?: string) => void;
   isSaved?: boolean;
   solanaSignature?: string | null;
   onDownloadCertificate?: () => void;
@@ -73,6 +75,9 @@ export function ScoreCard({
   affinityMultiplier,
   specificityMultiplier,
 }: ScoreCardProps) {
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+  const [customName, setCustomName] = useState("");
+
   const totalDisplay =
     totalScore !== null && totalScore !== undefined
       ? totalScore.toFixed(1)
@@ -98,50 +103,84 @@ export function ScoreCard({
         Heurística compuesta para priorización (0–100). No equivale a validación experimental.
       </p>
 
-      <div className="flex gap-3 pt-2">
-        {onSave && (
-          <button
-            onClick={onSave}
-            disabled={isSaved}
-            className={`flex-1 rounded-lg py-3 font-semibold transition-all ${
-              isSaved
-                ? "cursor-not-allowed bg-surface-800 text-surface-500"
-                : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-white"
-            }`}
-          >
-            {isSaved ? "✓ Guardada en tu cuenta" : "💾 Guardar molécula"}
-          </button>
-        )}
-        
-        {solanaSignature ? (
-          <div className="flex-1 flex gap-2">
-            <a
-              href={`https://explorer.solana.com/tx/${solanaSignature}?cluster=devnet`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-[#14F195]/10 text-[#14F195] py-3 font-semibold text-center transition-all hover:bg-[#14F195]/20"
-              title="Ver en Solana Explorer"
-            >
-              ✓ Certificada en Solana
-            </a>
-            {onDownloadCertificate && (
-              <button
-                onClick={onDownloadCertificate}
-                className="flex-[0.5] rounded-lg bg-surface-800 text-surface-300 py-3 font-semibold transition-all hover:bg-surface-700 hover:text-white"
-                title="Descargar Certificado PDF"
+      <div className="flex flex-col gap-3 pt-2">
+        {isSavingPrompt ? (
+          <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-4 shadow-xl">
+            <p className="mb-2 text-xs font-semibold text-surface-200">Asigna un nombre a este candidato (Opcional)</p>
+            <input 
+              type="text" 
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder="Ej. MDX-7E2Y-51D1"
+              className="w-full rounded bg-surface-900 px-3 py-2 text-sm text-white border border-surface-700 focus:border-brand-500 focus:outline-none mb-3"
+            />
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setIsSavingPrompt(false)}
+                className="flex-1 rounded py-2 text-xs font-bold text-surface-400 bg-surface-800 hover:text-white"
               >
-                📥 PDF
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  if (onSave) onSave(customName.trim() || undefined);
+                  setIsSavingPrompt(false);
+                }}
+                className="flex-1 rounded bg-brand-600 py-2 text-xs font-bold text-white hover:bg-brand-500"
+              >
+                Confirmar y Guardar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            {onSave && (
+              <button
+                onClick={() => setIsSavingPrompt(true)}
+                disabled={isSaved}
+                className={`flex-1 rounded-lg py-3 font-semibold transition-all ${
+                  isSaved
+                    ? "cursor-not-allowed bg-surface-800 text-surface-500"
+                    : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-white"
+                }`}
+              >
+                {isSaved ? "✓ Guardada en tu cuenta" : "💾 Guardar molécula"}
               </button>
             )}
+            
+            {solanaSignature ? (
+              <div className="flex-1 flex gap-2">
+                <a
+                  href={`https://explorer.solana.com/tx/${solanaSignature}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-[#14F195]/10 text-[#14F195] py-3 font-semibold text-center transition-all hover:bg-[#14F195]/20"
+                  title="Ver en Solana Explorer"
+                >
+                  ✓ Certificada en Solana
+                </a>
+                {onDownloadCertificate && (
+                  <button
+                    onClick={onDownloadCertificate}
+                    className="flex-[0.5] rounded-lg bg-surface-800 text-surface-300 py-3 font-semibold transition-all hover:bg-surface-700 hover:text-white"
+                    title="Descargar Certificado PDF"
+                  >
+                    📥 PDF
+                  </button>
+                )}
+              </div>
+            ) : onCertify ? (
+              <button
+                onClick={onCertify}
+                className="flex-1 text-center rounded-lg bg-gradient-to-r from-[#9945FF] to-[#14F195] py-3 font-bold text-white shadow-lg transition-all hover:opacity-90 active:scale-95"
+              >
+                Certificar en Solana
+              </button>
+            ) : null}
           </div>
-        ) : onCertify ? (
-          <button
-            onClick={onCertify}
-            className="flex-1 text-center rounded-lg bg-gradient-to-r from-[#9945FF] to-[#14F195] py-3 font-bold text-white shadow-lg transition-all hover:opacity-90 active:scale-95"
-          >
-            Certificar en Solana
-          </button>
-        ) : null}
+        )}
+        
+
         
         {!onSave && !onCertify && !solanaSignature && (
           <div className="w-full text-center rounded-lg border border-brand-500/20 bg-surface-950/50 p-3 shadow-inner">

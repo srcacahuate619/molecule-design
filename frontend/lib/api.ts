@@ -248,8 +248,12 @@ export async function getEvaluationHistory(
   return request<HistoryResponse>(`/history/evaluations?${params}`);
 }
 
-export async function saveMolecule(moleculeId: string): Promise<void> {
-  await request(`/history/save/${moleculeId}`, { method: "POST" });
+export async function saveMolecule(moleculeId: string, name?: string): Promise<void> {
+  let url = `/history/save/${moleculeId}`;
+  if (name) {
+    url += `?name=${encodeURIComponent(name)}`;
+  }
+  await request(url, { method: "POST" });
 }
 
 export async function getMoldex(targetPdbId?: string): Promise<any> {

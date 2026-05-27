@@ -247,6 +247,7 @@ async def get_stats(
 )
 async def save_molecule(
     molecule_id: uuid.UUID,
+    name: str | None = Query(None, description="Nombre personalizado"),
     current_user: UserORM = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -256,5 +257,7 @@ async def save_molecule(
         raise HTTPException(status_code=404, detail="Molécula no encontrada")
     
     mol.is_saved = True
+    if name:
+        mol.name = name
     await db.commit()
-    return {"status": "saved", "molecule_id": str(molecule_id)}
+    return {"status": "saved", "molecule_id": str(molecule_id), "name": mol.name}

@@ -34,6 +34,10 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
     return 'text-rose-400 border-rose-500/30 bg-rose-500/10'; // ROJO (Low)
   };
 
+  const targetBasedName = `MDX-${molecule.target?.pdb_id || "UKN"}-${molecule.smiles_hash.substring(0,4).toUpperCase()}`;
+  const isDefaultName = !molecule.name || molecule.name.startsWith("Ligando ");
+  const displayName = isDefaultName ? targetBasedName : molecule.name;
+
   return (
     <motion.div
       whileHover={{ y: -5, scale: 1.02 }}
@@ -64,13 +68,13 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
           }}
         />
         
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover/img:opacity-100 transition-opacity bg-slate-900/80 backdrop-blur-md px-2 py-1 rounded text-[8px] font-mono text-indigo-400">
-          {molecule.smiles_hash.substring(0, 8)}
+        <div className="absolute bottom-2 right-2 bg-slate-900/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-mono font-bold text-slate-300 border border-slate-700/50 shadow-sm">
+          {targetBasedName}
         </div>
       </div>
 
       <div className="space-y-2">
-        <h3 className="truncate text-sm font-bold text-slate-100">{molecule.name}</h3>
+        <h3 className="truncate text-sm font-bold text-slate-100">{displayName}</h3>
         
         <div className="flex items-center justify-between">
           <div className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-bold ${getQualityColor(molecule.metrics?.score || 0)}`}>
