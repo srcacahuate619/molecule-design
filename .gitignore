@@ -61,3 +61,18 @@ backend/debug_*.py
 backend/chown.py
 backend/migrate_*.py
 backend/solana_setup.py
+# Archivos temporales y de desarrollo local
+*.db
+tsconfig.tsbuildinfo
+fix_*.py
+check_*.py
+get_last_*.py
+insert_target_*.py
+scratch_*.py
+sync_to_remote.py
+update_*.py
+audit_hotspots.py
+WHITEPAPER_*.md
+logomoldesignia*.png
+logosinfondo*.png
+
