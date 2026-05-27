@@ -51,14 +51,14 @@ MolDesign resuelve esto con una capa de rescoring por Machine Learning entrenada
 | Feature | SwissDock | MolModa | Webina | **MolDesign** |
 |:---|:---:|:---:|:---:|:---:|
 | Docking Vina en navegador | ✅ | ✅ | ✅ | ✅ |
-| ML Rescoring | âŒ | âŒ | âŒ | ✅ |
-| Score compuesto ADME + Afinidad | âŒ | âŒ | âŒ | ✅ |
-| Control de sesgo de ligando (Modelo NULL) | âŒ | âŒ | âŒ | ✅ |
-| Ligand Efficiency como filtro | âŒ | âŒ | âŒ | ✅ |
-| Editor molecular 2D integrado | ✅ | âŒ | âŒ | ✅ |
-| Certificación de autoría blockchain | âŒ | âŒ | âŒ | ✅ |
-| Gamificación y comunidad | âŒ | âŒ | âŒ | ✅ |
-| Open Source | âŒ | ✅ | ✅ | ✅ |
+| ML Rescoring | ❌ | ❌ | ❌ | ✅ |
+| Score compuesto ADME + Afinidad | ❌ | ❌ | ❌ | ✅ |
+| Control de sesgo de ligando (Modelo NULL) | ❌ | ❌ | ❌ | ✅ |
+| Ligand Efficiency como filtro | ❌ | ❌ | ❌ | ✅ |
+| Editor molecular 2D integrado | ✅ | ❌ | ❌ | ✅ |
+| Certificación de autoría blockchain | ❌ | ❌ | ❌ | ✅ |
+| Gamificación y comunidad | ❌ | ❌ | ❌ | ✅ |
+| Open Source | ❌ | ✅ | ✅ | ✅ |
 
 ---
 
@@ -161,16 +161,16 @@ Vina usa una función de puntuación empírica que no captura efectos de solvata
 Pose de docking
       │
       ├──► Modelo A (Full 3D)     → Score basado en interacciones proteína-ligando
-      │         H-bonds, Ï€-stacking, contactos hidrofóbicos (ProLIF)
+      │         H-bonds, π-stacking, contactos hidrofóbicos (ProLIF)
       │
       └──► Modelo NULL (Ciego)    → Score basado SOLO en descriptores 1D/2D
                 MW, LogP, TPSA (sin geometría 3D)
 
-Delta = Score_A âˆ’ Score_NULL
+Delta = Score_A − Score_NULL
 
   Delta > +0.5  →  Afinidad real por encaje geométrico específico ✅
   Delta ≈ 0     →  Binding por fuerza bruta fisicoquímica ⚠️
-  Delta < 0     →  Choques estéricos; la molécula no cabe físicamente âŒ
+  Delta < 0     →  Choques estéricos; la molécula no cabe físicamente ❌
 ```
 
 ### Features del Modelo XGBoost (176 total)
