@@ -12,7 +12,7 @@ const PIPELINE_STEPS = [
   { step: 3, icon: "🧬", title: "Conformer 3D", desc: "Generación de estructuras tridimensionales de baja energía.", detail: "Uso del algoritmo ETKDG para obtener la geometría más probable del ligando." },
   { step: 4, icon: "🎯", title: "Docking Físico", desc: "AutoDock Vina contra múltiples receptores (Multi-Target).", detail: "Simulación de fuerzas electrostáticas y de van der Waals en sitios activos calibrados." },
   { step: 5, icon: "🧠", title: "Rescoring ML", desc: "Corrección de afinidad via Machine Learning.", detail: "Modelo entrenado con 5,000 complejos de PDBbind para reducir falsos positivos." },
-  { step: 6, icon: "🤖", title: "Interpretación IA", desc: "Reporte científico narrativo generado por Gemini / Ollama.", detail: "Análisis cualitativo de interacciones clave en tiempo real por streaming SSE." },
+  { step: 6, icon: "📥", title: "Reporte Científico", desc: "Compilación técnica e interacciones clave en PDF de grado clínico.", detail: "Integración automática de docking, afinidad, ADME, hotspots e historial certificado." },
   { step: 7, icon: "🔗", title: "Blockchain", desc: "Registro inmutable de autoría en la red Solana.", detail: "Certificación permanente del descubrimiento con hash SHA-256 único." },
 ];
 
@@ -260,7 +260,8 @@ export default function HomePage() {
               { name: "XGBoost ML Rescoring", status: "STABLE", color: "text-emerald-400" },
               { name: "RDKit Cheminformatics", status: "ONLINE", color: "text-emerald-400" },
               { name: "Solana Node (Devnet)", status: "SYNCED", color: "text-brand-400" },
-              { name: "Gemini / Claude Interpretation", status: "READY", color: "text-emerald-400" },
+              { name: "Scientific PDF Generator", status: "ONLINE", color: "text-emerald-400" },
+              { name: "AI Interpretation Module", status: "INACTIVE (Maintenance)", color: "text-yellow-500" },
             ].map((sys) => (
               <div key={sys.name} className="flex items-center justify-between border-b border-surface-900 pb-2 last:border-0">
                 <span className="text-[10px] text-surface-500 leading-tight">{sys.name}</span>

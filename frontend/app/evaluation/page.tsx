@@ -158,6 +158,10 @@ export default function EvaluationPage() {
   }, [status?.result?.molecule_id]);
 
   useEffect(() => {
+    // NOTA: El módulo de interpretación de IA se encuentra inactivo en producción.
+    // Se prioriza el Reporte Científico PDF que contiene datos moleculares de grado clínico.
+    return;
+
     const moleculeId = status?.result?.molecule_id;
     if (!moleculeId) return;
     setAiReport(null);
@@ -181,7 +185,7 @@ export default function EvaluationPage() {
     try {
       const stored = localStorage.getItem("moldesign_auth");
       if (stored) {
-        const parsed = JSON.parse(stored);
+        const parsed = JSON.parse(stored as string);
         if (parsed.token) headers["Authorization"] = `Bearer ${parsed.token}`;
       }
     } catch (e) {}
