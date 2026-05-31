@@ -189,7 +189,7 @@ SMILES / Editor Molecular 2D (Ketcher)
 └─────────────────────────────────┘
 ```
 
-> **Nota de latencia**: El System Monitor muestra ~48ms de respuesta de API (tiempo de lectura de PostgreSQL/Redis). El tiempo de cómputo real del docking es 15–20s en el worker de Celery. Los parámetros del grid box para cada receptor están en `docs/HOTSPOTS_SYSTEM.md`.
+> **Nota de latencia**: El System Monitor muestra ~48ms de respuesta de API (tiempo de lectura de PostgreSQL/Redis). El tiempo de cómputo real del docking es 15–20s en el worker de Celery. Los parámetros del grid box y hotspots de especificidad para cada receptor están en [`docs/GRID_BOX_PARAMETERS.md`](docs/GRID_BOX_PARAMETERS.md).
 
 ---
 
