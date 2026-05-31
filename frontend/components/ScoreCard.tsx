@@ -133,50 +133,52 @@ export function ScoreCard({
             </div>
           </div>
         ) : (
-          <div className="flex gap-3">
-            {onSave && (
-              <button
-                onClick={() => setIsSavingPrompt(true)}
-                disabled={isSaved}
-                className={`flex-1 rounded-lg py-3 font-semibold transition-all ${
-                  isSaved
-                    ? "cursor-not-allowed bg-surface-800 text-surface-500"
-                    : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-white"
-                }`}
-              >
-                {isSaved ? "✓ Guardada en tu cuenta" : "💾 Guardar molécula"}
-              </button>
-            )}
-            
-            {solanaSignature ? (
-              <div className="flex-1 flex gap-2">
-                <a
-                  href={`https://explorer.solana.com/tx/${solanaSignature}?cluster=devnet`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-[#14F195]/10 text-[#14F195] py-3 font-semibold text-center transition-all hover:bg-[#14F195]/20"
-                  title="Ver en Solana Explorer"
-                >
-                  ✓ Certificada en Solana
-                </a>
-                {onDownloadCertificate && (
+          <div className="space-y-3">
+            {(onSave || onCertify || solanaSignature) && (
+              <div className="flex gap-3">
+                {onSave && (
                   <button
-                    onClick={onDownloadCertificate}
-                    className="flex-[0.5] rounded-lg bg-surface-800 text-surface-300 py-3 font-semibold transition-all hover:bg-surface-700 hover:text-white"
-                    title="Descargar Certificado PDF"
+                    onClick={() => setIsSavingPrompt(true)}
+                    disabled={isSaved}
+                    className={`flex-1 rounded-lg py-3 font-semibold transition-all ${
+                      isSaved
+                        ? "cursor-not-allowed bg-surface-800 text-surface-500"
+                        : "bg-surface-800 text-surface-300 hover:bg-surface-700 hover:text-white"
+                    }`}
                   >
-                    📥 PDF
+                    {isSaved ? "✓ Guardada en tu cuenta" : "💾 Guardar molécula"}
                   </button>
                 )}
+                
+                {solanaSignature ? (
+                  <a
+                    href={`https://explorer.solana.com/tx/${solanaSignature}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-[#14F195]/10 text-[#14F195] py-3 font-semibold text-center transition-all hover:bg-[#14F195]/20"
+                    title="Ver en Solana Explorer"
+                  >
+                    ✓ Certificada en Solana
+                  </a>
+                ) : onCertify ? (
+                  <button
+                    onClick={onCertify}
+                    className="flex-1 text-center rounded-lg bg-gradient-to-r from-[#9945FF] to-[#14F195] py-3 font-bold text-white shadow-lg transition-all hover:opacity-90 active:scale-95"
+                  >
+                    Certificar en Solana
+                  </button>
+                ) : null}
               </div>
-            ) : onCertify ? (
+            )}
+
+            {onDownloadCertificate && (
               <button
-                onClick={onCertify}
-                className="flex-1 text-center rounded-lg bg-gradient-to-r from-[#9945FF] to-[#14F195] py-3 font-bold text-white shadow-lg transition-all hover:opacity-90 active:scale-95"
+                onClick={onDownloadCertificate}
+                className="w-full flex items-center justify-center gap-2 rounded-lg border border-brand-500/30 bg-brand-500/10 text-brand-400 py-3 px-4 font-bold text-sm tracking-wide transition-all hover:bg-brand-500/20 active:scale-[0.98]"
               >
-                Certificar en Solana
+                📥 {solanaSignature ? "Descargar Certificado PDF (On-Chain)" : "Descargar Reporte Científico (PDF)"}
               </button>
-            ) : null}
+            )}
           </div>
         )}
         

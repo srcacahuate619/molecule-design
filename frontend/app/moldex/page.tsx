@@ -145,8 +145,8 @@ export default function MoldexPage() {
       {/* 3D Viewport: El Protagonista (Full Background) */}
       <div className="absolute inset-0 z-0">
         <MoleculeViewer3D 
-          proteinData={proteinData}
-          poseData={poseData}
+          proteinData={proteinData ?? undefined}
+          poseData={poseData ?? undefined}
           height={windowHeight}
           hotspots={(selectedMolecule?.target?.hotspots || []).map((h: any) => h.name)}
           hotspotsHit={selectedMolecule?.hotspots_hit || []}
