@@ -83,21 +83,21 @@ async def main():
         {
             "pdb_id": "3PP0",
             "chain": "A",
-            "center": (25.86, 30.61, 7.55),
+            "center": (17.10, 16.55, 26.60),
             "size": (25.0, 25.0, 25.0),
             "name": "HER2 Kinase Domain (SYR-475)"
         },
         {
             "pdb_id": "4ZZZ",
             "chain": "A",
-            "center": (55.81, 0.16, 22.52),
+            "center": (63.41, 6.48, 9.59),
             "size": (25.0, 25.0, 25.0),
             "name": "PARP1 LBD (NMS-P118)"
         },
         {
             "pdb_id": "1HVY",
             "chain": "A",
-            "center": (25.99, 19.63, 17.19),
+            "center": (0.40, 12.39, 17.77),
             "size": (25.0, 25.0, 25.0),
             "name": "Thymidylate Synthase (Raltitrexed)"
         }

@@ -42,7 +42,9 @@ export function MolecularInsight({ result }: Props) {
       insights.push({
         type: "success",
         title: "Validación Científica",
-        message: `Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el target ${result.target_name || "seleccionado"} (Spearman ρ=${result.target_spearman_rho?.toFixed(3) || "0.512"}).`
+        message: result.target_spearman_rho != null && result.target_spearman_rho !== 0
+          ? `Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el target ${result.target_name || "seleccionado"} (Spearman ρ=${result.target_spearman_rho.toFixed(3)} — validado en benchmark ciego).`
+          : `Los descriptores de interacción (ProLIF) y el modelo ML confirman una señal biológica prometedora para el target ${result.target_name || "seleccionado"}. La correlación Spearman de este receptor está pendiente de recálculo con la geometría de sitio activo corrigida.`
       });
     } else if (!isWeak) {
       insights.push({

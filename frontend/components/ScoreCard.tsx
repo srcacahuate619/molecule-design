@@ -294,10 +294,10 @@ export function ScoreCard({
                   Mide la "calidad" de la afinidad. Evita que la molécula sea potente solo por ser demasiado grasa.
                 </p>
                 <div className="mt-2 rounded bg-surface-900 p-2 text-center font-mono text-[10px] text-emerald-300 border border-surface-800">
-                  LLE = -Afinidad - LogP
+                  LLE = (-Afinidad / 1.36) - LogP
                 </div>
                 <p className="mt-2 text-[9px] text-surface-500">
-                  Un valor mayor es mejor. Para un buen fármaco se busca un LLE {">"} 3 o incluso {">"} 5.
+                  Calculado con escala termodinámica (factor de conversión de 1.36 kcal/mol a pKd). Se busca un LLE {">"} 3 o incluso {">"} 5.
                 </p>
               </div>
             </div>

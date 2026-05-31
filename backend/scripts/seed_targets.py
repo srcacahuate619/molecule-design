@@ -36,7 +36,7 @@ async def main():
         },
         {
             "pdb_id": "6B3J",
-            "name": "GLP-1R (ECD / Peptide Pocket)",
+            "name": "GLP-1R (ECD; Co-cristalizado con Exendin-P5)",
             "chain": "R",
             "description": "Receptor GLP-1 acoplado a proteína Gs en estado activo con agonista peptídico Exendin-P5 (Cadena P). Resolución 3.3 Å Cryo-EM (Liang et al. 2018, Nature). Bolsillo del Dominio Extracelular (ECD): indica complementariedad para análogos peptídicos, peptidomiméticos y moléculas con anclaje N-terminal. Para agonistas orales small-molecule, usar el target GLP-1R TMD (6X1A).",
             "grid_center_x": 93.23, "grid_center_y": 148.16, "grid_center_z": 103.33,
@@ -54,13 +54,13 @@ async def main():
         },
         {
             "pdb_id": "6X1A",
-            "name": "GLP-1R (TMD / Oral Agonist Pocket)",
+            "name": "GLP-1R (TMD; Co-cristalizado con Danuglipron)",
             "chain": "R",
             "description": "Receptor GLP-1 en estado activo unido al agonista oral no peptídico Danuglipron (PF-06882961, Pfizer; ligando UK4, Cadena R). Resolución 2.5 Å Cryo-EM (Song et al. 2020, Cell). Bolsillo del Dominio Transmembranal (TMD): TM1/TM2/TM3/TM7. Target primario para virtual screening de fármacos orales. TRP33 es primate-específico y crítico para selectividad de especie.",
             "grid_center_x": 131.35, "grid_center_y": 116.78, "grid_center_z": 155.04,
             "grid_size_x": 30.0, "grid_size_y": 30.0, "grid_size_z": 30.0,
             "requires_cns": False, "structural_family": "GPCR", "organism": "Homo sapiens",
-            "resolution": 2.5, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "resolution": 2.5, "spearman_rho": -0.267, "affinity_threshold": -7.5,
             "is_hot": True,
             "hotspots": [
                 {"name": "LYS197", "importance": 1.0},
@@ -124,13 +124,13 @@ async def main():
         },
         {
             "pdb_id": "3ERT",
-            "name": "ER-alpha LBD (Tamoxifen)",
+            "name": "ER-alpha LBD (Co-cristalizado con 4-Hidroxitamoxifeno)",
             "chain": "A",
             "description": "Receptor de estrogeno alfa humano (LBD) co-cristalizado con el modulador selectivo 4-Hidroxitamoxifeno (OHT). Diana principal en terapia endocrina de cancer de mama ER+.",
             "grid_center_x": 31.57, "grid_center_y": -1.59, "grid_center_z": 25.60,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Nuclear Receptor", "organism": "Homo sapiens",
-            "resolution": 1.9, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "resolution": 1.9, "spearman_rho": -0.583, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "GLU353", "importance": 1.0},
@@ -142,13 +142,13 @@ async def main():
         },
         {
             "pdb_id": "5L2I",
-            "name": "CDK6 (Palbociclib)",
+            "name": "CDK6 (Co-cristalizado con Palbociclib)",
             "chain": "A",
             "description": "Ciclina dependiente de quinasa 6 (CDK6) humana unida al inhibidor selectivo de quinasa Palbociclib (Ibrance). Control del ciclo celular G1/S en tumores ER+.",
             "grid_center_x": 13.98, "grid_center_y": 28.18, "grid_center_z": 9.65,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Kinase", "organism": "Homo sapiens",
-            "resolution": 2.75, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "resolution": 2.75, "spearman_rho": -0.483, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "VAL101", "importance": 1.0},
@@ -160,13 +160,13 @@ async def main():
         },
         {
             "pdb_id": "2W96",
-            "name": "CDK4 (Apo/Cyclin D1)",
+            "name": "CDK4 (Complejo con Ciclina D1; sitio por homología estructural con CDK6)",
             "chain": "B",
             "description": "Ciclina dependiente de quinasa 4 (CDK4) humana en complejo activo con Ciclina D1. Bolsillo ATP alineado estructuralmente con Palbociclib para cribado selectivo.",
             "grid_center_x": 7.41, "grid_center_y": 2.10, "grid_center_z": 81.55,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Kinase", "organism": "Homo sapiens",
-            "resolution": 2.3, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "resolution": 2.3, "spearman_rho": -0.550, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "LYS35", "importance": 1.0},
@@ -178,13 +178,13 @@ async def main():
         },
         {
             "pdb_id": "4JPS",
-            "name": "PIK3CA WT (Alpelisib)",
+            "name": "PIK3CA WT (Co-cristalizado con Alpelisib)",
             "chain": "A",
             "description": "Subunidad catalitica p110alfa de fosfatidilinositol 3-quinasa (PI3K) salvaje en complejo con el inhibidor BYL719 (Alpelisib) indicado para resistencia endocrina.",
             "grid_center_x": -1.32, "grid_center_y": -9.51, "grid_center_z": 16.95,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Kinase", "organism": "Homo sapiens",
-            "resolution": 2.2, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "resolution": 2.2, "spearman_rho": 0.610, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "SER854", "importance": 1.0},
@@ -196,13 +196,13 @@ async def main():
         },
         {
             "pdb_id": "3O96",
-            "name": "AKT1 (Allosteric Inhibitor VIII)",
+            "name": "AKT1 (Co-cristalizado con Inhibidor Alostérico VIII)",
             "chain": "A",
             "description": "RAC-alfa serina/treonina-proteina quinasa 1 (AKT1) en estado inactivo con inhibidor alosterico VIII. Bloqueo de la señalizacion aguas abajo de PI3K.",
             "grid_center_x": 8.37, "grid_center_y": -6.83, "grid_center_z": 12.62,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Kinase", "organism": "Homo sapiens",
-            "resolution": 2.7, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "resolution": 2.7, "spearman_rho": -0.333, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "SER205", "importance": 1.0},
@@ -214,13 +214,16 @@ async def main():
         },
         {
             "pdb_id": "3PP0",
-            "name": "HER2 Kinase Domain (SYR-475)",
+            "name": "HER2 Kinase Domain (Co-cristalizado con SYR-475)",
             "chain": "A",
             "description": "Dominio quinasa de la tirosina-proteina quinasa erbB-2 (HER2/Neu) en complejo con el inhibidor pirrolopirimidinico selectivo SYR-475.",
-            "grid_center_x": 25.86, "grid_center_y": 30.61, "grid_center_z": 7.55,
+            "grid_center_x": 17.10, "grid_center_y": 16.55, "grid_center_z": 26.60,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Kinase", "organism": "Homo sapiens",
-            "resolution": 2.25, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            # spearman_rho=None: Benchmark anterior (ρ=+0.167) fue calculado con grid box
+            # centrada en coordenadas incorrectas (centroide del multímero completo vs Cadena A).
+            # Pendiente de recálculo con la geometría corregida. Auditado: 2026-05-31.
+            "resolution": 2.25, "spearman_rho": None, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "MET801", "importance": 1.0},
@@ -232,13 +235,16 @@ async def main():
         },
         {
             "pdb_id": "4ZZZ",
-            "name": "PARP1 LBD (NMS-P118)",
+            "name": "PARP1 LBD (Co-cristalizado con NMS-P118)",
             "chain": "A",
             "description": "Dominio catalitico de Poli(ADP-ribosa) polimerasa 1 (PARP1) unida al inhibidor de isoindolinona NMS-P118. Letalidad sintetica en tumores con mutacion BRCA.",
-            "grid_center_x": 55.81, "grid_center_y": 0.16, "grid_center_z": 22.52,
+            "grid_center_x": 63.41, "grid_center_y": 6.48, "grid_center_z": 9.59,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Polymerase", "organism": "Homo sapiens",
-            "resolution": 1.9, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            # spearman_rho=None: Benchmark anterior (ρ=-0.407) fue calculado con grid box
+            # centrada en coordenadas incorrectas (centroide del dímero completo vs Cadena A).
+            # Pendiente de recálculo con la geometría corregida. Auditado: 2026-05-31.
+            "resolution": 1.9, "spearman_rho": None, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "SER904", "importance": 1.0},
@@ -250,13 +256,16 @@ async def main():
         },
         {
             "pdb_id": "1HVY",
-            "name": "Thymidylate Synthase (Raltitrexed)",
+            "name": "Thymidylate Synthase (Co-cristalizado con Raltitrexed)",
             "chain": "A",
             "description": "Timidilato sintasa humana (dímero catalítico, Cadena A) en complejo cerrado con el analogo de folato Raltitrexed (D16) y dUMP. Blanco quimioterapeutico clasico.",
-            "grid_center_x": 25.99, "grid_center_y": 19.63, "grid_center_z": 17.19,
+            "grid_center_x": 0.40, "grid_center_y": 12.39, "grid_center_z": 17.77,
             "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
             "requires_cns": False, "structural_family": "Transferase", "organism": "Homo sapiens",
-            "resolution": 1.9, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            # spearman_rho=None: Benchmark anterior (ρ=-0.335) fue calculado con grid box
+            # centrada en coordenadas incorrectas (centroide del homodímero completo vs Cadena A).
+            # Pendiente de recálculo con la geometría corregida. Auditado: 2026-05-31.
+            "resolution": 1.9, "spearman_rho": None, "affinity_threshold": -7.5,
             "is_hot": False,
             "hotspots": [
                 {"name": "ASP218", "importance": 1.0},

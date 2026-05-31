@@ -70,10 +70,10 @@ export function MethodDisclaimer() {
                 3. Eficiencia Lipofílica (Lipophilic Efficiency - LLE)
               </h4>
               <p className="text-surface-500 text-[10px]">
-                Garantiza la calidad de la interacción termodinámica evitando compuestos hiper-lipofílicos inespecíficos.
+                Garantiza la calidad de la unión evitando compuestos hiper-lipofílicos inespecíficos. La afinidad (ΔG) se escala por 1.36 kcal/mol a 300 K para convertirla en la escala logarítmica de pKd teórica.
               </p>
               <div className="bg-surface-900/80 p-2 rounded border border-surface-800/50 my-2 text-center text-emerald-400">
-                {`LLE = (-ΔG) - LogP`}
+                {`LLE = (-ΔG / 1.36) - LogP`}
               </div>
               <div className="bg-surface-900/80 p-2.5 rounded border border-surface-800/50 my-2 text-gray-400 text-[10px] leading-normal">
                 {`• Si LLE < 3.0: Se penaliza multiplicando por max(0.4, LLE / 3.0)`} <br />

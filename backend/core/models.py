@@ -457,10 +457,10 @@ class EvaluationResultRead(BaseModel):
     @property
     def ligand_lipophilicity_efficiency(self) -> float | None:
         """
-        LLE = (-affinity_kcal) - log_p
+        LLE = (-affinity_kcal / 1.36) - log_p
         """
         if self.affinity_kcal is not None and self.log_p is not None:
-            return round((-self.affinity_kcal) - self.log_p, 3)
+            return round((-self.affinity_kcal / 1.36) - self.log_p, 3)
         return None
 
     is_control:        bool = False

@@ -1,4 +1,5 @@
 import io
+import os
 from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import Draw
@@ -7,6 +8,8 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from core.models import MoleculeORM, EvaluationResultORM
 
 def get_2d_image(smiles: str, width=2.5*inch, height=2.5*inch):
@@ -30,6 +33,16 @@ def generate_certificate_pdf(mol: MoleculeORM, eval_result: EvaluationResultORM,
     
     styles = getSampleStyleSheet()
     
+    # Registrar DejaVuSansMono si está disponible para evitar problemas de copy-paste
+    font_name = 'Courier'
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
+    if os.path.exists(font_path):
+        try:
+            pdfmetrics.registerFont(TTFont('DejaVuSansMono', font_path))
+            font_name = 'DejaVuSansMono'
+        except Exception:
+            pass
+            
     # Custom Styles
     brand_color = colors.HexColor('#3b82f6')
     
@@ -70,7 +83,7 @@ def generate_certificate_pdf(mol: MoleculeORM, eval_result: EvaluationResultORM,
     mono_style = ParagraphStyle(
         'Mono',
         parent=styles['Normal'],
-        fontName='Courier',
+        fontName=font_name,
         fontSize=9,
         textColor=colors.HexColor('#475569')
     )
@@ -127,7 +140,7 @@ def generate_certificate_pdf(mol: MoleculeORM, eval_result: EvaluationResultORM,
         
     lle = None
     if eval_result.affinity_kcal is not None and eval_result.log_p is not None:
-        lle = -eval_result.affinity_kcal - eval_result.log_p
+        lle = (-eval_result.affinity_kcal / 1.36) - eval_result.log_p
 
     dock_data = [
         ["Afinidad (Energía de Unión)", f"{eval_result.affinity_kcal:.2f} kcal/mol" if eval_result.affinity_kcal is not None else "N/A"],
@@ -241,8 +254,27 @@ def generate_certificate_pdf(mol: MoleculeORM, eval_result: EvaluationResultORM,
     ]))
     story.append(bc_table)
 
+    # METODOLOGÍA Y LIMITACIONES CIENTÍFICAS
+    story.append(Spacer(1, 10))
+    methodology_style = ParagraphStyle(
+        'Methodology',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=9,
+        textColor=colors.HexColor('#64748b'),
+        alignment=4 # Justified
+    )
+    methodology_text = (
+        "<b>Nota de Metodología Científica y Limitaciones:</b> Las energías de unión (afinidad, ΔG) son predichas in silico "
+        "mediante docking molecular utilizando AutoDock Vina y no corresponden a constantes experimentales directas (K<sub>d</sub> o IC<sub>50</sub>). "
+        "La Eficiencia Lipofílica (LLE) se calcula utilizando la aproximación termodinámica clásica LLE = pK<sub>d</sub><sup>teórica</sup> - LogP = (-ΔG / 1.36) - LogP, "
+        "donde 1.36 kcal/mol es el factor de conversión a energía libre de Gibbs por unidad logarítmica de afinidad a 300 K. "
+        "Los resultados constituyen estimaciones teóricas y deben ser validados experimentalmente mediante ensayos in vitro."
+    )
+    story.append(Paragraph(methodology_text, methodology_style))
+
     # FOOTER
-    story.append(Spacer(1, 30))
+    story.append(Spacer(1, 15))
     footer_text = "<font color='#94a3b8' size='8'><i>Generado de forma autónoma por MolDesign AI bajo licencia abierta CC0.<br/>Código y Plataforma: https://github.com/srcacahuate619/molecule-design</i></font>"
     story.append(Paragraph(footer_text, ParagraphStyle('Footer', alignment=1)))
 

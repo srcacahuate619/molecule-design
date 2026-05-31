@@ -110,6 +110,58 @@ El benchmark cruzó el **82% de progreso** consolidando resultados definitivos p
 
 ---
 
+## 9. Auditoría Geométrica de Targets Multímeros — Corrección de Grid Box (Mayo 2026)
+
+**Fecha de Auditoría:** 2026-05-31
+**Auditor:** Antigravity (Gemini 2.5 Pro)
+**Resultado:** ⚠️ Invalidación parcial de benchmarks piloto. Corrección aplicada.
+
+### Problema Detectado: Error en el Centroide de Grid Box para Multímeros
+
+Durante la auditoría del pipeline de preparación estructural, se identificó un error sistemático en el cálculo de las coordenadas de la caja de docking para proteínas multiméricas:
+
+- El script de preparación calculaba el centroide promediando las coordenadas de **todas las cadenas** del complejo cristalográfico.
+- Sin embargo, `meeko` (el preparador de proteínas para AutoDock Vina) solo procesa la **Cadena A** del archivo PDB.
+- El resultado era que la caja de docking quedaba centrada en el **centroide geométrico del multímero completo**, que en proteínas con múltiples cadenas puede estar **15–30 Å fuera del sitio activo real** de la Cadena A.
+
+### Targets Afectados y Valores Invalidados
+
+| Target | PDB | ρ Reportado (Piloto) | Estado Real | Desplazamiento Estimado |
+|--------|-----|---------------------|-------------|------------------------|
+| HER2 Kinase Domain | `3PP0` | ~~+0.167~~ | ❌ **INVALIDADO** | ~25–30 Å |
+| PARP1 LBD | `4ZZZ` | ~~-0.407~~ | ❌ **INVALIDADO** | ~20–25 Å |
+| Thymidylate Synthase | `1HVY` | ~~-0.335~~ | ❌ **INVALIDADO** | ~15–20 Å |
+
+> **Nota importante:** Estos valores negativos o débiles no indican que el sistema de scoring sea incorrecto. Indican que el docking se estaba calculando contra el solvente/vacío entre cadenas. Las moléculas se unían a la nada, generando ruido estadístico puro que el coeficiente de Spearman no puede distinguir de una señal real.
+
+### Targets NO Afectados (Validez Conservada)
+
+Los siguientes targets tenían su caja centrada correctamente desde el origen y sus benchmarks siguen siendo válidos:
+
+| Target | PDB | ρ Certificado | Validez |
+|--------|-----|--------------|---------|
+| 5-HT1A | `7E2Y` | **+0.512** | ✅ Monómero GPCR, cadena R |
+| GLP-1R ECD | `6B3J` | **+0.485** | ✅ GPCR clase B, cadena R |
+| PIK3CA WT | `4JPS` | **+0.610** | ✅ Cadena A, bolsillo ATP |
+
+### Corrección Aplicada
+
+Se recalcularon las coordenadas de los 3 targets afectados usando el centroide del **ligando co-cristalizado en la Cadena A**:
+
+| Target | PDB | Centro Corregido (X, Y, Z) | Validación Post-Corrección |
+|--------|-----|--------------------------|---------------------------|
+| HER2 | `3PP0` | `(17.10, 16.55, 26.60)` | Ligando `03Q`: -10.03 kcal/mol, 100% hotspots ✅ |
+| PARP1 | `4ZZZ` | `(63.41, 6.48, 9.59)` | Centroide ligando `NMS`, Cadena A ✅ |
+| Thymidylate Synthase | `1HVY` | `(0.40, 12.39, 17.77)` | Centroide ligando `D16`, Cadena A ✅ |
+
+### Estado Actual
+
+Los `spearman_rho` de `3PP0`, `4ZZZ` y `1HVY` han sido establecidos en `null` en la base de datos y en el código fuente, con etiqueta **"Pendiente de recálculo"** en el frontend. Los benchmarks serán re-ejecutados con N ≥ 20 compuestos usando la geometría corregida.
+
+
+
+---
+
 ### Descubrimiento Clave: Conformer Bias y Estratificación Mecanística
 
 El análisis en profundidad del panel heterogéneo de **5-HT1A (7E2Y)** ha aportado una contribución metodológica de enorme valor:

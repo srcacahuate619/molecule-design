@@ -144,7 +144,7 @@ def calculate_score_breakdown(
 
     # Calcular LE y LLE bruta para pasarla al frontend
     le_raw = round(docking.best_affinity / properties.heavy_atom_count, 3) if properties.heavy_atom_count else None
-    lle_raw = round((-docking.best_affinity) - properties.log_p, 3) if properties.log_p is not None else None
+    lle_raw = round((-docking.best_affinity / 1.36) - properties.log_p, 3) if properties.log_p is not None else None
 
     return ScoreBreakdown(
         affinity_score=affinity_score,

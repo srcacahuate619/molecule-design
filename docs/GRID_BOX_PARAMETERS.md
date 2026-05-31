@@ -21,9 +21,9 @@ Los centros ($X, Y, Z$) y dimensiones ($X, Y, Z$, en Angstroms $\text{Å}$) han 
 | **CDK4 (Apo/Cyclin D1)** | `2W96` | B | $(7.41, 2.10, 81.55)$ | $25.0 \times 25.0 \times 25.0$ | $2.30$ | Kinase |
 | **PIK3CA WT (Alpelisib)** | `4JPS` | A | $(-1.32, -9.51, 16.95)$ | $25.0 \times 25.0 \times 25.0$ | $2.20$ | Kinase |
 | **AKT1 (Allosteric Inhibitor VIII)** | `3O96` | A | $(8.37, -6.83, 12.62)$ | $25.0 \times 25.0 \times 25.0$ | $2.70$ | Kinase |
-| **HER2 Kinase Domain (SYR-475)** | `3PP0` | A | $(25.86, 30.61, 7.55)$ | $25.0 \times 25.0 \times 25.0$ | $2.25$ | Kinase |
-| **PARP1 LBD (NMS-P118)** | `4ZZZ` | A | $(55.81, 0.16, 22.52)$ | $25.0 \times 25.0 \times 25.0$ | $1.90$ | Polymerase |
-| **Thymidylate Synthase (Raltitrexed)** | `1HVY` | A | $(25.99, 19.63, 17.19)$ | $25.0 \times 25.0 \times 25.0$ | $1.90$ | Transferase |
+| **HER2 Kinase Domain (SYR-475)** | `3PP0` | A | $(17.10, 16.55, 26.60)$ | $25.0 \times 25.0 \times 25.0$ | $2.25$ | Kinase |
+| **PARP1 LBD (NMS-P118)** | `4ZZZ` | A | $(63.41, 6.48, 9.59)$ | $25.0 \times 25.0 \times 25.0$ | $1.90$ | Polymerase |
+| **Thymidylate Synthase (Raltitrexed)** | `1HVY` | A | $(0.40, 12.39, 17.77)$ | $25.0 \times 25.0 \times 25.0$ | $1.90$ | Transferase |
 
 ---
 

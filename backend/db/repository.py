@@ -336,7 +336,7 @@ class Repository:
                 "name": "HER2 Kinase Domain (SYR-475)",
                 "chain": "A",
                 "description": "Dominio quinasa de la tirosina-proteina quinasa erbB-2 (HER2/Neu) en complejo con el inhibidor pirrolopirimidinico selectivo SYR-475.",
-                "grid_center_x": 25.86, "grid_center_y": 30.61, "grid_center_z": 7.55,
+                "grid_center_x": 17.10, "grid_center_y": 16.55, "grid_center_z": 26.60,
                 "requires_cns": False, "structural_family": "Kinase",
                 "organism": "Homo sapiens", "resolution": 2.25, "affinity_threshold": -7.5,
                 "hotspots": [
@@ -352,7 +352,7 @@ class Repository:
                 "name": "PARP1 LBD (NMS-P118)",
                 "chain": "A",
                 "description": "Dominio catalitico de Poli(ADP-ribosa) polimerasa 1 (PARP1) unida al inhibidor de isoindolinona NMS-P118. Letalidad sintetica en tumores con mutacion BRCA.",
-                "grid_center_x": 55.81, "grid_center_y": 0.16, "grid_center_z": 22.52,
+                "grid_center_x": 63.41, "grid_center_y": 6.48, "grid_center_z": 9.59,
                 "requires_cns": False, "structural_family": "Polymerase",
                 "organism": "Homo sapiens", "resolution": 1.9, "affinity_threshold": -7.5,
                 "hotspots": [
@@ -368,7 +368,7 @@ class Repository:
                 "name": "Thymidylate Synthase (Raltitrexed)",
                 "chain": "A",
                 "description": "Timidilato sintasa humana (dímero catalítico, Cadena A) en complejo cerrado con el analogo de folato Raltitrexed (D16) y dUMP. Blanco quimioterapeutico clasico.",
-                "grid_center_x": 25.99, "grid_center_y": 19.63, "grid_center_z": 17.19,
+                "grid_center_x": 0.40, "grid_center_y": 12.39, "grid_center_z": 17.77,
                 "requires_cns": False, "structural_family": "Transferase",
                 "organism": "Homo sapiens", "resolution": 1.9, "affinity_threshold": -7.5,
                 "hotspots": [

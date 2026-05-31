@@ -170,7 +170,7 @@ def _calc_hbd(mol: Mol) -> int:
     H-bond donors según definición de Lipinski.
     Cuenta NH y OH (nitrógenos y oxígenos con hidrógenos unidos).
     """
-    return Lipinski.NumHDonors(mol)
+    return Lipinski.NHOHCount(mol)
 
 
 def _calc_hba(mol: Mol) -> int:
@@ -182,7 +182,7 @@ def _calc_hba(mol: Mol) -> int:
     la de Ertl — cuenta todos los N y O, no solo los que aceptan
     en la práctica. Usamos Lipinski para consistencia con la regla.
     """
-    return Lipinski.NumHAcceptors(mol)
+    return Lipinski.NOCount(mol)
 
 
 def _calc_rotatable_bonds(mol: Mol) -> int:

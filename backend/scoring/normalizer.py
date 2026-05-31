@@ -57,7 +57,7 @@ def normalize_affinity(
 
     # --- Factor LLE (Lipophilic Efficiency) ---
     if log_p is not None:
-        lle = (-affinity_kcal) - log_p
+        lle = (-affinity_kcal / 1.36) - log_p
         if lle < 3.0:
             lle_factor = max(0.4, (lle / 3.0)) 
             base_score *= lle_factor
