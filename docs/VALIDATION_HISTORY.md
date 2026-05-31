@@ -106,7 +106,7 @@ El benchmark cruzó el **82% de progreso** consolidando resultados definitivos p
 | **PCSK9** (Pocket Ortostérico) | `2P4E` | `CHEMBL2929` | 50 | **+0.023** | **0.8765** | 🟡 PPI plana sin bolsillo hidrofóbico (Esperado) |
 | **PCSK9** (Bolsillo Alostérico) | `6U26` | `CHEMBL2929` | 50 | **+0.019** | **0.8956** | 🟢 **Control Negativo Perfecto (Modelo Nulo)** |
 | **CTLA-4** (Checkpoint Inmune) | `3OSK` | `CHEMBL2364164` | 44 | **NaN** | **NaN** | 🟡 Colapso de Señal (Ausencia de interacciones 3D detectadas en ProLIF) |
-
+*Nota de Auditoría Científica:* Los 9 nuevos targets oncológicos y de bolsillo transmembranal dual agregados en la v6.2 (3ERT, 5L2I, 2W96, 4JPS, 3O96, 3PP0, 4ZZZ, 1HVY, 6X1A) no formaron parte de esta corrida inicial de validación global v7.0 de Spearman. Sus respectivas pruebas de correlación y benchmarks ciegos se encuentran actualmente en planificación y están por ejecutarse.
 
 ---
 

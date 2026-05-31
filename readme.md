@@ -240,6 +240,8 @@ Delta = Score_A − Score_NULL
 
 El coeficiente de validación ciega (**ρ = 0.33**, p < 0.05) fue calculado sobre un panel de 40 moléculas con actividad experimental medida en 5-HT1A, **nunca vistas por el modelo durante el entrenamiento**. Vina sola en el mismo panel: ρ = −0.14.
 
+*Nota Científica:* Las métricas de correlación de Spearman en validación ciega para los 9 nuevos targets oncológicos y de GPCR dual agregados en la v6.2 se encuentran actualmente en fase de planificación y están por ejecutarse contra paneles externos de ChEMBL/BindingDB en el roadmap técnico.
+
 ---
 
 ## Reporte Científico PDF
