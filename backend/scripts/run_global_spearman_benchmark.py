@@ -42,14 +42,23 @@ TARGET_NAMES = {
     "1HVY": "Thymidylate Synthase (Chemotherapy Target)"
 }
 
-async def submit_jobs(run_id, is_test):
+async def submit_jobs(run_id, is_test, target_list=None, limit=None):
     print(f"\n📥 Cargando datasets y enviando tareas a Celery (Run ID: {run_id})...")
     submitted_jobs = []
     
     # Importar tarea de Celery
     from services.docking.queue_handler import run_full_evaluation
     
-    for pdb_id in TARGETS:
+    active_targets = TARGETS
+    if target_list:
+        if target_list.lower() == "new":
+            active_targets = ["6X1A", "3ERT", "5L2I", "2W96", "4JPS", "3O96", "3PP0", "4ZZZ", "1HVY"]
+        elif target_list.lower() == "original":
+            active_targets = ["7E2Y", "6B3J", "2P4E", "6U26", "3OSK"]
+        else:
+            active_targets = [t.strip().upper() for t in target_list.split(",") if t.strip()]
+            
+    for pdb_id in active_targets:
         panel_path = f"data/benchmark/{pdb_id}_panel.json"
         if not os.path.exists(panel_path):
             print(f"❌ Error: No se encontró el dataset en {panel_path}")
@@ -58,10 +67,12 @@ async def submit_jobs(run_id, is_test):
         with open(panel_path, "r", encoding="utf-8") as f:
             compounds = json.load(f)
             
-        if is_test:
+        if limit is not None:
+            compounds = compounds[:limit]
+        elif is_test:
             compounds = compounds[:2] # Prueba piloto: solo 2 moléculas por target
             
-        print(f"   Enviando {len(compounds)} tareas para {pdb_id} ({TARGET_NAMES[pdb_id]})...")
+        print(f"   Enviando {len(compounds)} tareas para {pdb_id} ({TARGET_NAMES.get(pdb_id, pdb_id)})...")
         
         for idx, cmp in enumerate(compounds):
             smiles = cmp["smiles"]
@@ -194,7 +205,9 @@ async def run_statistics(run_id, completed_jobs):
         by_target[tid].append(job)
         
     for tid in TARGETS:
-        jobs = by_target.get(tid, [])
+        if tid not in by_target:
+            continue
+        jobs = by_target[tid]
         if len(jobs) < 2:
             print(f"⚠️ Insuficientes datos para calcular Spearman en {tid} (N={len(jobs)})")
             continue
@@ -336,14 +349,20 @@ El presente documento certifica la precisión biofísica del motor de MolDesign 
 async def main():
     parser = argparse.ArgumentParser(description="Benchmarking global de MolDesign.")
     parser.add_argument("--test", action="store_true", help="Prueba piloto rápida con 2 moléculas por target.")
+    parser.add_argument("--targets", type=str, default=None, help="Lista de PDB IDs separados por comas a evaluar (o 'new'/'original').")
+    parser.add_argument("--limit", type=int, default=None, help="Límite del número de moléculas a evaluar por target.")
     args = parser.parse_args()
     
     run_id = f"spearman_run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     if args.test:
         run_id += "_pilot"
+    if args.targets == "new":
+        run_id += "_new"
+    if args.limit:
+        run_id += f"_lim{args.limit}"
         
     # 1. Enviar tareas asíncronas
-    jobs = await submit_jobs(run_id, args.test)
+    jobs = await submit_jobs(run_id, args.test, target_list=args.targets, limit=args.limit)
     if not jobs:
         print("❌ Error: No se enviaron tareas. Abortando.")
         return
