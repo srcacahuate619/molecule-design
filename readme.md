@@ -2,7 +2,7 @@
 
 **Plataforma de Descubrimiento Farmacológico In Silico — Docking Físico · ML Rescoring · Certificación Blockchain**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Python: 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)]()
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
 [![Solana: Devnet](https://img.shields.io/badge/Blockchain-Solana_Devnet-purple.svg)]()
@@ -464,5 +464,5 @@ Ingeniero en Software · UVEG · Monterrey, México
 
 ## Licencia
 
-Código fuente bajo licencia **MIT**.  
+Código fuente bajo licencia **GNU Affero General Public License v3 (AGPL-3.0)**.  
 Descubrimientos certificados por los usuarios bajo **Creative Commons Zero (CC0)** — dominio público universal.
