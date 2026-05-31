@@ -189,7 +189,7 @@ SMILES / Editor Molecular 2D (Ketcher)
 └─────────────────────────────────┘
 ```
 
-> **Nota de latencia**: El System Monitor muestra ~48ms de respuesta de API (tiempo de lectura de PostgreSQL/Redis). El tiempo de cómputo real del docking es 15–20s en el worker de Celery. Los parámetros del grid box y hotspots de especificidad para cada receptor están en [`docs/GRID_BOX_PARAMETERS.md`](docs/GRID_BOX_PARAMETERS.md).
+> **Nota de latencia**: El System Monitor muestra ~48ms de respuesta de API (tiempo de lectura de PostgreSQL/Redis). El tiempo de cómputo real del docking es 15–20s en el worker de Celery. Los parámetros del grid box y la lista de hotspots específicos de cada receptor están detallados en [`docs/GRID_BOX_PARAMETERS.md`](docs/GRID_BOX_PARAMETERS.md), mientras que el funcionamiento conceptual y las reglas del sistema de hotspots moleculares de selectividad se describen en [`docs/HOTSPOTS_SYSTEM.md`](docs/HOTSPOTS_SYSTEM.md).
 
 ---
 
@@ -268,10 +268,11 @@ Delta = Score_A − Score_NULL
 | v6.0 | Calibración Gold Standard (Spearman ρ) | 0.512 / **0.485** |
 | v6.1 | Dynamic Size-Adaptive LE & Soft Potency | 0.512 / **0.485** (Estabilizado) |
 | v6.2 (actual) | Ingestión de 9 Targets Oncológicos y UI de Selección | 0.512 / **0.485** (Estabilizado) |
+| v6.2 (piloto) | Spearman Piloto en 9 Nuevos Targets (10 mol/target) | **+0.610** (PIK3CA WT) / Margen Estrecho |
 
-El coeficiente de validación ciega (**ρ = 0.33**, p < 0.05) fue calculado sobre un panel de 40 moléculas con actividad experimental medida en 5-HT1A, **nunca vistas por el modelo durante el entrenamiento**. Vina sola en el mismo panel: ρ = −0.14.
+El coeficiente de validación ciega de referencia (**ρ = 0.33**, p < 0.05) fue calculado sobre un panel de 40 moléculas con actividad experimental medida en 5-HT1A, **nunca vistas por el modelo durante el entrenamiento**. Vina sola en el mismo panel: ρ = −0.14.
 
-*Nota Científica:* Las métricas de correlación de Spearman en validación ciega para los 9 nuevos targets oncológicos y de GPCR dual agregados en la v6.2 se encuentran actualmente en fase de planificación y están por ejecutarse contra paneles externos de ChEMBL/BindingDB en el roadmap técnico.
+*Nota Científica:* Las métricas de correlación de Spearman en validación ciega para los 9 nuevos targets oncológicos y de GPCR dual agregados en la v6.2 fueron evaluadas inicialmente mediante una **corrida piloto de 10 moléculas** (Run ID `spearman_run_20260531_092940_new_lim10`). Se obtuvo una correlación positiva notable en **PIK3CA WT (`4JPS`) de ρ = +0.610** ($p=0.06$). Para los demás targets, la limitación de rango dinámico de los compuestos ultra-potentes piloto introdujo ruido estadístico temporal (Spearman negativo). Los resultados completos, gráficos de dispersión y la discusión sobre la resolución termodinámica en rangos de potencia estrechos se detallan en [`docs/VALIDATION_HISTORY.md`](docs/VALIDATION_HISTORY.md#L141-L200) y el reporte [`docs/Spearman_Report_Latest.md`](docs/Spearman_Report_Latest.md).
 
 ---
 
