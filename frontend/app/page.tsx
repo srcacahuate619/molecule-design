@@ -12,7 +12,7 @@ const PIPELINE_STEPS = [
   { step: 3, icon: "🧬", title: "Conformer 3D", desc: "Generación de estructuras tridimensionales de baja energía.", detail: "Uso del algoritmo ETKDG para obtener la geometría más probable del ligando." },
   { step: 4, icon: "🎯", title: "Docking Físico", desc: "AutoDock Vina contra múltiples receptores (Multi-Target).", detail: "Simulación de fuerzas electrostáticas y de van der Waals en sitios activos calibrados." },
   { step: 5, icon: "🧠", title: "Rescoring ML", desc: "Corrección de afinidad via Machine Learning.", detail: "Modelo entrenado con 5,000 complejos de PDBbind para reducir falsos positivos." },
-  { step: 6, icon: "🤖", title: "Interpretación IA", desc: "Reporte científico narrativo generado por Claude.", detail: "Análisis cualitativo de interacciones clave y sugerencias de optimización." },
+  { step: 6, icon: "🤖", title: "Interpretación IA", desc: "Reporte científico narrativo generado por Gemini / Ollama.", detail: "Análisis cualitativo de interacciones clave en tiempo real por streaming SSE." },
   { step: 7, icon: "🔗", title: "Blockchain", desc: "Registro inmutable de autoría en la red Solana.", detail: "Certificación permanente del descubrimiento con hash SHA-256 único." },
 ];
 
@@ -145,7 +145,7 @@ export default function HomePage() {
                         <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
                         {stats?.best_user_name ?? "Anónimo"} 
                         <span className="text-brand-500">→</span>
-                        <span className="text-emerald-400">{stats?.best_target_pdb ?? "6B3J"}</span>
+                        <span className="text-emerald-400">{stats?.best_target_pdb ?? "7E2Y"}</span>
                       </span>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -213,14 +213,22 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-2 rounded-full bg-brand-500/10 px-4 py-1 text-xs font-bold text-brand-400 border border-brand-500/20">
                 Hot Target Activo: {stats?.hot_target?.name || "Cargando..."} ({stats?.hot_target?.pdb_id || "----"})
               </div>
-              <h2 className="text-4xl font-black text-white tracking-tighter">Precisión Calibrada: {stats?.hot_target?.spearman_rho?.toFixed(3) || "0.000"}</h2>
+              <h2 className="text-4xl font-black text-white tracking-tighter">
+                {stats?.hot_target?.spearman_rho && stats.hot_target.spearman_rho > 0 
+                  ? `Precisión Calibrada: ${stats.hot_target.spearman_rho.toFixed(3)}` 
+                  : "Física y Geometría de Alta Precisión"}
+              </h2>
               <p className="text-base leading-relaxed text-surface-400">
-                Nuestro motor ha sido validado contra el receptor {stats?.hot_target?.name || "----"}, 
-                logrando una correlación de Spearman de {stats?.hot_target?.spearman_rho?.toFixed(3) || "0.000"} en pruebas blindadas.
+                {stats?.hot_target?.spearman_rho && stats.hot_target.spearman_rho > 0 
+                  ? `Nuestro motor ha sido validado contra el receptor ${stats.hot_target.name}, logrando una correlación de Spearman de ${stats.hot_target.spearman_rho.toFixed(3)} en pruebas blindadas.`
+                  : `Nuestro motor está optimizado para el receptor ${stats?.hot_target?.name || "----"}, mapeando fuerzas químicas y hotspots tridimensionales. La validación blindada de Spearman contra paneles externos (ChEMBL) está en fase de planificación.`}
               </p>
               <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest">
                 <span className="flex items-center gap-2 text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> SPEARMAN ρ = {stats?.hot_target?.spearman_rho?.toFixed(3) || "0.000"}
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {stats?.hot_target?.spearman_rho && stats.hot_target.spearman_rho > 0 
+                    ? `SPEARMAN ρ = ${stats.hot_target.spearman_rho.toFixed(3)}` 
+                    : "SPEARMAN BENCHMARK: EN PLANIFICACIÓN"}
                 </span>
                 <span className="flex items-center gap-2 text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> MULTI-TARGET SUPPORT
@@ -241,8 +249,8 @@ export default function HomePage() {
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-surface-500">System Monitor</h3>
             <div className="flex gap-1">
-              <div className="h-2 w-2 rounded-full bg-red-500" />
-              <div className="h-2 w-2 rounded-full bg-yellow-500/20" />
+              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+              <div className="h-2 w-2 rounded-full bg-emerald-500/20" />
               <div className="h-2 w-2 rounded-full bg-emerald-500/20" />
             </div>
           </div>
@@ -260,8 +268,8 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <div className="mt-8 text-[9px] text-surface-600 animate-pulse">
-            {">"} SYSTEM ALERT: AI INFERENCE SUSPENDED
+          <div className="mt-8 text-[9px] text-emerald-500/80 animate-pulse">
+            {">"} SYSTEM STATUS: OPTIMAL | AI COGNITIVE AGENT READY
           </div>
         </section>
       </div>
