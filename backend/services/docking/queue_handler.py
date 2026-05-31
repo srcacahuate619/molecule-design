@@ -191,8 +191,8 @@ async def _run_full_evaluation_async(
                 affinity_threshold=target.affinity_threshold if target.affinity_threshold is not None else -7.5
             )
 
-            # --- [NUEVO] Programar limpieza automática si el score es bajo ---
-            if breakdown.total_score < 60.0:
+            # --- [NUEVO] Programar limpieza automática si el score es bajo (Umbral ajustado a 50 para conservación) ---
+            if breakdown.total_score < 50.0:
                 log.info({"event": "scheduling_cleanup_low_score", "molecule_id": str(molecule.id), "score": breakdown.total_score})
                 cleanup_unsaved_molecule.apply_async(args=[str(molecule.id)], countdown=3600) # 1 hora
             # --- [NUEVO] Auditoría Científica Profunda ---
@@ -289,13 +289,13 @@ def cleanup_unsaved_molecule(molecule_id: str):
                 
             # Criterios de borrado:
             # 1. Falló la evaluación
-            # 2. El score final es inferior al umbral de "prometedora" (60.0)
+            # 2. El score final es inferior al umbral de "prometedora" (50.0)
             should_delete = False
             if mol.status == MoleculeStatus.FAILED:
                 should_delete = True
                 log.info({"event": "cleanup_reason_failed", "molecule_id": molecule_id})
             elif mol.evaluation_result and mol.evaluation_result.total_score is not None:
-                if mol.evaluation_result.total_score < 60.0:
+                if mol.evaluation_result.total_score < 50.0:
                     should_delete = True
                     log.info({"event": "cleanup_reason_low_score", "molecule_id": molecule_id, "score": mol.evaluation_result.total_score})
             

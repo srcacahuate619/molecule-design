@@ -553,7 +553,7 @@ class Repository:
             .options(
                 joinedload(EvaluationResultORM.molecule).joinedload(MoleculeORM.target)
             )
-            .order_by(EvaluationResultORM.evaluated_at.desc())
+            .order_by(TargetORM.name.asc(), EvaluationResultORM.total_score.desc())
         )
         
         if target_pdb_id:
