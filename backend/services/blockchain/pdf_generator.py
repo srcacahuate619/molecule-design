@@ -84,7 +84,8 @@ def generate_certificate_pdf(mol: MoleculeORM, eval_result: EvaluationResultORM,
     
     # TARGET SECTION
     story.append(Paragraph("Receptor Biológico (Target)", section_title_style))
-    story.append(Paragraph(f"<b>PDB ID:</b> {mol.target.pdb_id.upper() if mol.target else 'N/A'} | <b>Nombre:</b> {target_name}", normal_style))
+    rho_val = f" | <b>Spearman ρ:</b> {mol.target.spearman_rho:.3f}" if (mol.target and mol.target.spearman_rho is not None) else ""
+    story.append(Paragraph(f"<b>PDB ID:</b> {mol.target.pdb_id.upper() if mol.target else 'N/A'} | <b>Nombre:</b> {target_name}{rho_val}", normal_style))
     story.append(Spacer(1, 10))
     target_desc = mol.target.description if mol.target and mol.target.description else "Descripción fisiológica no disponible."
     story.append(Paragraph(f"<b>Contexto Fisiológico:</b> {target_desc}", normal_style))
