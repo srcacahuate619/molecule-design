@@ -46,6 +46,37 @@ MolDesign resuelve esto con:
 3. **Score compuesto auditable**: Ponderación documentada Afinidad 45% + ADME 30% + Drug-likeness 25%.
 4. **Dominio de aplicabilidad**: Distancia de Mahalanobis — degrada la confianza si la molécula está fuera del espacio químico de entrenamiento, en lugar de extrapolar ciegamente.
 
+---
+
+## Arquitectura de Cribado Multi-Nivel "Micro-Analítica"
+
+Para superar el límite físico de resolución en rangos de potencia estrechos (donde las pequeñas diferencias experimentales caen dentro de la incertidumbre típica del docking de $\pm 1.5$ a $2.0 \text{ kcal/mol}$), MolDesign está estructurado bajo una **hoja de ruta de cribado en múltiples capas de resolución**:
+
+```
+ ┌────────────────────────────────────────────────────────┐
+ │   Nivel 1: Vina + XGBoost + ADME                       │  ← Filtro Biológico Rápido (~17s)
+ │   (Descarte si Score Compuesto < 20)                   │  ← Implementación Actual (Producción)
+ └───────────────────────────┬────────────────────────────┘
+                             │ Score >= 20
+                             ▼
+ ┌────────────────────────────────────────────────────────┐
+ │   Nivel 2: Red Neuronal de Grafos 3D (SchNet/DimeNet)  │  ← Filtro Conformacional Fino (~60s)
+ │   (Descarte si Score GNN < 35)                         │  ← Fase de Desarrollo v6.3
+ └───────────────────────────┬────────────────────────────┘
+                             │ Score >= 35
+                             ▼
+ ┌────────────────────────────────────────────────────────┐
+ │   Nivel 3: Solvatación Explícita 3D-RISM               │  ← Termodinámica de Solvatación (~10 min)
+ │   (AmberTools Amber RISM3D Solver)                     │  ← Fase de Desarrollo v6.4
+ └────────────────────────────────────────────────────────┘
+```
+
+1. **Nivel 1 (Filtro Rápido - 17s/molécula) — [En Producción]:** AutoDock Vina + Rescoring XGBoost (contactos discretos ProLIF + descriptores electroquímicos globales ECIF-lite). Descarta compuestos inactivos o con propiedades ADME pobres.
+2. **Nivel 2 (Geometría Geométrica Continua - 60s/molécula) — [En Desarrollo]:** Integración de Redes Neuronales GNN continuas (**SchNet** o **DimeNet**). A diferencia del mapeo discreto, evalúan el campo de potencial continuo átomo a átomo, capturando distancias continuas exactas y ángulos de enlace tridimensionales de los hotspots.
+3. **Nivel 3 (Física Termodinámica de Solvatación - 10m/molécula) — [En Desarrollo]:** Solvatación explícita mediante cálculo **3D-RISM** (*3D Reference Interaction Site Model*). Mapea la densidad de agua en el bolsillo y calcula la energía libre ganada al desplazar moléculas de agua estructuradas del receptor, logrando una resolución ultrafina en escala nanomolar.
+
+---
+
 ### Comparativa con herramientas públicas
 
 | Feature | SwissDock | MolModa | Webina | **MolDesign** |
