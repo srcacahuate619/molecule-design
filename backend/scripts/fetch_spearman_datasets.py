@@ -7,14 +7,18 @@ import math
 # Añadir el path del backend
 sys.path.append(os.getcwd())
 
-# Diccionario de Target ChEMBL IDs para nuestros 5 receptores
+# Diccionario de Target ChEMBL IDs para nuestros 14 receptores totales (Lanzamiento v6.2)
 TARGET_MAP = {
     "7E2Y": {
         "name": "5-HT1A",
         "chembl_id": "CHEMBL214"
     },
     "6B3J": {
-        "name": "GLP-1R",
+        "name": "GLP-1R_ECD",
+        "chembl_id": "CHEMBL1784"
+    },
+    "6X1A": {
+        "name": "GLP-1R_TMD",
         "chembl_id": "CHEMBL1784"
     },
     "2P4E": {
@@ -28,6 +32,38 @@ TARGET_MAP = {
     "3OSK": {
         "name": "CTLA-4",
         "chembl_id": "CHEMBL2364164"
+    },
+    "3ERT": {
+        "name": "ER-alpha",
+        "chembl_id": "CHEMBL206"
+    },
+    "5L2I": {
+        "name": "CDK6",
+        "chembl_id": "CHEMBL3386"
+    },
+    "2W96": {
+        "name": "CDK4",
+        "chembl_id": "CHEMBL3128"
+    },
+    "4JPS": {
+        "name": "PIK3CA_WT",
+        "chembl_id": "CHEMBL4017"
+    },
+    "3O96": {
+        "name": "AKT1",
+        "chembl_id": "CHEMBL3810"
+    },
+    "3PP0": {
+        "name": "HER2",
+        "chembl_id": "CHEMBL1824"
+    },
+    "4ZZZ": {
+        "name": "PARP1",
+        "chembl_id": "CHEMBL3105"
+    },
+    "1HVY": {
+        "name": "Thymidylate_Synthase",
+        "chembl_id": "CHEMBL3898"
     }
 }
 

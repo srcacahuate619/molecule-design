@@ -21,14 +21,25 @@ import matplotlib
 matplotlib.use('Agg') # Modo no interactivo para servidores sin GUI
 import matplotlib.pyplot as plt
 
-TARGETS = ["7E2Y", "6B3J", "6X1A", "2P4E", "6U26", "3OSK"]
+TARGETS = [
+    "7E2Y", "6B3J", "6X1A", "2P4E", "6U26", "3OSK",
+    "3ERT", "5L2I", "2W96", "4JPS", "3O96", "3PP0", "4ZZZ", "1HVY"
+]
 TARGET_NAMES = {
     "7E2Y": "5-HT1A (Serotonin Receptor)",
     "6B3J": "GLP-1R (ECD / Peptide Pocket)",
     "6X1A": "GLP-1R (TMD / Oral Agonist Pocket)",
     "2P4E": "PCSK9 (Orthosteric Pocket)",
     "6U26": "PCSK9 (Allosteric Pocket)",
-    "3OSK": "CTLA-4 (Immune Checkpoint)"
+    "3OSK": "CTLA-4 (Immune Checkpoint)",
+    "3ERT": "ER-alpha LBD (Estrogen Receptor)",
+    "5L2I": "CDK6 (Cell Cycle Kinase)",
+    "2W96": "CDK4 (Cell Cycle Kinase)",
+    "4JPS": "PIK3CA WT (Phosphatidylinositol 3-Kinase)",
+    "3O96": "AKT1 (AKT Kinase)",
+    "3PP0": "HER2 Kinase Domain (Receptor Tyrosine Kinase)",
+    "4ZZZ": "PARP1 LBD (DNA Repair Polymerase)",
+    "1HVY": "Thymidylate Synthase (Chemotherapy Target)"
 }
 
 async def submit_jobs(run_id, is_test):
@@ -165,8 +176,9 @@ async def monitor_jobs(submitted_jobs, run_id):
     print(f"\n🏁 Simulación completada. Exitosos: {len(completed_jobs)} | Fallidos: {len(failed_jobs)}")
     return completed_jobs
 
-def run_statistics(run_id, completed_jobs):
+async def run_statistics(run_id, completed_jobs):
     print(f"\n📊 Ejecutando cálculos de Coeficiente de Spearman (SciPy) y Generación de Plots...")
+    import math
     
     # Crear carpeta para plots
     os.makedirs("docs/validation_plots", exist_ok=True)
@@ -190,18 +202,13 @@ def run_statistics(run_id, completed_jobs):
         # Extraer listas para correlación
         y_real = [j["experimental_p_value"] for j in jobs]
         
-        # Ojo: la afinidad predicha de Vina/ML está en kcal/mol (negativo, menor es más afín).
-        # Los valores experimentales de pKi/pIC50 están en escala logarítmica positiva (mayor es más afín).
-        # Por lo tanto, convertimos kcal/mol a una métrica de afinidad positiva multiplicando por -1
-        # o usamos la afinidad cruda y esperamos un Spearman negativo.
-        # Científicamente: multiplicamos predicha por -1 para que la correlación sea POSITIVA (+)
+        # Convertimos kcal/mol a una métrica de afinidad positiva multiplicando por -1
         y_pred = [-j["predicted_affinity"] for j in jobs]
         
         # Calcular Spearman
         rho, p_value = scipy.stats.spearmanr(y_pred, y_real)
         
         # Calcular MAE
-        # Estimamos la afinidad predicha en escala pKi aproximada dividiendo por -1.36
         y_pred_pki = [j["predicted_affinity"] / -1.36 for j in jobs]
         mae = sum(abs(r - p) for r, p in zip(y_real, y_pred_pki)) / len(jobs)
         
@@ -216,11 +223,23 @@ def run_statistics(run_id, completed_jobs):
             "target": tid,
             "name": TARGET_NAMES[tid],
             "n": len(jobs),
-            "rho": round(rho, 3),
+            "rho": round(rho, 3) if not math.isnan(rho) else 0.0,
             "p_value": p_value,
             "mae": round(mae, 3),
             "status": status
         })
+        
+        # Actualizar en la DB el spearman_rho de este target para sincronizar con el frontend
+        try:
+            async for db in get_db():
+                rounded_rho = float(round(rho, 3)) if not math.isnan(rho) else 0.0
+                update_q = text("UPDATE targets SET spearman_rho = :rho WHERE pdb_id = :pdb_id")
+                await db.execute(update_q, {"rho": rounded_rho, "pdb_id": tid})
+                await db.commit()
+                print(f"   🔄 DB: spearman_rho de {tid} actualizado a {rounded_rho}")
+                break
+        except Exception as db_err:
+            print(f"⚠️ Error actualizando spearman_rho en targets DB para {tid}: {str(db_err)}")
         
         # Generar Scatter Plot
         plt.figure(figsize=(6, 5))
@@ -336,7 +355,7 @@ async def main():
         return
         
     # 3. Calcular estadísticas y generar plots
-    run_statistics(run_id, completed)
+    await run_statistics(run_id, completed)
 
 if __name__ == "__main__":
     asyncio.run(main())
