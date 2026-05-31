@@ -4,10 +4,12 @@ import os
 
 # Añadir el path del backend para importar módulos internos
 sys.path.append(os.getcwd())
+sys.path.append(os.path.join(os.getcwd(), "backend"))
 
 from core.database import get_db
 from db.repository import Repository
 from core.models import TargetORM
+from services.blockchain.target_info import fetch_and_translate_target_info
 
 async def main():
     print("🚀 Sembrando/actualizando targets biológicos en la base de datos...")
@@ -269,6 +271,13 @@ async def main():
     async for db in get_db():
         repo = Repository(db)
         for t_data in targets_data:
+            print(f"Obteniendo descripción UniProt detallada para {t_data['pdb_id']}...")
+            try:
+                desc = await fetch_and_translate_target_info(t_data["pdb_id"])
+                if desc and not desc.startswith("Receptor Biológico PDB") and not desc.startswith("Descripción del receptor"):
+                    t_data["description"] = desc
+            except Exception as e:
+                print(f"⚠️ Error al descargar info para {t_data['pdb_id']}: {e}")
             existing = await repo.get_target_by_pdb_id(t_data["pdb_id"])
             if not existing:
                 t = TargetORM(
