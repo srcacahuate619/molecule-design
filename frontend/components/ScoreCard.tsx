@@ -361,10 +361,17 @@ export function ScoreCard({
             Rigor Científico y Auditoría Matemática
           </summary>
           <div className="mt-4 space-y-3 rounded-lg bg-surface-950/50 p-4 font-mono text-[11px] text-surface-400">
-            <div className="flex justify-between border-b border-surface-800/30 pb-2">
-              <span>Fórmula del Score Compuesto:</span>
-              <span className="text-surface-500">[(A·0.45) + (P·M_a)] · M_s</span>
-            </div>
+            {isControl ? (
+              <div className="flex justify-between border-b border-surface-800/30 pb-2">
+                <span>Fórmula del Score Compuesto:</span>
+                <span className="text-surface-500">Métrica de Afinidad Pura (Control)</span>
+              </div>
+            ) : (
+              <div className="flex justify-between border-b border-surface-800/30 pb-2">
+                <span>Fórmula del Score Compuesto:</span>
+                <span className="text-surface-500">[(A·0.45) + (P·M_a)] · M_s</span>
+              </div>
+            )}
             
             <div className="grid grid-cols-2 gap-4 pt-1">
               <div className="space-y-1">
@@ -372,35 +379,48 @@ export function ScoreCard({
                   <span>(A) Afin. Score:</span>
                   <span className="text-blue-400">{(affinity || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>(P) Phys. Score:</span>
-                  <span className="text-purple-400">
-                    {((adme || 0) * 0.30 + (druglikeness || 0) * 0.25).toFixed(2)}
-                  </span>
-                </div>
+                {!isControl && (
+                  <div className="flex justify-between">
+                    <span>(P) Phys. Score:</span>
+                    <span className="text-purple-400">
+                      {((adme || 0) * 0.30 + (druglikeness || 0) * 0.25).toFixed(2)}
+                    </span>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-1">
-                <div className="flex justify-between" title="Multiplicador por afinidad insuficiente">
-                  <span>(M_a) Multipl. A:</span>
-                  <span className="text-gray-200">{(affinityMultiplier || 1).toFixed(3)}</span>
-                </div>
-                <div className="flex justify-between" title="Multiplicador por falta de especificidad">
-                  <span>(M_s) Multipl. S:</span>
-                  <span className="text-orange-400">{(specificityMultiplier || 1).toFixed(3)}</span>
+                {!isControl && (
+                  <div className="flex justify-between">
+                    <span>(M_a) Multipl. A:</span>
+                    <span className={affinityMultiplier && affinityMultiplier < 1.0 ? "text-red-400" : "text-emerald-400"}>
+                      {(affinityMultiplier ?? 1.0).toFixed(3)}
+                    </span>
+                  </div>
+                )}
+                {!isControl && (
+                  <div className="flex justify-between">
+                    <span>(M_s) Multipl. S:</span>
+                    <span className={specificityMultiplier && specificityMultiplier < 1.0 ? "text-orange-400" : "text-emerald-400"}>
+                      {(specificityMultiplier ?? 1.0).toFixed(3)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="col-span-2 pt-2 border-t border-surface-800/30">
+                {!isControl && (
+                  <p className="text-[10px] text-surface-500 mb-2">
+                    * Nota: El "Phys. Score" es la suma ponderada de ADME (30%) y Drug-likeness (25%). 
+                    M_a penaliza si la afinidad es baja, y M_s penaliza la falta de interacción con hotspots.
+                  </p>
+                )}
+                <div className="flex justify-between text-xs font-bold text-gray-200 bg-surface-800/30 p-2 rounded">
+                  <span>Resultado Final:</span>
+                  <strong className={scoreColor}>{totalDisplay}</strong>
                 </div>
               </div>
             </div>
-
-            <div className="mt-3 flex items-center justify-center gap-2 rounded bg-surface-900 py-2 text-center text-xs text-white">
-              <span>Resultado:</span>
-              <strong className={scoreColor}>{totalDisplay}</strong>
-            </div>
-            
-            <p className="mt-2 text-[9px] leading-relaxed text-surface-500 italic">
-              * Nota: El "Phys. Score" es la suma ponderada de ADME (30%) y Drug-likeness (25%).
-              M_a penaliza si la afinidad es baja, y M_s penaliza la falta de interacción con hotspots.
-            </p>
           </div>
         </details>
       </div>

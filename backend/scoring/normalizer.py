@@ -11,7 +11,8 @@ def normalize_affinity(
     affinity_kcal: float, 
     heavy_atoms: int | None = None, 
     log_p: float | None = None,
-    threshold: float = -7.5
+    threshold: float = -7.5,
+    is_control: bool = False
 ) -> float:
     """
     Normaliza afinidad usando una función sigmoidea (Curva de Hill) basada en 
@@ -47,7 +48,7 @@ def normalize_affinity(
     # --- PENALIZADOR DE POTENCIA ABSOLUTA OPTIMIZADO ---
     # Si la molécula es más débil que el threshold, se aplica un castigo sigmoideo suave.
     # Si cumple o supera el threshold, no hay penalización (potency_factor = 1.0).
-    if affinity_kcal > threshold:
+    if affinity_kcal > threshold and not is_control:
         # Sigmoide centrada en threshold con pendiente k=2.0
         potency_factor = 1.0 / (1 + math.exp(2.0 * (affinity_kcal - threshold)))
         # Escalamos para evitar discontinuidades bruscas: a la altura del threshold vale 1.0

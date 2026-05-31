@@ -86,7 +86,8 @@ def calculate_score_breakdown(
         docking.best_affinity, 
         properties.heavy_atom_count,
         properties.log_p,
-        threshold=affinity_threshold
+        threshold=affinity_threshold,
+        is_control=is_control
     )
     
     # Ambos scores usan QED internamente (Bickerton 2012)
