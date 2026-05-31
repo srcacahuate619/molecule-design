@@ -199,6 +199,16 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     gemini_max_tokens: int = Field(default=2000, ge=100, le=4096)
 
+    # Ollama Local LLM
+    ollama_base_url: str = Field(
+        default="http://192.168.100.12:11434",
+        description="URL de la API de Ollama corriendo en el host."
+    )
+    ollama_model: str = Field(
+        default="gemma3:1b",
+        description="Modelo local para Ollama."
+    )
+
     # ── Anthropic API ──────────────────────────────────────────────────────────
     anthropic_api_key: str | None = Field(
         default=None,

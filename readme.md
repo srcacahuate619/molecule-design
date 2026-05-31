@@ -66,17 +66,35 @@ MolDesign resuelve esto con:
 
 ## Receptores Disponibles
 
-La plataforma soporta múltiples targets, cada uno con su grid box calibrado individualmente y hotspots definidos desde estructuras cristalográficas del PDB:
+La plataforma soporta múltiples targets agrupados por especialidad clínica, cada uno con su grid box calibrado individualmente y hotspots definidos desde estructuras cristalográficas del PDB:
 
+### Neuropsiquiatría y Metabolismo
 | Receptor | PDB ID | Relevancia Terapéutica | Método Cristalográfico |
 |:---|:---:|:---|:---:|
 | **5-HT1A Serotonin Receptor** | 7E2Y | Ansiedad, depresión, esquizofrenia | Cryo-EM, 3.0 Å |
-| **GLP-1 Receptor** | 6B3J | Diabetes tipo 2, obesidad | Cryo-EM |
-| **PCSK9** | 2P4E | Hipercolesterolemia, ECV | X-ray |
-| **PCSK9 (Alostérico)** | 6U26 | Sitio alostérico alternativo | X-ray |
-| **CTLA-4** | 3OSK | Inmuno-oncología, checkpoint | X-ray |
+| **GLP-1R (ECD / Peptide Pocket)** | 6B3J | Diabetes tipo 2, obesidad (Análogos peptídicos) | Cryo-EM, 3.3 Å |
+| **GLP-1R (TMD / Oral Agonist)** | 6X1A | Diabetes tipo 2, obesidad (Agonistas orales) | Cryo-EM, 2.5 Å |
 
-Nuevos receptores se integran mediante el pipeline de ingestión automática: `insert_target_{pdb_id}.py` + PDBQT preparado.
+### Cardiovascular e Inmunología
+| Receptor | PDB ID | Relevancia Terapéutica | Método Cristalográfico |
+|:---|:---:|:---|:---:|
+| **PCSK9 (Proprotein Convertase)** | 2P4E | Hipercolesterolemia, ECV (Ortostérico) | X-ray, 1.97 Å |
+| **PCSK9 (Allosteric)** | 6U26 | Sitio alostérico alternativo | X-ray, 1.6 Å |
+| **CTLA-4 Immune Checkpoint** | 3OSK | Inmuno-oncología, checkpoint inmune | X-ray, 2.5 Å |
+
+### Oncología (Cáncer de Mama)
+| Receptor | PDB ID | Relevancia Terapéutica | Método Cristalográfico |
+|:---|:---:|:---|:---:|
+| **ER-alpha LBD (Tamoxifen)** | 3ERT | Receptor de Estrógeno (Terapia endocrina ER+) | X-ray, 1.9 Å |
+| **CDK6 (Palbociclib)** | 5L2I | Control del ciclo celular G1/S (Cáncer ER+) | X-ray, 2.75 Å |
+| **CDK4 (Apo/Cyclin D1)** | 2W96 | Quinasa de ciclo celular (Cribado selectivo) | X-ray, 2.3 Å |
+| **PIK3CA WT (Alpelisib)** | 4JPS | Mutación oncogénica / Resistencia endocrina | X-ray, 2.2 Å |
+| **AKT1 (Allosteric Inhibitor VIII)** | 3O96 | Supervivencia celular (Vía PI3K/AKT/mTOR) | X-ray, 2.7 Å |
+| **HER2 Kinase Domain (SYR-475)** | 3PP0 | Tirosina quinasa erbB-2 (Cáncer HER2+) | X-ray, 2.25 Å |
+| **PARP1 LBD (NMS-P118)** | 4ZZZ | Reparación de ADN (Letalidad sintética BRCA) | X-ray, 1.9 Å |
+| **Thymidylate Synthase (Raltitrexed)** | 1HVY | Síntesis de nucleótidos (Quimioterapia clásica) | X-ray, 1.9 Å |
+
+Nuevos receptores se integran mediante el pipeline de ingestión automática: `seed_targets.py` + PDBQT preparado en MinIO.
 
 ---
 
@@ -214,8 +232,11 @@ Delta = Score_A − Score_NULL
 |:---|:---|:---:|
 | v1 baseline | Solo MW | 0.275 / — |
 | v3 ProLIF | ProLIF 2.1.0, RDKit-direct | 0.435 / — |
-| v4 (actual) | +RF-Score shells + ECIF + MW norm | 0.601 / **0.33** |
-| v5 (Fase 6.1) | +GNINA CNN rescoring 3D | *target: 0.50–0.65* |
+| v4.0 | +RF-Score shells + ECIF + MW norm (5-HT1A) | 0.601 / **0.33** |
+| v5.0 | Docking Calibrado GLP-1R (6B3J) | 0.512 / **0.43** |
+| v6.0 | Calibración Gold Standard (Spearman ρ) | 0.512 / **0.485** |
+| v6.1 | Dynamic Size-Adaptive LE & Soft Potency | 0.512 / **0.485** (Estabilizado) |
+| v6.2 (actual) | Ingestión de 9 Targets Oncológicos y UI de Selección | 0.512 / **0.485** (Estabilizado) |
 
 El coeficiente de validación ciega (**ρ = 0.33**, p < 0.05) fue calculado sobre un panel de 40 moléculas con actividad experimental medida en 5-HT1A, **nunca vistas por el modelo durante el entrenamiento**. Vina sola en el mismo panel: ρ = −0.14.
 
@@ -365,9 +386,11 @@ NEXT_PUBLIC_API_URL=http://localhost:8010
 | v5.1 | Mentor Químico (MolecularInsight) · Árbol evolutivo | ✅ |
 | v5.2 | Rebranding Moldex · Auditoría científica profunda (LE, LLE) | ✅ |
 | v6.0 | PDF Científico automático · Descripción dinámica UniProt/PDB | ✅ |
-| v6.1 | Integración GNINA (rescoring 3D CNN) | 📋 |
-| v6.2 | 3D-RISM desolvatación (AmberTools) | 📋 |
-| v6.3 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
+| v6.1 | Calibración Dynamic Size-Adaptive LE & Soft Potency Floor | ✅ |
+| v6.2 (actual) | Ingestión de 9 Targets Oncológicos y UI de Selección interactiva | ✅ |
+| v6.3 | Integración GNINA (rescoring 3D CNN) | 📋 |
+| v6.4 | 3D-RISM desolvatación (AmberTools) | 📋 |
+| v6.5 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
 
 Ver detalles técnicos en [`docs/MVP_ROADMAP.md`](docs/MVP_ROADMAP.md) — Sección 16 (Fase 6.0).
 

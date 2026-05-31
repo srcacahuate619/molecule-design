@@ -11,9 +11,18 @@ from core.database import get_db
 async def main():
     targets_to_reingest = [
         {"pdb_id": "6B3J", "chain_id": "R", "ligand_chain": "P", "family": "GPCR", "is_hot": True},
+        {"pdb_id": "6X1A", "chain_id": "R", "ligand_chain": None, "family": "GPCR", "is_hot": True}, # UK4 como HETATM en cadena R
         {"pdb_id": "2P4E", "chain_id": "A", "ligand_chain": None, "family": "Serine Protease", "is_hot": True},
         {"pdb_id": "6U26", "chain_id": "B", "ligand_chain": None, "family": "Serine Protease", "is_hot": True},
         {"pdb_id": "4NC3", "chain_id": "A", "ligand_chain": None, "family": "Serine Protease", "is_hot": True},
+        {"pdb_id": "3ERT", "chain_id": "A", "ligand_chain": None, "family": "Nuclear Receptor", "is_hot": True},
+        {"pdb_id": "5L2I", "chain_id": "A", "ligand_chain": None, "family": "Kinase", "is_hot": True},
+        {"pdb_id": "2W96", "chain_id": "B", "ligand_chain": None, "family": "Kinase", "is_hot": True},
+        {"pdb_id": "4JPS", "chain_id": "A", "ligand_chain": None, "family": "Kinase", "is_hot": True},
+        {"pdb_id": "3O96", "chain_id": "A", "ligand_chain": None, "family": "Kinase", "is_hot": True},
+        {"pdb_id": "3PP0", "chain_id": "A", "ligand_chain": None, "family": "Kinase", "is_hot": True},
+        {"pdb_id": "4ZZZ", "chain_id": "A", "ligand_chain": None, "family": "Polymerase", "is_hot": True},
+        {"pdb_id": "1HVY", "chain_id": "A", "ligand_chain": None, "family": "Transferase", "is_hot": True},
     ]
     
     print("🚀 Iniciando Re-ingesta masiva para actualizar Hotspots...")

@@ -226,6 +226,111 @@ class AIReportResponse(BaseModel):
     ai_report: str | None
 
 
+from fastapi.responses import StreamingResponse
+
+@router.get(
+    "/ai-report/{molecule_id}/stream",
+    response_class=StreamingResponse,
+    summary="Generar reporte IA bajo demanda (Streaming SSE)",
+)
+async def generate_ai_report_stream_endpoint(
+    molecule_id: uuid.UUID,
+    current_user: UserORM | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    from core.models import AIReportRequest
+    from services.ai.interpreter import stream_ollama_report
+
+    repository = Repository(db)
+    result = await repository.get_evaluation_result(molecule_id)
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="No existe resultado")
+    
+    from core.models import MoleculeORM
+    mol_row = await db.get(MoleculeORM, molecule_id)
+    demo_user = await repository.get_or_create_test_user()
+    current_user_id = current_user.id if current_user else demo_user.id
+    
+    if not mol_row or (mol_row.user_id != current_user_id and mol_row.user_id != demo_user.id):
+        raise HTTPException(status_code=403, detail="Sin permiso")
+
+    # Si ya hay reporte en BD, devolverlo instantáneamente como un solo chunk de streaming
+    if result.ai_report:
+        async def cached_stream():
+            import json
+            yield f"data: {json.dumps(result.ai_report)}\n\n"
+        return StreamingResponse(cached_stream(), media_type="text/event-stream")
+
+    from core.models import PhysicochemicalProperties, DockingResult, DockingPose
+    from scoring.engine import calculate_score_breakdown
+    try:
+        props = PhysicochemicalProperties(
+            molecular_weight=result.molecular_weight,
+            log_p=result.log_p,
+            tpsa=result.tpsa,
+            hbd=result.hbd,
+            hba=result.hba,
+            rotatable_bonds=result.rotatable_bonds,
+            heavy_atom_count=result.heavy_atom_count,
+            ring_count=result.ring_count,
+            lipinski_pass=result.lipinski_pass,
+            veber_pass=result.veber_pass,
+            qed=result.qed,
+            sa_score=result.sa_score if result.sa_score is not None else 0.0,
+            sa_reasons=result.sa_reasons if result.sa_reasons is not None else [],
+        )
+        poses = [DockingPose(rank=p["rank"], affinity=p["affinity"], rmsd_lb=p["rmsd_lb"], rmsd_ub=p["rmsd_ub"]) for p in (result.docking_poses or [])]
+        docking = DockingResult(best_affinity=result.affinity_kcal, poses=poses)
+        is_control = bool(result.is_control)
+        breakdown = calculate_score_breakdown(docking, props, is_control=is_control)
+
+        from core.models import TargetORM
+        target_row = await db.get(TargetORM, mol_row.target_id) if mol_row else None
+
+        ai_request = AIReportRequest(
+            molecule_smiles=mol_row.smiles if mol_row else "N/A",
+            target_name=target_row.name if target_row else "N/A",
+            affinity_kcal=result.affinity_kcal,
+            affinity_score=result.affinity_score,
+            properties=props,
+            score_breakdown=breakdown,
+            parent_smiles=None,
+            mutation_type=mol_row.mutation_type if mol_row else None,
+            is_control=is_control,
+            hotspots_hit=result.hotspots_hit,
+            target_hotspots=target_row.hotspots if target_row else [],
+            delta_a_null=getattr(result, "delta_a_null", None),
+        )
+
+        async def generate_and_save_stream():
+            full_text = ""
+            try:
+                from core.database import get_db_session
+                import json
+                async for chunk in stream_ollama_report(ai_request):
+                    full_text += chunk
+                    yield f"data: {json.dumps(chunk)}\n\n"
+                
+                if full_text:
+                    async with get_db_session() as session:
+                        repo = Repository(session)
+                        await repo.upsert_evaluation_result(
+                            molecule_id=molecule_id,
+                            ai_report=full_text,
+                        )
+            except Exception as e:
+                log.error("Error in SSE stream", error=str(e))
+                import json
+                yield f"data: {json.dumps(str(e))}\n\n"
+        
+        return StreamingResponse(generate_and_save_stream(), media_type="text/event-stream")
+    except Exception as e:
+        log.error("Error pre-generando reporte IA streaming", error=str(e))
+        async def err_stream():
+            yield 'data: "Error al iniciar streaming"\n\n'
+        return StreamingResponse(err_stream(), media_type="text/event-stream")
+
 @router.post(
     "/ai-report/{molecule_id}",
     response_model=AIReportResponse,
@@ -289,6 +394,8 @@ async def generate_ai_report_endpoint(
             lipinski_pass=result.lipinski_pass,
             veber_pass=result.veber_pass,
             qed=result.qed,
+            sa_score=result.sa_score if result.sa_score is not None else 0.0,
+            sa_reasons=result.sa_reasons if result.sa_reasons is not None else [],
         )
         poses = [
             DockingPose(rank=p["rank"], affinity=p["affinity"], rmsd_lb=p["rmsd_lb"], rmsd_ub=p["rmsd_ub"])
@@ -317,6 +424,9 @@ async def generate_ai_report_endpoint(
             parent_smiles=None,
             mutation_type=mol_row.mutation_type if mol_row else None,
             is_control=is_control,
+            hotspots_hit=result.hotspots_hit,
+            target_hotspots=target_row.hotspots if target_row else [],
+            delta_a_null=getattr(result, "delta_a_null", None),
         )
 
         report = await safe_generate_ai_report(ai_request)

@@ -21,10 +21,11 @@ import matplotlib
 matplotlib.use('Agg') # Modo no interactivo para servidores sin GUI
 import matplotlib.pyplot as plt
 
-TARGETS = ["7E2Y", "6B3J", "2P4E", "6U26", "3OSK"]
+TARGETS = ["7E2Y", "6B3J", "6X1A", "2P4E", "6U26", "3OSK"]
 TARGET_NAMES = {
     "7E2Y": "5-HT1A (Serotonin Receptor)",
-    "6B3J": "GLP-1R (Glucagon-like Peptide 1)",
+    "6B3J": "GLP-1R (ECD / Peptide Pocket)",
+    "6X1A": "GLP-1R (TMD / Oral Agonist Pocket)",
     "2P4E": "PCSK9 (Orthosteric Pocket)",
     "6U26": "PCSK9 (Allosteric Pocket)",
     "3OSK": "CTLA-4 (Immune Checkpoint)"
@@ -207,7 +208,7 @@ def run_statistics(run_id, completed_jobs):
         # Clasificar estado científico del target
         status = "🔴 Inválido"
         if rho > 0.45:
-            status = "🏆 Certificado (Producción)" if tid in ["7E2Y", "6B3J"] else "🟢 Validado"
+            status = "🏆 Certificado (Producción)" if tid in ["7E2Y", "6B3J", "6X1A"] else "🟢 Validado"
         elif rho > 0.30:
             status = "🟡 Débil"
             

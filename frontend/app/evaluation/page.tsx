@@ -23,6 +23,8 @@ export default function EvaluationPage() {
   const [smiles, setSmiles] = useState("CC(=O)Oc1ccccc1C(=O)O");
   const [target, setTarget] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"HUMANOS" | "PATOGENOS" | "">("");
+  const [activeCategory, setActiveCategory] = useState<string>("");
+  const [activeSubcategory, setActiveSubcategory] = useState<string>("");
   const [targets, setTargets] = useState<Target[]>([]);
   const [loadingTargets, setLoadingTargets] = useState(true);
 
@@ -160,10 +162,86 @@ export default function EvaluationPage() {
     if (!moleculeId) return;
     setAiReport(null);
     setLoadingAiReport(true);
-    getAiReport(moleculeId)
-      .then((report) => setAiReport(report))
-      .catch(() => setAiReport(null))
-      .finally(() => setLoadingAiReport(false));
+
+    let isMounted = true;
+    const fetchStream = async () => {
+      try {
+        // Necesitamos importar API_URL y getAuthHeaders si no están en scope,
+        // pero podemos usar window.location.origin o importarlos.
+        // wait, api.ts is usually imported as `import * as api from "@/lib/api";`
+        // so we can use api.API_URL
+      } catch (e) {
+      }
+    };
+    // We will use native fetch to the stream endpoint
+    
+    // Attempt to get the correct URL from api module if we could import it, 
+    // but we can just hardcode the logic for token parsing:
+    const headers: Record<string, string> = {};
+    try {
+      const stored = localStorage.getItem("moldesign_auth");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.token) headers["Authorization"] = `Bearer ${parsed.token}`;
+      }
+    } catch (e) {}
+
+    const fetchAiStream = async () => {
+      try {
+        let url = process.env.NEXT_PUBLIC_API_URL;
+        if (!url) {
+           url = window.location.hostname === "localhost" ? "http://localhost:8010" : `${window.location.protocol}//${window.location.hostname}:8010`;
+        }
+        
+        const res = await fetch(`${url}/evaluation/ai-report/${moleculeId}/stream`, {
+          headers
+        });
+        
+        if (!res.ok) throw new Error("Network error");
+        if (!res.body) throw new Error("No body in response");
+        
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        
+        if (isMounted) {
+          setLoadingAiReport(false);
+          setAiReport("");
+        }
+
+        let done = false;
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n\n");
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const tokenText = JSON.parse(line.slice(6));
+                  if (isMounted) {
+                    setAiReport((prev) => (prev || "") + tokenText);
+                  }
+                } catch (e) {
+                  // ignore JSON parse errors for incomplete chunks, though SSE chunks should be complete
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          setAiReport("No se pudo generar la interpretación. Revisa el servidor local.");
+          setLoadingAiReport(false);
+        }
+      }
+    };
+    
+    fetchAiStream();
+
+    return () => {
+      isMounted = false;
+    };
   }, [status?.result?.molecule_id]);
 
   useEffect(() => {
@@ -171,13 +249,8 @@ export default function EvaluationPage() {
       setDisplayedReport("");
       return;
     }
-    let i = 0;
-    const interval = setInterval(() => {
-      setDisplayedReport(aiReport.slice(0, i));
-      i += 3;
-      if (i > aiReport.length) clearInterval(interval);
-    }, 20);
-    return () => clearInterval(interval);
+    // Removemos el typewriter effect (ya que el streaming es en tiempo real real)
+    setDisplayedReport(aiReport);
   }, [aiReport]);
 
   useEffect(() => {
@@ -330,96 +403,226 @@ export default function EvaluationPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => {
-                      setSelectedCategory(e.target.value as any);
-                      setTarget("");
-                    }}
-                    disabled={!!taskId && !isTerminal}
-                    className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 font-mono text-sm text-gray-200 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50 appearance-none"
-                  >
-                    <option value="">Seleccionar Origen del Target...</option>
-                    <option value="HUMANOS">🧬 Organismo: Humano (H. sapiens)</option>
-                    <option value="PATOGENOS">🦠 Organismo: Patógenos / Microorganismos</option>
-                  </select>
+                  {/* Origen del Target: Humanos vs Patógenos */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory("HUMANOS");
+                          setActiveCategory("");
+                          setActiveSubcategory("");
+                          setTarget("");
+                        }}
+                        disabled={!!taskId && !isTerminal}
+                        className={`px-3 py-2.5 rounded-xl border text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                          selectedCategory === "HUMANOS"
+                            ? "bg-brand-500/10 border-brand-500 text-brand-400 shadow-[0_0_15px_rgba(20,241,149,0.1)]"
+                            : "bg-surface-950 border-surface-800 text-surface-400 hover:border-surface-700 hover:text-surface-300"
+                        }`}
+                      >
+                        🧬 Humano (H. sapiens)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory("PATOGENOS");
+                          setActiveCategory("");
+                          setActiveSubcategory("");
+                          setTarget("");
+                        }}
+                        disabled={!!taskId && !isTerminal}
+                        className={`px-3 py-2.5 rounded-xl border text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                          selectedCategory === "PATOGENOS"
+                            ? "bg-brand-500/10 border-brand-500 text-brand-400 shadow-[0_0_15px_rgba(20,241,149,0.1)]"
+                            : "bg-surface-950 border-surface-800 text-surface-400 hover:border-surface-700 hover:text-surface-300"
+                        }`}
+                      >
+                        🦠 Patógenos
+                      </button>
+                    </div>
 
-                  {selectedCategory && (
-                    <select
-                      value={target}
-                      onChange={(e) => setTarget(e.target.value)}
-                      disabled={!!taskId && !isTerminal}
-                      className="w-full animate-in fade-in slide-in-from-top-2 rounded-xl border border-brand-500/30 bg-surface-950 px-4 py-3 font-mono text-sm text-brand-300 transition-colors focus:border-brand-500 focus:outline-none disabled:opacity-50 appearance-none shadow-[0_0_15px_rgba(20,241,149,0.1)]"
-                    >
-                      <option value="">Seleccionar Receptor Específico...</option>
-                      {selectedCategory === "HUMANOS" ? (
-                        <>
-                          <optgroup label="🧠 Neurología / Psiquiatría">
-                            {targets.filter(t => t.pdb_id === '7E2Y').map(t => (
-                              <option key={t.pdb_id} value={t.pdb_id}>
-                                {t.pdb_id} - {t.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="🧬 Oncología / Inmunoterapia">
-                            {targets.filter(t => t.pdb_id === '3OSK' || t.pdb_id === 'EGFR' || t.pdb_id === 'MET').map(t => (
-                              <option key={t.pdb_id} value={t.pdb_id}>
-                                {t.pdb_id} - {t.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="❤️ Cardiología">
-                            {targets.filter(t => t.pdb_id === '2P4E' || t.pdb_id === '6U26').map(t => (
-                              <option key={t.pdb_id} value={t.pdb_id}>
-                                {t.pdb_id} - {t.name} {t.is_hot ? "🔥" : ""}
-                              </option>
-                            ))}
-                            {targets.filter(t => t.pdb_id === '2P4E' || t.pdb_id === '6U26').length === 0 && (
-                              <option disabled>Próximamente: Receptores Hipertensión</option>
-                            )}
-                          </optgroup>
-                          <optgroup label="🩸 Endocrinología">
-                            {targets.filter(t => t.name.toUpperCase().includes('GLP')).map(t => (
-                              <option key={t.pdb_id} value={t.pdb_id}>
-                                {t.pdb_id} - {t.name} {t.is_hot ? "🔥" : ""}
-                              </option>
-                            ))}
-                            {targets.filter(t => t.name.toUpperCase().includes('GLP')).length === 0 && (
-                              <option disabled>Próximamente: Insulina / Diabetes</option>
-                            )}
-                          </optgroup>
-                        </>
-                      ) : (
-                        <>
-                          <optgroup label="🦠 Bacterias - Pared Celular">
-                            {targets.filter(t => t.pdb_id.includes('PBP')).map(t => (
-                              <option key={t.pdb_id} value={t.pdb_id}>
-                                {t.pdb_id} - {t.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="🧬 Bacterias - Replicación ADN">
-                            {targets.filter(t => t.name.toLowerCase().includes('girasa')).map(t => (
-                              <option key={t.pdb_id} value={t.pdb_id}>
-                                {t.pdb_id} - {t.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="🛡️ Bacterias - Resistencia">
-                            {targets.filter(t => t.name.toLowerCase().includes('lactamasa')).map(t => (
-                              <option key={t.pdb_id} value={t.pdb_id}>
-                                {t.pdb_id} - {t.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="🧫 Virus">
-                            <option disabled>Próximamente: Proteasas Virales</option>
-                          </optgroup>
-                        </>
-                      )}
-                    </select>
-                  )}
-                </div>
+                    {/* Categorías Principales */}
+                    {selectedCategory === "HUMANOS" && (
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        {[
+                          { id: "neurologia", name: "Neurología", icon: "🧠" },
+                          { id: "oncologia", name: "Oncología", icon: "🧬" },
+                          { id: "cardiologia", name: "Cardiología", icon: "❤️" },
+                          { id: "endocrinologia", name: "Endocrinología", icon: "🩸" }
+                        ].map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveCategory(cat.id);
+                              setActiveSubcategory("");
+                              setTarget("");
+                            }}
+                            disabled={!!taskId && !isTerminal}
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all duration-200 ${
+                              activeCategory === cat.id
+                                ? "bg-brand-500/5 border-brand-500/60 text-brand-300"
+                                : "bg-surface-950 border-surface-800/80 text-surface-300 hover:border-surface-700"
+                            }`}
+                          >
+                            <span>{cat.icon}</span>
+                            <span className="truncate">{cat.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedCategory === "PATOGENOS" && (
+                      <div className="grid grid-cols-1 gap-2 mt-2">
+                        {[
+                          { id: "bacterias_pared", name: "Pared Celular Bacteriana", icon: "🦠" },
+                          { id: "bacterias_replicacion", name: "Replicación de ADN", icon: "🧬" },
+                          { id: "bacterias_resistencia", name: "Resistencia a Antibióticos", icon: "🛡️" }
+                        ].map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveCategory(cat.id);
+                              setActiveSubcategory(cat.id); // Para patógenos la subcategoría es la misma
+                              setTarget("");
+                            }}
+                            disabled={!!taskId && !isTerminal}
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all duration-200 ${
+                              activeCategory === cat.id
+                                ? "bg-brand-500/5 border-brand-500/60 text-brand-300"
+                                : "bg-surface-950 border-surface-800/80 text-surface-300 hover:border-surface-700"
+                            }`}
+                          >
+                            <span>{cat.icon}</span>
+                            <span className="truncate">{cat.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Subcategorías (Ej: dentro de Oncología) */}
+                    {selectedCategory === "HUMANOS" && activeCategory === "oncologia" && (
+                      <div className="flex gap-2 mt-2 border-t border-surface-800/60 pt-2 animate-in fade-in slide-in-from-top-1">
+                        {[
+                          { id: "cancer_mama", name: "Cáncer de Mama", icon: "🎀" },
+                          { id: "inmunoterapia", name: "Inmunoterapia", icon: "🛡️" }
+                        ].map((sub) => (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveSubcategory(sub.id);
+                              setTarget("");
+                            }}
+                            disabled={!!taskId && !isTerminal}
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
+                              activeSubcategory === sub.id
+                                ? "bg-brand-500/10 border-brand-500/80 text-brand-300"
+                                : "bg-surface-950 border-surface-850 text-surface-400 hover:border-surface-800"
+                            }`}
+                          >
+                            <span>{sub.icon}</span>
+                            <span>{sub.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Receptores desglosados (Botones finales de targets) */}
+                    {((selectedCategory === "HUMANOS" && activeCategory) || (selectedCategory === "PATOGENOS" && activeCategory)) && (
+                      <div className="mt-3 space-y-2 border-t border-surface-800/60 pt-3 animate-in fade-in slide-in-from-top-2">
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-surface-400">
+                          Seleccionar Receptor Específico
+                        </label>
+                        
+                        <div className="grid gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+                          {(() => {
+                            let filteredTargets: Target[] = [];
+                            
+                            if (selectedCategory === "HUMANOS") {
+                              if (activeCategory === "neurologia") {
+                                filteredTargets = targets.filter(t => t.pdb_id === "7E2Y");
+                              } else if (activeCategory === "oncologia") {
+                                if (activeSubcategory === "cancer_mama") {
+                                  // Los 8 targets de cáncer de mama
+                                  const breastCancerPdbIds = ["3ERT", "5L2I", "2W96", "4JPS", "3O96", "3PP0", "4ZZZ", "1HVY"];
+                                  filteredTargets = targets.filter(t => breastCancerPdbIds.includes(t.pdb_id));
+                                } else if (activeSubcategory === "inmunoterapia") {
+                                  filteredTargets = targets.filter(t => t.pdb_id === "3OSK");
+                                }
+                              } else if (activeCategory === "cardiologia") {
+                                filteredTargets = targets.filter(t => t.pdb_id === "2P4E" || t.pdb_id === "6U26");
+                              } else if (activeCategory === "endocrinologia") {
+                                filteredTargets = targets.filter(t => t.name.toUpperCase().includes("GLP"));
+                              }
+                            } else if (selectedCategory === "PATOGENOS") {
+                              if (activeCategory === "bacterias_pared") {
+                                filteredTargets = targets.filter(t => t.pdb_id.includes("PBP"));
+                              } else if (activeCategory === "bacterias_replicacion") {
+                                filteredTargets = targets.filter(t => t.name.toLowerCase().includes("girasa"));
+                              } else if (activeCategory === "bacterias_resistencia") {
+                                filteredTargets = targets.filter(t => t.name.toLowerCase().includes("lactamasa"));
+                              }
+                            }
+
+                            if (filteredTargets.length === 0) {
+                              return (
+                                <div className="text-xs text-surface-500 py-2 italic">
+                                  Próximamente: Más receptores en esta categoría
+                                </div>
+                              );
+                            }
+
+                            // Ordenar alfabéticamente por PDB ID para consistencia visual
+                            const sortedTargets = [...filteredTargets].sort((a, b) => a.pdb_id.localeCompare(b.pdb_id));
+
+                            return sortedTargets.map((t) => {
+                              const isSelected = target === t.pdb_id;
+                              
+                              // Subtítulo clínico en el botón para guiar al usuario
+                              let breastSubtype = "";
+                              if (t.pdb_id === "3ERT") breastSubtype = "Receptor Hormonal (ER-α)";
+                              else if (t.pdb_id === "5L2I") breastSubtype = "Ciclo Celular (CDK6)";
+                              else if (t.pdb_id === "2W96") breastSubtype = "Ciclo Celular (CDK4)";
+                              else if (t.pdb_id === "4JPS") breastSubtype = "Vía PI3K (PIK3CA WT)";
+                              else if (t.pdb_id === "3O96") breastSubtype = "Vía AKT (AKT1)";
+                              else if (t.pdb_id === "3PP0") breastSubtype = "Receptor RTK (HER2)";
+                              else if (t.pdb_id === "4ZZZ") breastSubtype = "Reparación ADN (PARP1)";
+                              else if (t.pdb_id === "1HVY") breastSubtype = "Quimioterapia (TS)";
+
+                              return (
+                                <button
+                                  key={t.pdb_id}
+                                  type="button"
+                                  onClick={() => setTarget(t.pdb_id)}
+                                  disabled={!!taskId && !isTerminal}
+                                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all duration-200 ${
+                                    isSelected
+                                      ? "bg-brand-500/10 border-brand-500 text-brand-300 shadow-[0_0_12px_rgba(20,241,149,0.12)] font-semibold"
+                                      : "bg-surface-950/80 border-surface-850/80 text-surface-300 hover:border-surface-800 hover:bg-surface-950"
+                                  }`}
+                                >
+                                  <div className="flex flex-col min-w-0 pr-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-mono text-xs text-brand-400 font-bold">{t.pdb_id}</span>
+                                      <span className="text-xs truncate">{t.name}</span>
+                                    </div>
+                                    {breastSubtype && (
+                                      <span className="text-[10px] text-surface-400 font-medium mt-0.5">{breastSubtype}</span>
+                                    )}
+                                  </div>
+                                  {t.is_hot && (
+                                    <span className="text-xs animate-pulse">🔥</span>
+                                  )}
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
               )}
               {(() => {
                 const selected = targets.find((t) => t.pdb_id === target);
@@ -620,16 +823,18 @@ export default function EvaluationPage() {
           <MolecularInsight result={status.result} />
           <PropertiesPanel result={status.result} />
 
-          {(loadingAiReport || aiReport) && (
+          {/* (loadingAiReport || aiReport !== null) && (
             <section className="rounded-2xl border border-brand-800/20 bg-surface-900 p-5">
               <h3 className="mb-1 text-sm font-bold text-white">Interpretación Científica AI</h3>
               {loadingAiReport ? (
                 <p>Generando interpretación...</p>
               ) : (
-                <p className="text-sm leading-relaxed text-surface-300">{displayedReport}</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-surface-300">
+                  {displayedReport || "Esperando respuesta de IA..."}
+                </p>
               )}
             </section>
-          )}
+          ) */}
 
           <ReproducibilityInfo result={status.result} />
           <MethodDisclaimer />

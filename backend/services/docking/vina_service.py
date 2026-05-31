@@ -565,27 +565,38 @@ def _analyze_hotspot_interactions(
         return []
 
     # 2. Extraer coordenadas del receptor para los residuos hotspot
-    # Formato esperado de hotspot['name']: "MET97", "ASP116", etc.
-    hotspot_names = {h["name"].upper() for h in hotspots}
+    # Formato esperado de hotspot['name']: "MET97", "ASP116", "A:TYR100"
+    hotspot_names_full = {h["name"].upper() for h in hotspots}
+    
+    # Precomputar una versión sin cadena para fallbacks
+    hotspot_names_no_chain = {}
+    for h in hotspot_names_full:
+        if ":" in h:
+            hotspot_names_no_chain[h.split(":")[1]] = h
+        else:
+            hotspot_names_no_chain[h] = h
+
     receptor_atoms = {} # name -> list of coords
 
     with open(receptor_path, "r") as f:
         for line in f:
             if line.startswith(("ATOM", "HETATM")):
                 res_name = line[17:20].strip()
-                res_chain = line[21].strip() # [NUEVO] Capturar cadena
+                res_chain = line[21].strip() # Capturar cadena si existe
                 res_seq = line[22:26].strip()
                 
-                # Soportamos tanto "PRO101" como "A:PRO101"
                 full_res_no_chain = f"{res_name}{res_seq}"
                 full_res_with_chain = f"{res_chain}:{res_name}{res_seq}" if res_chain else full_res_no_chain
                 
                 # Verificar si alguna de las formas está en hotspots
                 matched_id = None
-                if full_res_with_chain in hotspot_names:
+                if full_res_with_chain in hotspot_names_full:
                     matched_id = full_res_with_chain
-                elif full_res_no_chain in hotspot_names:
+                elif full_res_no_chain in hotspot_names_full:
                     matched_id = full_res_no_chain
+                elif full_res_no_chain in hotspot_names_no_chain:
+                    # Fallback: si el PDBQT perdió la cadena, usar la versión sin cadena
+                    matched_id = hotspot_names_no_chain[full_res_no_chain]
                 
                 if matched_id:
                     try:

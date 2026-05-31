@@ -570,6 +570,9 @@ class AIReportRequest(BaseModel):
     parent_smiles:    str | None = None   # para comparar con la versión anterior
     mutation_type:    MutationType | None = None
     is_control:       bool = False
+    hotspots_hit:     list[str] | None = None
+    target_hotspots:  list[dict] | None = None
+    delta_a_null:     float | None = None
 
     model_config = {"from_attributes": True}
 

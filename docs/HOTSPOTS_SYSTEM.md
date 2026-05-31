@@ -44,5 +44,5 @@ Para evitar el exceso de optimismo en moléculas pequeñas (como la Serotonina),
 - **Resultado**: El sistema advierte que se trata de un "Potencial de Fragmento". Aunque el score sea alto, se requiere crecimiento estructural para lograr un bloqueo competitivo del target.
 
 ---
-*Versión: 1.0 (v4.2 Active)*
-*Target de Referencia: CTLA-4 (3OSK)*
+*Versión: 2.0 (v6.2 Active)*
+*Targets de Referencia: CTLA-4 (3OSK) & ER-alpha (3ERT) / CDK6 (5L2I)*

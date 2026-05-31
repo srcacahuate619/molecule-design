@@ -18,64 +18,65 @@ async def benchmark():
         {"name": "Control Negativo (Cafeína)", "smiles": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C"}
     ]
     
-    pdb_id = "6B3J"
-    results = []
-    
-    print(f"🧪 Iniciando Benchmarking de Calibración para {pdb_id}...")
+    pdb_targets = ["6X1A", "6B3J"]
     
     from db.repository import Repository
     from core.database import get_db
     
-    target_data = None
-    async for db in get_db():
-        repo = Repository(db)
-        target_data = await repo.get_target_by_pdb_id(pdb_id)
-        break
-    
-    if not target_data:
-        print(f"❌ Target {pdb_id} no encontrado en DB.")
-        return
+    for pdb_id in pdb_targets:
+        results = []
+        print(f"\n🧪 Iniciando Benchmarking de Calibración para {pdb_id}...")
         
-    center = (target_data.grid_center_x, target_data.grid_center_y, target_data.grid_center_z)
-    size = (target_data.grid_size_x, target_data.grid_size_y, target_data.grid_size_z)
-    hotspots = target_data.hotspots
-
-    for mol in panel:
-        print(f"🔄 Evaluando {mol['name']}...")
-        val = validate_smiles(mol['smiles'])
-        await generate_conformer(mol['smiles'])
+        target_data = None
+        async for db in get_db():
+            repo = Repository(db)
+            target_data = await repo.get_target_by_pdb_id(pdb_id)
+            break
         
-        try:
-            # Usar exhaustiveness alta para calibración (32)
-            docking = await run_vina_docking(
-                smiles_hash=val.smiles_hash,
-                target_pdb_id=pdb_id,
-                target_chain=target_data.chain,
-                target_center=center,
-                target_size=size,
-                force_redock=True,
-                hotspots=hotspots
-            )
+        if not target_data:
+            print(f"❌ Target {pdb_id} no encontrado en DB.")
+            continue
             
-            results.append({
-                "name": mol['name'],
-                "affinity": docking.best_affinity,
-                "hotspots": docking.hotspots_hit
-            })
-            print(f"  ✅ Aff: {docking.best_affinity} kcal/mol | Hotspots: {len(docking.hotspots_hit)}")
-        except Exception as e:
-            print(f"  ❌ Error: {str(e)}")
-            
-    # Sugerir Threshold
-    actives = [r['affinity'] for r in results if "Control Negativo" not in r['name']]
-    inactives = [r['affinity'] for r in results if "Control Negativo" in r['name']]
+        center = (target_data.grid_center_x, target_data.grid_center_y, target_data.grid_center_z)
+        size = (target_data.grid_size_x, target_data.grid_size_y, target_data.grid_size_z)
+        hotspots = target_data.hotspots
     
-    if actives and inactives:
-        suggested = (max(actives) + min(inactives)) / 2
-        print(f"\n📊 ANÁLISIS DE CALIBRACIÓN:")
-        print(f"  Media Activos: {sum(actives)/len(actives):.2f}")
-        print(f"  Media Inactivos: {sum(inactives)/len(inactives):.2f}")
-        print(f"  🚀 Threshold sugerido para {pdb_id}: {round(suggested, 1)}")
+        for mol in panel:
+            print(f"🔄 Evaluando {mol['name']} en {pdb_id}...")
+            val = validate_smiles(mol['smiles'])
+            await generate_conformer(mol['smiles'])
+            
+            try:
+                # Usar exhaustiveness alta para calibración (32)
+                docking = await run_vina_docking(
+                    smiles_hash=val.smiles_hash,
+                    target_pdb_id=pdb_id,
+                    target_chain=target_data.chain,
+                    target_center=center,
+                    target_size=size,
+                    force_redock=True,
+                    hotspots=hotspots
+                )
+                
+                results.append({
+                    "name": mol['name'],
+                    "affinity": docking.best_affinity,
+                    "hotspots": docking.hotspots_hit
+                })
+                print(f"  ✅ Aff: {docking.best_affinity} kcal/mol | Hotspots: {len(docking.hotspots_hit)}")
+            except Exception as e:
+                print(f"  ❌ Error: {str(e)}")
+                
+        # Sugerir Threshold
+        actives = [r['affinity'] for r in results if "Control Negativo" not in r['name']]
+        inactives = [r['affinity'] for r in results if "Control Negativo" in r['name']]
+        
+        if actives and inactives:
+            suggested = (max(actives) + min(inactives)) / 2
+            print(f"📊 ANÁLISIS DE CALIBRACIÓN PARA {pdb_id}:")
+            print(f"  Media Activos: {sum(actives)/len(actives):.2f}")
+            print(f"  Media Inactivos: {sum(inactives)/len(inactives):.2f}")
+            print(f"  🚀 Threshold sugerido para {pdb_id}: {round(suggested, 1)}")
 
 if __name__ == "__main__":
     asyncio.run(benchmark())

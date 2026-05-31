@@ -15,14 +15,14 @@ Cada molécula pasa por un riguroso proceso de validación antes de ser procesad
 - **SA Score (Accesibilidad Sintética)**: Estimación de qué tan difícil es fabricar la molécula (1 = fácil, 10 = imposible).
 - **Penalización por Tensión de Anillo**: Anillos de 3 y 4 carbonos fusionados (como en el Cubano) disparan el SA Score para reflejar la inestabilidad geométrica.
 
-## 3. Calibración del Scoring y Eficiencia de Ligando (v6.1)
+## 3. Calibración del Scoring y Eficiencia de Ligando (v6.2)
 
 El score final de MolDesign (0-100) no es una simple media, sino un sistema calibrado para penalizar el binding inespecífico y equilibrar la biofísica de la unión.
 
-### Eficiencia de Ligando Adaptativa al Tamaño (Size-Adaptive LE) [NUEVO v6.1]
+### Eficiencia de Ligando Adaptativa al Tamaño (Size-Adaptive LE) [v6.2]
 La afinidad cruda de Vina tiende a favorecer moléculas grandes simplemente por tener más átomos (efecto de superficie). Para corregir esto, usamos la **Eficiencia de Ligando (LE)** ($LE = \frac{\Delta G}{N_H}$). Sin embargo, un umbral estático de $-0.30$ castiga de forma injusta a ligandos más grandes porque la densidad de unión biofísica decae fisiológicamente con el tamaño debido a limitaciones estéricas de empaquetamiento.
 
-En la versión **v6.1**, implementamos un **punto medio de LE dinámico y adaptativo ($LE_{mid}$)**:
+En la versión **v6.2**, consolidamos el **punto medio de LE dinámico y adaptativo ($LE_{mid}$)**:
 - **Moléculas pequeñas ($N_H < 15$ átomos pesados)**: $LE_{mid} = -0.38$ kcal/mol/átomo (los fragmentos deben ser altamente eficientes).
 - **Moléculas grandes ($N_H > 45$ átomos pesados)**: $LE_{mid} = -0.20$ kcal/mol/átomo (compuestos maduros toleran menor densidad por acoples hidrofóbicos extendidos).
 - **Moléculas medianas ($15 \le N_H \le 45$)**: Interpolación lineal continua entre $-0.38$ y $-0.20$:
@@ -55,6 +55,13 @@ Tras pruebas de validación con el target CTLA-4 (3OSK), hemos ajustado el umbra
 - **Nuevo Umbral (5.0 Å)**: Optimizado para capturar el radio de influencia biológica de residuos como Metionina y Tirosina.
 - **Especificidad de Cadena (v4.2)**: Para proteínas multiméricas (como el dímero de CTLA-4), los hotspots se definen con prefijo de cadena (ej: `A:MET99`). Esto evita falsos positivos visuales en la cadena opuesta del receptor.
 - **Lógica de Scoring**: Cada hotspot tiene un peso relativo. Si una molécula no "toca" al menos un hotspot crítico, el score final es penalizado mediante un multiplicador de especificidad (rango 0.5x a 1.0x).
+
+### Ingestión de Targets Oncológicos y Soporte Dual GPCR (v6.2)
+En la versión **v6.2**, se amplió el catálogo de targets biológicos integrando 8 receptores críticos para la oncología del cáncer de mama (ER-alpha, CDK4, CDK6, PIK3CA, AKT1, HER2, PARP1 y Timidilato Sintasa). Sus cavidades de unión y hotspots se alinearon individualmente a partir de estructuras cristalográficas co-complejadas con ligandos clínicos.
+
+Asimismo, se resolvió la especificidad de unión para el receptor **GLP-1R** mediante un modelado de bolsillo dual:
+1. **GLP-1R ECD (6B3J)**: Centrado en el dominio extracelular. Valida la complementariedad y afinidad para análogos peptídicos y peptidomiméticos voluminosos.
+2. **GLP-1R TMD (6X1A)**: Centrado en la cavidad transmembranal helicoidal profunda. Calibrado específicamente para cribar agonistas orales no peptídicos (como Danuglipron), donde el residuo **TRP33** actúa como hotspot crítico de especificidad biológica.
 
 ## 5. El "Filtro de Honestidad" y ML v4.2 (Spearman ρ=0.512)
 

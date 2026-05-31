@@ -23,10 +23,17 @@ async def main():
         },
         {
             "pdb_id": "6B3J",
-            "chain": "A",
-            "center": (93.23, 148.16, 103.33),
-            "size": (28.0, 28.0, 28.0),
-            "name": "GLP-1 Receptor"
+            "chain": "R",      # Cadena R = GLP-1R (confirmado RCSB API)
+            "center": (93.23, 148.16, 103.33),  # Centroide Exendin-P5 (diff=0.01 Å)
+            "size": (30.0, 30.0, 30.0),         # 30 Å para cubrir interfaz ECD péptido
+            "name": "GLP-1R (ECD / Peptide Pocket)"
+        },
+        {
+            "pdb_id": "6X1A",
+            "chain": "R",      # Cadena R = GLP-1R (confirmado RCSB API)
+            "center": (131.35, 116.78, 155.04), # Centroide UK4/Danuglipron (diff=0.0000 Å)
+            "size": (30.0, 30.0, 30.0),         # 30 Å recomendado por dimensiones del ligando
+            "name": "GLP-1R (TMD / Oral Agonist Pocket)"
         },
         {
             "pdb_id": "2P4E",
@@ -48,6 +55,62 @@ async def main():
             "center": (-2.132, -19.592, 22.149),
             "size": (25.0, 25.0, 25.0),
             "name": "CTLA-4 Immune Checkpoint"
+        },
+        {
+            "pdb_id": "3ERT",
+            "chain": "A",
+            "center": (31.57, -1.59, 25.60),
+            "size": (25.0, 25.0, 25.0),
+            "name": "ER-alpha LBD (Tamoxifen)"
+        },
+        {
+            "pdb_id": "5L2I",
+            "chain": "A",
+            "center": (13.98, 28.18, 9.65),
+            "size": (25.0, 25.0, 25.0),
+            "name": "CDK6 (Palbociclib)"
+        },
+        {
+            "pdb_id": "2W96",
+            "chain": "B",
+            "center": (7.41, 2.10, 81.55),
+            "size": (25.0, 25.0, 25.0),
+            "name": "CDK4 (Apo/Cyclin D1)"
+        },
+        {
+            "pdb_id": "4JPS",
+            "chain": "A",
+            "center": (-1.32, -9.51, 16.95),
+            "size": (25.0, 25.0, 25.0),
+            "name": "PIK3CA WT (Alpelisib)"
+        },
+        {
+            "pdb_id": "3O96",
+            "chain": "A",
+            "center": (8.37, -6.83, 12.62),
+            "size": (25.0, 25.0, 25.0),
+            "name": "AKT1 (Allosteric Inhibitor VIII)"
+        },
+        {
+            "pdb_id": "3PP0",
+            "chain": "A",
+            "center": (25.86, 30.61, 7.55),
+            "size": (25.0, 25.0, 25.0),
+            "name": "HER2 Kinase Domain (SYR-475)"
+        },
+        {
+            "pdb_id": "4ZZZ",
+            "chain": "A",
+            "center": (55.81, 0.16, 22.52),
+            "size": (25.0, 25.0, 25.0),
+            "name": "PARP1 LBD (NMS-P118)"
+        },
+        {
+            "pdb_id": "1HVY",
+            "chain": "A",
+            "center": (25.99, 19.63, 17.19),
+            "size": (25.0, 25.0, 25.0),
+            "name": "Thymidylate Synthase (Raltitrexed)"
         }
     ]
 
