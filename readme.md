@@ -7,6 +7,7 @@
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
 [![Solana: Devnet](https://img.shields.io/badge/Blockchain-Solana_Devnet-purple.svg)]()
 [![Spearman ρ: 0.33](https://img.shields.io/badge/Spearman_%CF%81_blind-0.33-brightgreen.svg)]()
+[![Spearman ρ PIK3CA WT: 0.450](https://img.shields.io/badge/Spearman_%CF%81_PIK3CA_WT-0.450_5e--6-blue.svg)]()
 [![ML Features: 176](https://img.shields.io/badge/XGBoost_features-176-orange.svg)]()
 
 > *"Democratizando el diseño de fármacos mediante rigor científico, transparencia total y registro inmutable de autoría."*
@@ -54,26 +55,33 @@ Para superar el límite físico de resolución en rangos de potencia estrechos (
 
 ```
  ┌────────────────────────────────────────────────────────┐
- │   Nivel 1: Vina + XGBoost + ADME                       │  ← Filtro Biológico Rápido (~17s)
- │   (Descarte si Score Compuesto < 20)                   │  ← Implementación Actual (Producción)
+ │   Nivel 1: Vina + XGBoost Rescoring + ADME             │  ← Filtro Orgánico Rápido (~17s)
+ │   (Descarte si Score Compuesto < 20)                   │  ← En Producción
  └───────────────────────────┬────────────────────────────┘
-                             │ Score >= 20
+                             │
                              ▼
  ┌────────────────────────────────────────────────────────┐
- │   Nivel 2: Red Neuronal de Grafos 3D (SchNet/DimeNet)  │  ← Filtro Conformacional Fino (~60s)
- │   (Descarte si Score GNN < 35)                         │  ← Fase de Desarrollo v6.3
+ │   Nivel 2: Red Neuronal de Grafos (GNN RTMScore)       │  ← Filtro de Acople 3D Continuo (~8s)
+ │   (Evaluación de complementariedad con GMM)            │  ← En Producción [v6.3]
  └───────────────────────────┬────────────────────────────┘
-                             │ Score >= 35
+                             │
                              ▼
  ┌────────────────────────────────────────────────────────┐
- │   Nivel 3: Solvatación Explícita 3D-RISM               │  ← Termodinámica de Solvatación (~10 min)
- │   (AmberTools Amber RISM3D Solver)                     │  ← Fase de Desarrollo v6.4
+ │   Nivel 3: Motores Peptídicos (DiffPepDock/ColabFold)  │  ← Acoplamiento Macromolecular
+ │   + Refinamiento con Restricciones (Amber/OpenMM)       │  ← En Producción [v6.4]
+ └───────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+ ┌────────────────────────────────────────────────────────┐
+ │   Nivel 4: Docking Cuántico de Metales (xtb + AD4)     │  ← Metaloenzimas / Coordinación
+ │   (Cálculo semiempírico de cargas electrónicas)        │  ← En Producción [v6.4]
  └────────────────────────────────────────────────────────┘
 ```
 
-1. **Nivel 1 (Filtro Rápido - 17s/molécula) — [En Producción]:** AutoDock Vina + Rescoring XGBoost (contactos discretos ProLIF + descriptores electroquímicos globales ECIF-lite). Descarta compuestos inactivos o con propiedades ADME pobres.
-2. **Nivel 2 (Geometría Geométrica Continua - 60s/molécula) — [En Desarrollo]:** Integración de Redes Neuronales GNN continuas (**SchNet** o **DimeNet**). A diferencia del mapeo discreto, evalúan el campo de potencial continuo átomo a átomo, capturando distancias continuas exactas y ángulos de enlace tridimensionales de los hotspots.
-3. **Nivel 3 (Física Termodinámica de Solvatación - 10m/molécula) — [En Desarrollo]:** Solvatación explícita mediante cálculo **3D-RISM** (*3D Reference Interaction Site Model*). Mapea la densidad de agua en el bolsillo y calcula la energía libre ganada al desplazar moléculas de agua estructuradas del receptor, logrando una resolución ultrafina en escala nanomolar.
+1.  **Nivel 1 (Filtro Rápido - 17s/molécula) — [En Producción]:** AutoDock Vina + Rescoring XGBoost (contactos discretos ProLIF + descriptores electroquímicos globales ECIF-lite). Descarta compuestos inactivos o con propiedades ADME pobres.
+2.  **Nivel 2 (Red Neuronal de Grafos - 8s/molécula) — [En Producción v6.3]:** Inferencia profunda basada en grafos con **RTMScore** (Residue-Atom Graph Transformer Module). Modela al complejo proteína-ligando como un grafo y predice la densidad de probabilidad de las distancias de contacto mediante un Modelo de Mezclas Gaussianas (GMM). Aporta una corrección biofísica continua contra falsos positivos tridimensionales.
+3.  **Nivel 3 (Docking Peptídico y Refinamiento - 1m/molécula) — [En Producción v6.4]:** Docking de péptidos y macromoléculas flexibles mediante redes de difusión generativa (**DiffPepDock** con sesgo del sitio activo) o co-plegado co-evolutivo (**ColabFold**). Aplica una capa final de refinamiento físico en solvente implícito mediante **AMBER14SB/OpenMM** (fijando el esqueleto de la proteína) con caída controlada a **RDKit UFF** para aliviar choques estéricos.
+4.  **Nivel 4 (Docking Cuántico de Metales - 2m/molécula) — [En Producción v6.4]:** Mapeo de cargas parciales y polarización electrónica en complejos de coordinación metálica mediante cálculos semiempíricos **xtb (GFN2-xTB)**, enrutando el acoplamiento tridimensional a **AutoDock 4 (AD4)** que cuenta con calibración biofísica explícita para metales de transición.
 
 ---
 
@@ -267,12 +275,15 @@ Delta = Score_A − Score_NULL
 | v5.0 | Docking Calibrado GLP-1R (6B3J) | 0.512 / **0.43** |
 | v6.0 | Calibración Gold Standard (Spearman ρ) | 0.512 / **0.485** |
 | v6.1 | Dynamic Size-Adaptive LE & Soft Potency | 0.512 / **0.485** (Estabilizado) |
-| v6.2 (actual) | Ingestión de 9 Targets Oncológicos y UI de Selección | 0.512 / **0.485** (Estabilizado) |
-| v6.2 (piloto) | Spearman Piloto en 9 Nuevos Targets (10 mol/target) | **+0.610** (PIK3CA WT) / Margen Estrecho |
+| v6.2 | Ingestión de 9 Targets Oncológicos y UI de Selección | 0.512 / **0.485** (Estabilizado) |
+| v6.2.1 | Modificación Frontend (Modo Gamer/Pro) y fixes de Rate Limiting | 0.512 / **0.485** (Estabilizado) |
+| v6.2.1 (piloto)| Spearman Piloto en 9 Nuevos Targets (10 mol/target) | **+0.610** (PIK3CA WT) / Margen Estrecho |
+| v7.0 | Benchmark Global en 9 Targets Oncológicos (N=50) | **+0.521** (PARP1) / **+0.372** (GLP-1R) / Fallo en Quinasas |
+| v7.1 | Certificación Robusta PIK3CA WT (N=95) | **+0.450** (PIK3CA WT) · p = 5e-6 · MAE = 0.689 |
 
 El coeficiente de validación ciega de referencia (**ρ = 0.33**, p < 0.05) fue calculado sobre un panel de 40 moléculas con actividad experimental medida en 5-HT1A, **nunca vistas por el modelo durante el entrenamiento**. Vina sola en el mismo panel: ρ = −0.14.
 
-*Nota Científica:* Las métricas de correlación de Spearman en validación ciega para los 9 nuevos targets oncológicos y de GPCR dual agregados en la v6.2 fueron evaluadas inicialmente mediante una **corrida piloto de 10 moléculas** (Run ID `spearman_run_20260531_092940_new_lim10`). Se obtuvo una correlación positiva notable en **PIK3CA WT (`4JPS`) de ρ = +0.610** ($p=0.06$). Para los demás targets, la limitación de rango dinámico de los compuestos ultra-potentes piloto introdujo ruido estadístico temporal (Spearman negativo). Los resultados completos, gráficos de dispersión y la discusión sobre la resolución termodinámica en rangos de potencia estrechos se detallan en [`docs/VALIDATION_HISTORY.md`](docs/VALIDATION_HISTORY.md#L141-L200) y el reporte [`docs/Spearman_Report_Latest.md`](docs/Spearman_Report_Latest.md).
+*Nota Científica:* Las métricas de correlación de Spearman en validación ciega para los 9 nuevos targets oncológicos y de GPCR dual agregados en la v6.2 fueron evaluadas inicialmente mediante una **corrida piloto de 10 moléculas** (Run ID `spearman_run_20260531_092940_new_lim10`). Se obtuvo una correlación positiva notable en **PIK3CA WT (`4JPS`) de ρ = +0.610** ($p=0.06$). En junio de 2026, tras detectar que el docking empírico puro (Camino 0) fallaba en quinasas complejas ($\rho = -0.086$ para PIK3CA WT con $N=50$), se realizó una **validación robusta de 100 compuestos en PIK3CA WT (`4JPS`) utilizando el pipeline híbrido (GNN Nivel 2 + OpenMM Nivel 3)**. Esta corrida (Run ID: `spearman_run_20260608_180520_lim100`) resultó en un **éxito rotundo**, logrando un **$\rho = +0.450$ ($p = 5 \times 10^{-6}$, MAE = 0.689)**, certificando el poder predictivo del motor híbrido en producción. Los resultados completos, gráficos de dispersión y la discusión sobre la resolución termodinámica en rangos de potencia estrechos se detallan en [`docs/VALIDATION_HISTORY.md`](docs/VALIDATION_HISTORY.md#L282) y el reporte [`docs/Spearman_Report_Latest.md`](docs/Spearman_Report_Latest.md).
 
 ---
 
@@ -421,10 +432,12 @@ NEXT_PUBLIC_API_URL=http://localhost:8010
 | v5.2 | Rebranding Moldex · Auditoría científica profunda (LE, LLE) | ✅ |
 | v6.0 | PDF Científico automático · Descripción dinámica UniProt/PDB | ✅ |
 | v6.1 | Calibración Dynamic Size-Adaptive LE & Soft Potency Floor | ✅ |
-| v6.2 (actual) | Ingestión de 9 Targets Oncológicos y UI de Selección interactiva | ✅ |
-| v6.3 | Integración GNINA (rescoring 3D CNN) | 📋 |
-| v6.4 | 3D-RISM desolvatación (AmberTools) | 📋 |
-| v6.5 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
+| v6.2 | Ingestión de 9 Targets Oncológicos y UI de Selección interactiva | ✅ |
+| v6.2.1 | **Modificación del Frontend**: Implementación dual de **Modo Gamer** y **Modo Pro** | ✅ |
+| v6.3 | **Integración de Nivel 2 GNN**: Rescoring de grafos RTMScore (Graph Transformer + GMM) | ✅ |
+| v6.4 (actual) | **Nivel 3 & Nivel 4**: Motores Peptídicos (DiffPepDock/ColabFold + OpenMM) y Docking Cuántico de Metales (xtb + AD4). *Validado con Benchmark Robusto PIK3CA WT (N=95, ρ=+0.450)* | ✅ |
+| v6.5 | 3D-RISM desolvatación (AmberTools) | 📋 |
+| v6.6 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
 
 Ver detalles técnicos en [`docs/MVP_ROADMAP.md`](docs/MVP_ROADMAP.md) — Sección 16 (Fase 6.0).
 
