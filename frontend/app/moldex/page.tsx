@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMoldex, getProteinFile, getPoseFile, certifyMolecule } from "@/lib/api";
-import { API_URL } from "@/lib/config";
+import { getMoldex, getProteinFile, getPoseFile, certifyMolecule } from "../../lib/api";
+import { API_URL } from "../../lib/config";
 import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
 import MoldexCard from "../../components/MoldexCard";
 import MolecularComparison from "../../components/MolecularComparison";
 import { Search, ShieldCheck, Activity, Info, BarChart3, ChevronRight, Binary, Database, Box, FlaskConical, AlertCircle } from "lucide-react";
-import { useInterface } from "@/context/InterfaceContext";
+import { useInterface } from "../../context/InterfaceContext";
 import dynamic from "next/dynamic";
 
 const ProMoldex = dynamic(() => import("../../components/interfaces/pro/ProMoldex"), {

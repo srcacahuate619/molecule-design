@@ -11,12 +11,12 @@ import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
 import { ScoreCard } from "../../components/ScoreCard";
 import { ScientificWarnings } from "../../components/ScientificWarnings";
 import { MolecularInsight } from "../../components/MolecularInsight";
-import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus, getTargets, Target } from "@/lib/api";
-import type { JobStatus, MolecularSuggestion, ValidationResult } from "@/lib/types";
-import { useAuth } from "@/lib/auth";
+import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus, getTargets, Target } from "../../lib/api";
+import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../lib/types";
+import { useAuth } from "../../lib/auth";
 import { useRouter } from "next/navigation";
-import { API_URL } from "@/lib/config";
-import { useInterface } from "@/context/InterfaceContext";
+import { API_URL } from "../../lib/config";
+import { useInterface } from "../../context/InterfaceContext";
 import dynamic from "next/dynamic";
 
 const ProEvaluation = dynamic(() => import("../../components/interfaces/pro/ProEvaluation"), {

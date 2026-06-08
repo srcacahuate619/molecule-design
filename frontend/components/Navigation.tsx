@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "../lib/auth";
 import { Menu, X, LogOut, User as UserIcon } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
-import { useInterface } from "@/context/InterfaceContext";
+import { useInterface } from "../context/InterfaceContext";
 
 const NAV_ITEMS = [
   { href: "/", label: "Inicio" },
