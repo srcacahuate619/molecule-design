@@ -2,7 +2,7 @@ import "./globals.css";
 import type { ReactNode } from "react";
 import Script from "next/script";
 import { AuthProvider } from "@/lib/auth";
-import { Navigation } from "@/components/Navigation";
+import { Navigation } from "../components/Navigation";
 import { InterfaceProvider } from "@/context/InterfaceContext";
 
 export const metadata = {

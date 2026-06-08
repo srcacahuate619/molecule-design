@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { KetcherEditor } from "@/components/KetcherEditor";
-import { MethodDisclaimer } from "@/components/MethodDisclaimer";
-import { MoleculeViewer3D } from "@/components/MoleculeViewer3D";
-import { ProgressBar } from "@/components/ProgressBar";
-import { PropertiesPanel } from "@/components/PropertiesPanel";
-import { ReproducibilityInfo } from "@/components/ReproducibilityInfo";
-import { ScoreCard } from "@/components/ScoreCard";
-import { ScientificWarnings } from "@/components/ScientificWarnings";
-import { MolecularInsight } from "@/components/MolecularInsight";
+import { KetcherEditor } from "../../components/KetcherEditor";
+import { MethodDisclaimer } from "../../components/MethodDisclaimer";
+import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
+import { ProgressBar } from "../../components/ProgressBar";
+import { PropertiesPanel } from "../../components/PropertiesPanel";
+import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
+import { ScoreCard } from "../../components/ScoreCard";
+import { ScientificWarnings } from "../../components/ScientificWarnings";
+import { MolecularInsight } from "../../components/MolecularInsight";
 import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus, getTargets, Target } from "@/lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
@@ -19,7 +19,7 @@ import { API_URL } from "@/lib/config";
 import { useInterface } from "@/context/InterfaceContext";
 import dynamic from "next/dynamic";
 
-const ProEvaluation = dynamic(() => import("@/components/interfaces/pro/ProEvaluation"), {
+const ProEvaluation = dynamic(() => import("../../components/interfaces/pro/ProEvaluation"), {
   ssr: false,
   loading: () => (
     <div className="flex h-screen items-center justify-center bg-[#02050b] text-indigo-400 font-sans p-6">
