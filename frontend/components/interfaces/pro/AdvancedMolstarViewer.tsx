@@ -86,7 +86,10 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
         }
         const Viewer = molstarGlobal.Viewer;
         if (!Viewer) {
-          throw new Error("Viewer constructor not found in global 'molstar'.");
+          throw new Error("Viewer object not found in global 'molstar'.");
+        }
+        if (typeof Viewer.create !== "function") {
+          throw new Error("Viewer.create is not a function.");
         }
 
         if (cancelled || !containerRef.current) return;
@@ -94,7 +97,7 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
         // Clean container before rendering
         containerRef.current.innerHTML = "";
 
-        viewer = new Viewer(containerRef.current, {
+        viewer = await Viewer.create(containerRef.current, {
           layoutIsExpanded: false,
           layoutShowControls: false,
           layoutShowRemoteState: false,
