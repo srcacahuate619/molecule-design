@@ -64,20 +64,20 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
       setError(null);
 
       try {
-        // Load CSS
+        // Load CSS (prefer CDN first for reliable HTTPS and compression headers on production)
         try {
-          await loadStyle("/molstar.css", "molstar-css");
-        } catch (cssErr) {
-          console.warn("Local molstar.css failed, trying CDN:", cssErr);
           await loadStyle("https://cdn.jsdelivr.net/npm/molstar@5.9.0/build/viewer/molstar.css", "molstar-css");
+        } catch (cdnErr) {
+          console.warn("CDN molstar.css failed, trying local:", cdnErr);
+          await loadStyle("/molstar.css", "molstar-css");
         }
 
-        // Load JS
+        // Load JS (prefer CDN first for reliable HTTPS and compression headers on production)
         try {
-          await loadScript("/molstar.js", "molstar-js");
-        } catch (jsErr) {
-          console.warn("Local molstar.js failed, trying CDN:", jsErr);
           await loadScript("https://cdn.jsdelivr.net/npm/molstar@5.9.0/build/viewer/molstar.js", "molstar-js");
+        } catch (cdnErr) {
+          console.warn("CDN molstar.js failed, trying local:", cdnErr);
+          await loadScript("/molstar.js", "molstar-js");
         }
 
         const molstarGlobal = (window as any).molstar;
@@ -144,9 +144,13 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
   const hasData = !!(poseData || proteinData);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-indigo-500/10 bg-[#060a13] shadow-2xl" style={{ height, width: "100%" }}>
-      {/* Canvas container */}
-      <div ref={containerRef} className="w-full h-full" style={{ minHeight: `${height}px` }} />
+    <div className="relative overflow-hidden rounded-3xl border border-indigo-500/10 bg-[#060a13] shadow-2xl" style={{ height, width: "100%", position: "relative" }}>
+      {/* Canvas container - explicitly position and constrain parent dimensions, forcing canvas children to fill */}
+      <div 
+        ref={containerRef} 
+        className="w-full h-full [&_canvas]:!w-full [&_canvas]:!h-full [&_.msp-plugin]:!w-full [&_.msp-plugin]:!h-full [&_.msp-plugin-container]:!w-full [&_.msp-plugin-container]:!h-full" 
+        style={{ position: "relative", width: "100%", height: "100%", minHeight: `${height}px` }} 
+      />
 
       {/* Loading HUD */}
       {loading && (
