@@ -17,6 +17,7 @@
     "ketcher-react": "^3.12.0",
     "ketcher-standalone": "^3.12.0",
     "lucide-react": "^0.474.0",
+    "molstar": "^5.9.0",
     "next": "14.2.25",
     "next-auth": "^4.24.14",
     "postcss": "^8.5.8",

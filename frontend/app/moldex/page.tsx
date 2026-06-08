@@ -2,14 +2,30 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMoldex, getProteinFile, getPoseFile, certifyMolecule } from "../../lib/api";
-import { API_URL } from "../../lib/config";
-import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
-import MoldexCard from "../../components/MoldexCard";
-import MolecularComparison from "../../components/MolecularComparison";
+import { getMoldex, getProteinFile, getPoseFile, certifyMolecule } from "@/lib/api";
+import { API_URL } from "@/lib/config";
+import { MoleculeViewer3D } from "@/components/MoleculeViewer3D";
+import MoldexCard from "@/components/MoldexCard";
+import MolecularComparison from "@/components/MolecularComparison";
 import { Search, ShieldCheck, Activity, Info, BarChart3, ChevronRight, Binary, Database, Box, FlaskConical, AlertCircle } from "lucide-react";
+import { useInterface } from "@/context/InterfaceContext";
+import dynamic from "next/dynamic";
+
+const ProMoldex = dynamic(() => import("@/components/interfaces/pro/ProMoldex"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-screen items-center justify-center bg-[#02050b] text-indigo-400 font-sans p-6">
+      <div className="text-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent mx-auto mb-4" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Cargando workbench pro...</span>
+      </div>
+    </div>
+  )
+});
 
 export default function MoldexPage() {
+  const { interfaceMode } = useInterface();
+
   const [molecules, setMolecules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -57,12 +73,20 @@ export default function MoldexPage() {
     }
   };
 
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     setWindowHeight(window.innerHeight);
-    const handleResize = () => setWindowHeight(window.innerHeight);
+    const handleResize = () => {
+      setWindowHeight(window.innerHeight);
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getMoldex()
@@ -71,6 +95,10 @@ export default function MoldexPage() {
         if (data.results.length > 0) {
           setSelectedId(data.results[0].id);
         }
+      })
+      .catch((err) => {
+        console.error("Error al cargar la bioteca:", err);
+        setError(err.message);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -139,17 +167,61 @@ export default function MoldexPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#05080f] text-slate-300 font-sans p-6">
+        <div className="max-w-md w-full rounded-2xl border border-red-500/20 bg-red-950/20 p-8 text-center backdrop-blur-xl shadow-2xl">
+          <div className="mb-4 inline-block p-3 rounded-full bg-red-500/10 border border-red-500/30">
+            <AlertCircle size={32} className="text-red-500" />
+          </div>
+          <h2 className="text-lg font-black text-white uppercase tracking-wider mb-2">Error de Conexión</h2>
+          <p className="text-xs text-slate-400 leading-relaxed mb-6">
+            {error}
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full text-[10px] font-black text-white bg-red-600 hover:bg-red-500 py-3.5 rounded-xl transition-all uppercase tracking-widest"
+          >
+            Reintentar Conexión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (interfaceMode === "PRO") {
+    return (
+      <ProMoldex 
+        molecules={molecules}
+        selectedId={selectedId}
+        setSelectedId={setSelectedId}
+        search={search}
+        setSearch={setSearch}
+        targetFilter={targetFilter}
+        setTargetFilter={setTargetFilter}
+        selectedMolecule={selectedMolecule}
+        proteinData={proteinData}
+        poseData={poseData}
+        loading3D={loading3D}
+        certifying={certifying}
+        handleCertify={handleCertify}
+        targets={targets}
+      />
+    );
+  }
+
   return (
-    <div className="relative h-screen w-full bg-[#05080f] text-slate-300 font-sans selection:bg-indigo-500/30 overflow-hidden">
+    <div className="fixed inset-x-0 bottom-0 top-[57px] z-50 bg-[#05080f] text-slate-300 font-sans selection:bg-indigo-500/30 overflow-hidden">
       
       {/* 3D Viewport: El Protagonista (Full Background) */}
       <div className="absolute inset-0 z-0">
         <MoleculeViewer3D 
           proteinData={proteinData ?? undefined}
           poseData={poseData ?? undefined}
-          height={windowHeight}
+          height={windowHeight - 57}
           hotspots={(selectedMolecule?.target?.hotspots || []).map((h: any) => h.name)}
           hotspotsHit={selectedMolecule?.hotspots_hit || []}
+          mobileTopOffset={true}
         />
       </div>
 
@@ -157,49 +229,51 @@ export default function MoldexPage() {
       <div className="absolute inset-0 z-10 pointer-events-none flex flex-col md:flex-row">
         
         {/* Mobile Navigation Header */}
-        <div className="flex md:hidden flex-col bg-[#0a0f1d] border-b border-slate-800/50 z-50 pointer-events-auto">
-          <div className="flex items-center justify-between px-6 py-4">
-            <h1 className="text-sm font-black tracking-tighter text-white flex items-center gap-2">
-              <FlaskConical size={16} className="text-indigo-500" />
-              MOLDEX <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
-            </h1>
-            <div className="flex gap-1">
-              {[
-                { id: 'LIST', icon: <Database size={14} /> },
-                { id: '3D', icon: <Box size={14} /> },
-                { id: 'INFO', icon: <Info size={14} /> }
-              ].map((btn) => (
-                <button
-                  key={btn.id}
-                  onClick={() => setActiveView(btn.id as any)}
-                  className={`p-2 rounded-lg transition-all ${
-                    activeView === btn.id 
-                      ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
-                      : 'bg-slate-900 text-slate-500'
-                  }`}
-                >
-                  {btn.icon}
-                </button>
-              ))}
-            </div>
+        <div className="h-[60px] flex md:hidden items-center justify-between px-6 bg-[#0a0f1d] border-b border-slate-800/50 z-50 pointer-events-auto w-full">
+          <h1 className="text-sm font-black tracking-tighter text-white flex items-center gap-2">
+            <FlaskConical size={16} className="text-indigo-500" />
+            MOLDEX <span className="text-[8px] bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/35 tracking-widest uppercase font-black">Bioteca</span>
+          </h1>
+          <div className="flex gap-1">
+            {[
+              { id: 'LIST', icon: <Database size={14} /> },
+              { id: '3D', icon: <Box size={14} /> },
+              { id: 'INFO', icon: <Info size={14} /> }
+            ].map((btn) => (
+              <button
+                key={btn.id}
+                onClick={() => setActiveView(btn.id as any)}
+                className={`p-2 rounded-lg transition-all ${
+                  activeView === btn.id 
+                    ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                    : 'bg-slate-900 text-slate-500'
+                }`}
+              >
+                {btn.icon}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Sidebar Left: Biblioteca (Collapsible) */}
         <motion.aside 
           initial={false}
-          animate={{ 
+          animate={isMobile ? {
+            width: activeView === 'LIST' ? "100%" : 0,
+            opacity: activeView === 'LIST' ? 1 : 0,
+            x: activeView === 'LIST' ? 0 : -800
+          } : { 
             width: showLeftPanel ? 320 : 0,
             opacity: showLeftPanel ? 1 : 0,
             x: showLeftPanel ? 0 : -320
           }}
           transition={{ type: "spring", stiffness: 300, damping: 35 }}
-          className={`h-full flex-col border-r border-white/5 bg-[#0a0f1d]/40 backdrop-blur-xl pointer-events-auto overflow-hidden hidden md:flex`}
+          className={`border-r border-white/5 bg-[#0a0f1d]/95 md:bg-[#0a0f1d]/40 backdrop-blur-xl pointer-events-auto overflow-hidden flex flex-col ${isMobile ? 'absolute inset-x-0 bottom-0 top-[60px] z-40' : 'h-full'} ${isMobile && activeView !== 'LIST' ? 'pointer-events-none' : ''}`}
         >
           <div className="p-8 border-b border-white/5 min-w-[320px]">
             <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2 mb-8">
               <FlaskConical size={24} className="text-indigo-500" />
-              MOLDEX <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">V5.0</span>
+              MOLDEX <span className="text-[10px] bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/35 tracking-widest uppercase font-black">Bioteca</span>
             </h1>
             
             <div className="space-y-4">
@@ -261,57 +335,65 @@ export default function MoldexPage() {
         {/* Espacio Central del Visor */}
         <div className="flex-1 relative pointer-events-none">
           {/* HUD Superior */}
-          <div className="absolute top-8 left-8 right-8 flex items-start justify-between">
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 pointer-events-auto">
-              <div className="h-14 w-14 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center backdrop-blur-xl shadow-2xl">
-                 <Box className="text-indigo-500" size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1">PROTAGONISTA 3D</p>
-                <h2 className="text-2xl font-black text-white tracking-tighter">ESTÁNDAR CIENTÍFICO</h2>
-              </div>
-            </motion.div>
-          </div>
+          {!isMobile && (
+            <div className="absolute top-8 left-8 right-8 flex items-start justify-between">
+              <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 pointer-events-auto">
+                <div className="h-14 w-14 rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center backdrop-blur-xl shadow-2xl">
+                   <Box className="text-indigo-500" size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1">PROTAGONISTA 3D</p>
+                  <h2 className="text-2xl font-black text-white tracking-tighter">ESTÁNDAR CIENTÍFICO</h2>
+                </div>
+              </motion.div>
+            </div>
+          )}
 
           {/* HUD Inferior (Info de Molécula) */}
           <AnimatePresence mode="wait">
-            <motion.div 
-              key={selectedId}
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              className="absolute bottom-12 left-12 right-12 pointer-events-auto"
-            >
-              <div className="rounded-[3rem] border border-white/10 bg-black/60 px-10 py-6 backdrop-blur-2xl shadow-2xl max-w-6xl mx-auto flex items-center gap-16">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-4 mb-2">
-                    <span className="bg-indigo-500 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-widest uppercase">Target Pocket</span>
-                    <h3 className="text-3xl font-black text-white tracking-tighter truncate">{selectedMolecule?.name || "Molécula"}</h3>
+            {((!isMobile && selectedId) || (isMobile && activeView === '3D' && selectedId)) && (
+              <motion.div 
+                key={selectedId}
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
+                className={`absolute bottom-4 left-4 right-4 md:bottom-12 transition-all duration-300 ${
+                  !isMobile 
+                    ? `${showLeftPanel ? 'left-[340px]' : 'left-12'} ${showRightPanel ? 'right-[420px]' : 'right-12'}` 
+                    : 'left-4 right-4'
+                } pointer-events-auto`}
+              >
+                <div className="rounded-2xl md:rounded-[3rem] border border-white/10 bg-black/80 md:bg-black/60 px-6 py-4 md:px-10 md:py-6 backdrop-blur-2xl shadow-2xl max-w-sm md:max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-4 md:gap-16">
+                  <div className="flex-1 min-w-0 w-full text-center md:text-left">
+                    <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 mb-1 md:mb-2">
+                      <span className="bg-indigo-500 text-white text-[8px] md:text-[10px] font-black px-2 py-0.5 md:px-3 md:py-1 rounded-full tracking-widest uppercase">Target Pocket</span>
+                      <h3 className="text-xl md:text-3xl font-black text-white tracking-tighter truncate w-full md:w-auto">{selectedMolecule?.name || "Molécula"}</h3>
+                    </div>
+                    <p className="hidden md:block text-sm font-mono text-slate-500 truncate">{selectedMolecule?.smiles}</p>
                   </div>
-                  <p className="text-sm font-mono text-slate-500 truncate">{selectedMolecule?.smiles}</p>
-                </div>
-                <div className="flex items-center gap-12 border-l border-white/10 pl-12">
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">AFINIDAD</p>
-                    <div className="text-4xl font-black text-indigo-400 tabular-nums">
-                      {selectedMolecule?.metrics?.affinity?.toFixed(1)} <span className="text-sm font-bold text-slate-600">kcal</span>
+                  <div className="flex items-center justify-between md:justify-end gap-8 md:gap-12 w-full md:w-auto border-t md:border-t-0 md:border-l border-white/10 pt-3 md:pt-0 md:pl-12">
+                    <div className="text-left md:text-right">
+                      <p className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5 md:mb-1">AFINIDAD</p>
+                      <div className="text-2xl md:text-4xl font-black text-indigo-400 tabular-nums">
+                        {selectedMolecule?.metrics?.affinity?.toFixed(1)} <span className="text-xs font-bold text-slate-600">kcal</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-0.5 md:mb-1">GLOBAL SCORE</p>
+                      <div className={`text-2xl md:text-4xl font-black tabular-nums ${
+                        (selectedMolecule?.metrics?.score || 0) >= 95 ? 'text-yellow-400 italic' :
+                        (selectedMolecule?.metrics?.score || 0) >= 80 ? 'text-fuchsia-400' :
+                        (selectedMolecule?.metrics?.score || 0) >= 60 ? 'text-emerald-400' :
+                        (selectedMolecule?.metrics?.score || 0) >= 40 ? 'text-amber-400' :
+                        'text-rose-400'
+                      }`}>
+                        {selectedMolecule?.metrics?.score?.toFixed(1) || "0.0"}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">GLOBAL SCORE</p>
-                    <div className={`text-4xl font-black tabular-nums ${
-                      (selectedMolecule?.metrics?.score || 0) >= 95 ? 'text-yellow-400 italic' :
-                      (selectedMolecule?.metrics?.score || 0) >= 80 ? 'text-fuchsia-400' :
-                      (selectedMolecule?.metrics?.score || 0) >= 60 ? 'text-emerald-400' :
-                      (selectedMolecule?.metrics?.score || 0) >= 40 ? 'text-amber-400' :
-                      'text-rose-400'
-                    }`}>
-                      {selectedMolecule?.metrics?.score?.toFixed(1) || "0.0"}
-                    </div>
-                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
@@ -328,13 +410,17 @@ export default function MoldexPage() {
         {/* Sidebar Right: Perfil Farmacocinético (Collapsible) */}
         <motion.aside 
           initial={false}
-          animate={{ 
+          animate={isMobile ? {
+            width: activeView === 'INFO' ? "100%" : 0,
+            opacity: activeView === 'INFO' ? 1 : 0,
+            x: activeView === 'INFO' ? 0 : 1000
+          } : { 
             width: showRightPanel ? 400 : 0,
             opacity: showRightPanel ? 1 : 0,
             x: showRightPanel ? 0 : 400
           }}
           transition={{ type: "spring", stiffness: 300, damping: 35 }}
-          className={`h-full flex-col border-l border-white/5 bg-[#0a0f1d]/60 backdrop-blur-3xl p-10 overflow-y-auto custom-scrollbar pointer-events-auto hidden md:flex`}
+          className={`border-l border-white/5 bg-[#0a0f1d]/95 md:bg-[#0a0f1d]/60 backdrop-blur-3xl p-6 md:p-10 overflow-y-auto custom-scrollbar pointer-events-auto flex flex-col ${isMobile ? 'absolute inset-x-0 bottom-0 top-[60px] z-40' : 'h-full'} ${isMobile && activeView !== 'INFO' ? 'pointer-events-none' : ''}`}
         >
           <AnimatePresence mode="wait">
             <motion.div key={selectedId} initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="space-y-10 min-w-[320px]">
@@ -403,6 +489,8 @@ export default function MoldexPage() {
                     { label: "Masa", value: selectedMolecule?.metrics?.mw?.toFixed(0), unit: "Da" },
                     { label: "Polaridad", value: selectedMolecule?.metrics?.tpsa?.toFixed(1), unit: "Å²" },
                     { label: "Hotspots", value: `${selectedMolecule?.hotspots_hit?.length || 0}/${selectedMolecule?.target?.hotspots?.length || 0}`, unit: "HITS" },
+                    { label: "GNN 3D", value: selectedMolecule?.metrics?.gnn_score !== null && selectedMolecule?.metrics?.gnn_score !== undefined ? selectedMolecule.metrics.gnn_score.toFixed(1) : "N/A", unit: "PTS" },
+                    { label: "Lipinski", value: selectedMolecule?.metrics?.lipinski_pass ? "Apto" : "No Apto", unit: "RULE" },
                   ].map(stat => (
                     <div key={stat.label} className="rounded-2xl bg-black/40 p-4 border border-white/5 group hover:border-indigo-500/30 transition-all">
                       <p className="text-[8px] font-black text-slate-600 uppercase mb-1 tracking-widest">{stat.label}</p>
@@ -452,6 +540,14 @@ export default function MoldexPage() {
                     className="w-full text-[10px] font-black text-slate-400 bg-slate-800/50 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
                   >
                     DESCARGAR REPORTE CIENTÍFICO
+                  </a>
+                  
+                  <a 
+                    href={`${API_URL}/evaluation/files/complex/${selectedId}`}
+                    download={`complex_${selectedId}.pdb`}
+                    className="w-full mt-3 text-[10px] font-black text-slate-400 bg-slate-800/50 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                  >
+                    <Box size={14} /> DESCARGAR COMPLEJO 3D (PDB)
                   </a>
                 </div>
               </section>

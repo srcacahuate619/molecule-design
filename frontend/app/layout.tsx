@@ -1,13 +1,14 @@
 import "./globals.css";
 import type { ReactNode } from "react";
 import Script from "next/script";
-import { AuthProvider } from "../lib/auth";
-import { Navigation } from "../components/Navigation";
+import { AuthProvider } from "@/lib/auth";
+import { Navigation } from "@/components/Navigation";
+import { InterfaceProvider } from "@/context/InterfaceContext";
 
 export const metadata = {
-  title: "MolDesign — Diseño Molecular Asistido por IA",
+  title: "MolDesign AI — Diseño Molecular Gamificado y Avanzado",
   description:
-    "Pipeline científico reproducible: RDKit → AutoDock Vina → DiffDock → AlphaFold → Scoring Compuesto",
+    "Pipeline científico avanzado de 3 niveles: Screening Vina+XGBoost (Nivel 1), Redes de Grafos RTMScore GNN (Nivel 2) y Refinamiento Físico OpenMM/AMBER (Nivel 3). Certificación Solana.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -28,8 +29,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <AuthProvider>
-          <Navigation />
-          <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+          <InterfaceProvider>
+            <Navigation />
+            <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+          </InterfaceProvider>
         </AuthProvider>
       </body>
     </html>

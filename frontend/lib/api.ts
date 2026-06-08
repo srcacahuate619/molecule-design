@@ -20,6 +20,13 @@ export interface Target {
   is_hot: boolean;
   spearman_rho: number | null;
   calibration_date: string | null;
+  grid_center_x?: number;
+  grid_center_y?: number;
+  grid_center_z?: number;
+  grid_size_x?: number;
+  grid_size_y?: number;
+  grid_size_z?: number;
+  hotspots?: Array<{ name: string; importance: number; x?: number; y?: number; z?: number }>;
 }
 
 import { API_URL } from "./config";
@@ -97,19 +104,30 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store" as RequestCache,
   };
 
-  let response = await fetch(fetchUrl, fetchInit);
+  let response;
+  try {
+    response = await fetch(fetchUrl, fetchInit);
+  } catch (err) {
+    console.error(`Fetch error on ${fetchUrl}:`, err);
+    throw new Error("Error de conexión: No se pudo establecer contacto con el servidor de la API. Verifica que la API local esté encendida en el puerto 8010.");
+  }
 
   if (response.status === 401) {
     const refreshed = await attemptRefresh();
     if (refreshed) {
       // Retry with new headers
-      response = await fetch(fetchUrl, {
-        ...fetchInit,
-        headers: {
-          ...fetchInit.headers,
-          ...getAuthHeaders(),
-        },
-      });
+      try {
+        response = await fetch(fetchUrl, {
+          ...fetchInit,
+          headers: {
+            ...fetchInit.headers,
+            ...getAuthHeaders(),
+          },
+        });
+      } catch (err) {
+        console.error(`Fetch retry error on ${fetchUrl}:`, err);
+        throw new Error("Error de conexión: No se pudo establecer contacto con el servidor de la API en el reintento.");
+      }
     } else {
       // Si el refresh falla, borramos el token muerto del storage
       if (typeof window !== "undefined") {
@@ -141,10 +159,26 @@ export async function validateSmiles(smiles: string): Promise<ValidationResult> 
 
 // ── Evaluation ───────────────────────────────────────────────────
 
-export async function submitEvaluation(smiles: string, targetPdbId = "7E2Y", isControl = false) {
+export async function submitEvaluation(
+  smiles: string, 
+  targetPdbId = "7E2Y", 
+  isControl = false,
+  gridCenter?: [number, number, number],
+  gridSize?: [number, number, number],
+  customHotspots?: string[],
+  peptideDockingEngine?: "diffpepdock" | "colabfold"
+) {
   return request<EvaluationSubmitResponse>("/evaluation/submit", {
     method: "POST",
-    body: JSON.stringify({ smiles, target_pdb_id: targetPdbId, is_control: isControl }),
+    body: JSON.stringify({ 
+      smiles, 
+      target_pdb_id: targetPdbId, 
+      is_control: isControl,
+      grid_center: gridCenter,
+      grid_size: gridSize,
+      custom_hotspots: customHotspots,
+      peptide_docking_engine: peptideDockingEngine
+    }),
   });
 }
 

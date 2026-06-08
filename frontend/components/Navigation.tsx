@@ -1,11 +1,11 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@/lib/auth";
 import { Menu, X, LogOut, User as UserIcon } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
+import { useInterface } from "@/context/InterfaceContext";
 
 const NAV_ITEMS = [
   { href: "/", label: "Inicio" },
@@ -17,14 +17,15 @@ export function Navigation() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const { interfaceMode, toggleInterfaceMode } = useInterface();
 
   return (
     <nav className="sticky top-0 z-[100] border-b border-surface-800 bg-surface-950/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-lg font-bold text-white">
-          <Image src="/logo.png" alt="MolDesign Logo" width={32} height={32} className="rounded-lg object-contain" />
-          MolDesign
+          <Image src="/logo.png" alt="MolDesign AI Logo" width={32} height={32} className="rounded-lg object-contain" />
+          MolDesign AI
         </Link>
 
         {/* Mobile Menu Button */}
@@ -35,24 +36,33 @@ export function Navigation() {
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* Desktop Nav Links */}
-        <div className="hidden md:flex items-center gap-1">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-brand-600/20 text-brand-400"
-                    : "text-surface-400 hover:bg-surface-800 hover:text-gray-200"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        {/* Desktop Nav Links + Switch */}
+        <div className="hidden md:flex items-center gap-6">
+          <div className="flex items-center gap-1">
+            {NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-brand-600/20 text-brand-400"
+                      : "text-surface-400 hover:bg-surface-800 hover:text-gray-200"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Interface Switch (Gamer vs Pro) */}
+          <div className="flex items-center bg-surface-900/60 border border-surface-800 rounded-full p-0.5 relative cursor-pointer h-7 select-none" onClick={toggleInterfaceMode}>
+            <div className={`absolute top-0.5 bottom-0.5 rounded-full bg-brand-600/80 transition-all duration-300 ease-out ${interfaceMode === 'GAMIFIED' ? 'left-0.5 w-[85px]' : 'left-[88px] w-[65px]'}`} />
+            <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center ${interfaceMode === 'GAMIFIED' ? 'text-white' : 'text-surface-500'}`}>🕹️ Gamer</span>
+            <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center ${interfaceMode === 'PRO' ? 'text-white' : 'text-surface-500'}`}>🔬 Pro</span>
+          </div>
         </div>
 
         {/* Desktop Auth */}
@@ -83,6 +93,16 @@ export function Navigation() {
       {/* Mobile Menu Dropdown */}
       {isOpen && (
         <div className="md:hidden border-t border-surface-800 bg-surface-950 px-4 py-4 space-y-3 animate-in slide-in-from-top-4 duration-200">
+          {/* Conmutador de Interfaz Móvil */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-surface-800 pb-3">
+            <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">Modo de Vista</span>
+            <div className="flex items-center bg-surface-900 border border-surface-800 rounded-full p-0.5 relative cursor-pointer h-7 select-none w-[155px]" onClick={toggleInterfaceMode}>
+              <div className={`absolute top-0.5 bottom-0.5 rounded-full bg-brand-600/80 transition-all duration-300 ease-out ${interfaceMode === 'GAMIFIED' ? 'left-0.5 w-[85px]' : 'left-[88px] w-[65px]'}`} />
+              <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center h-full ${interfaceMode === 'GAMIFIED' ? 'text-white' : 'text-surface-500'}`}>🕹️ Gamer</span>
+              <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center h-full ${interfaceMode === 'PRO' ? 'text-white' : 'text-surface-500'}`}>🔬 Pro</span>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href;

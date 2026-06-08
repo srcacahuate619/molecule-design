@@ -49,6 +49,23 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
           : 'border-slate-800 bg-slate-900/50 hover:bg-slate-800/80'
       }`}
     >
+      {/* Badge de Tier (Gamer Rank) */}
+      {molecule.metrics?.score !== undefined && (
+        <div className={`absolute top-3 left-3 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black tracking-widest border ${
+          molecule.metrics.score >= 85 ? 'text-amber-400 border-amber-500/50 bg-amber-500/10 shadow-[0_0_8px_rgba(245,158,11,0.2)]' :
+          molecule.metrics.score >= 70 ? 'text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10' :
+          molecule.metrics.score >= 55 ? 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' :
+          molecule.metrics.score >= 40 ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' :
+          'text-rose-400 border-rose-500/30 bg-rose-500/10'
+        }`}>
+          {molecule.metrics.score >= 85 ? 'S-Tier' :
+           molecule.metrics.score >= 70 ? 'A-Tier' :
+           molecule.metrics.score >= 55 ? 'B-Tier' :
+           molecule.metrics.score >= 40 ? 'C-Tier' :
+           'D-Tier'}
+        </div>
+      )}
+
       {/* Badge de Target */}
       <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-slate-950/80 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-400 border border-slate-700">
         <Microscope size={10} />

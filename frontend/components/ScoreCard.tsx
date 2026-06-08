@@ -42,6 +42,7 @@ type ScoreCardProps = {
   isSaved?: boolean;
   solanaSignature?: string | null;
   onDownloadCertificate?: () => void;
+  onDownloadComplex?: () => void;
   isControl?: boolean;
   saScore?: number | null;
   saReasons?: string[] | null;
@@ -51,6 +52,7 @@ type ScoreCardProps = {
   specificity?: number | null;
   affinityMultiplier?: number | null;
   specificityMultiplier?: number | null;
+  gnnScore?: number | null;
 };
 
 export function ScoreCard({
@@ -65,6 +67,7 @@ export function ScoreCard({
   isSaved = false,
   solanaSignature,
   onDownloadCertificate,
+  onDownloadComplex,
   isControl = false,
   saScore,
   saReasons,
@@ -74,6 +77,7 @@ export function ScoreCard({
   specificity,
   affinityMultiplier,
   specificityMultiplier,
+  gnnScore,
 }: ScoreCardProps) {
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -90,11 +94,42 @@ export function ScoreCard({
         ? "text-yellow-400"
         : "text-red-400";
 
+  let tier = "D-Tier";
+  let tierColor = "bg-rose-500/10 text-rose-400 border-rose-500/25";
+  let tierGlow = "";
+  
+  if (totalScore !== null) {
+    if (totalScore >= 85) {
+      tier = "S-Tier";
+      tierColor = "bg-amber-500/10 text-amber-400 border-amber-500/30 font-black animate-pulse";
+      tierGlow = "shadow-[0_0_15px_rgba(245,158,11,0.2)]";
+    } else if (totalScore >= 70) {
+      tier = "A-Tier";
+      tierColor = "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/25";
+      tierGlow = "shadow-[0_0_10px_rgba(217,70,239,0.15)]";
+    } else if (totalScore >= 55) {
+      tier = "B-Tier";
+      tierColor = "bg-cyan-500/10 text-cyan-400 border-cyan-500/25";
+      tierGlow = "shadow-[0_0_10px_rgba(6,182,212,0.15)]";
+    } else if (totalScore >= 40) {
+      tier = "C-Tier";
+      tierColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/25";
+      tierGlow = "shadow-[0_0_10px_rgba(16,185,129,0.1)]";
+    }
+  }
+
   return (
     <section className="space-y-4 rounded-xl border border-surface-800 bg-surface-900 p-5">
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-base font-bold text-white">Score compuesto</h3>
-        <span className={`text-3xl font-bold tabular-nums ${scoreColor}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-bold text-white">Score compuesto</h3>
+          {totalScore !== null && (
+            <span className={`px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${tierColor} ${tierGlow}`}>
+              {tier}
+            </span>
+          )}
+        </div>
+        <span className={`text-3xl font-black tracking-tighter tabular-nums ${scoreColor}`}>
           {totalDisplay}
         </span>
       </div>
@@ -135,7 +170,7 @@ export function ScoreCard({
         ) : (
           <div className="space-y-3">
             {(onSave || onCertify || solanaSignature) && (
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 {onSave && (
                   <button
                     onClick={() => setIsSavingPrompt(true)}
@@ -177,6 +212,15 @@ export function ScoreCard({
                 className="w-full flex items-center justify-center gap-2 rounded-lg border border-brand-500/30 bg-brand-500/10 text-brand-400 py-3 px-4 font-bold text-sm tracking-wide transition-all hover:bg-brand-500/20 active:scale-[0.98]"
               >
                 📥 {solanaSignature ? "Descargar Certificado PDF (On-Chain)" : "Descargar Reporte Científico (PDF)"}
+              </button>
+            )}
+
+            {onDownloadComplex && (
+              <button
+                onClick={onDownloadComplex}
+                className="w-full flex items-center justify-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 py-3 px-4 font-bold text-sm tracking-wide transition-all hover:bg-indigo-500/20 active:scale-[0.98] mt-2"
+              >
+                🧬 Descargar Complejo 3D (PDB)
               </button>
             )}
           </div>
@@ -306,6 +350,40 @@ export function ScoreCard({
           </div>
         </div>
       )}
+
+      {gnnScore !== null && gnnScore !== undefined && (
+        <div className="group relative text-xs text-surface-400">
+          <div className="flex cursor-help items-center gap-1 w-max">
+            <span>Inteligencia GNN (Nivel 2):</span>
+            <strong className="text-purple-400 border-b border-dashed border-purple-500/50 pb-0.5">
+              {gnnScore.toFixed(2)} (x{((() => {
+                const rawFactor = 1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)));
+                return 0.7 + (rawFactor * 0.45);
+              })()).toFixed(3)})
+            </strong>
+          </div>
+          
+          {/* Tooltip Hover */}
+          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
+            <div className="rounded-lg border border-purple-500/30 bg-surface-950 p-3 shadow-xl">
+              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-purple-400">Evaluación de Topología 3D GNN</h4>
+              <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
+                <p>
+                  Mapea la pose 3D mediante una Red Neuronal de Grafos (RTMScore) entrenada con millones de pares interatómicos continuos.
+                </p>
+                <div className="mt-2 rounded bg-surface-900 p-2 text-center font-mono text-[10px] text-purple-300 border border-surface-800">
+                  Umbral Neutral: 20.0 | Multiplicador: 0.70x a 1.15x
+                </div>
+                <p className="mt-2 text-[9px] text-surface-500">
+                  Un valor más alto indica una pose libre de clashes estéricos y con alta complementariedad electrostática.
+                </p>
+              </div>
+            </div>
+            {/* Tooltip Arrow */}
+            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-purple-500/30 bg-surface-950"></div>
+          </div>
+        </div>
+      )}
       
       {saScore !== null && saScore !== undefined && (
         <div className="space-y-2">
@@ -371,7 +449,11 @@ export function ScoreCard({
             ) : (
               <div className="flex justify-between border-b border-surface-800/30 pb-2">
                 <span>Fórmula del Score Compuesto:</span>
-                <span className="text-surface-500">[(A·0.45) + (P·M_a)] · M_s</span>
+                <span className="text-surface-500">
+                  {gnnScore !== null && gnnScore !== undefined 
+                    ? "[(A·0.45) + (P·M_a)] · M_s · M_g" 
+                    : "[(A·0.45) + (P·M_a)] · M_s"}
+                </span>
               </div>
             )}
             
@@ -408,13 +490,21 @@ export function ScoreCard({
                     </span>
                   </div>
                 )}
+                {!isControl && gnnScore !== null && gnnScore !== undefined && (
+                  <div className="flex justify-between">
+                    <span>(M_g) Multipl. G:</span>
+                    <span className={((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)) < 1.0 ? "text-red-400" : "text-purple-400 font-bold"}>
+                      {((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)).toFixed(3)}
+                    </span>
+                  </div>
+                )}
               </div>
               
               <div className="col-span-2 pt-2 border-t border-surface-800/30">
                 {!isControl && (
-                  <p className="text-[10px] text-surface-500 mb-2">
+                  <p className="text-[10px] text-surface-500 mb-2 font-sans">
                     * Nota: El "Phys. Score" es la suma ponderada de ADME (30%) y Drug-likeness (25%). 
-                    M_a penaliza si la afinidad es baja, y M_s penaliza la falta de interacción con hotspots.
+                    M_a penaliza afinidad baja, M_s penaliza hotspots no acoplados, y M_g representa el factor corrector del RTMScore GNN (Nivel 2).
                   </p>
                 )}
                 <div className="flex justify-between text-xs font-bold text-gray-200 bg-surface-800/30 p-2 rounded">

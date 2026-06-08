@@ -9,11 +9,12 @@ type Props = {
   hotspots?: string[]; // ej. ["MET99", "TYR100"]
   hotspotsHit?: string[]; // ej. ["MET99"]
   hideLegend?: boolean;
+  mobileTopOffset?: boolean;
 };
 
 type ViewMode = "standard" | "surface" | "charges";
 
-export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots = [], hotspotsHit = [], hideLegend = false }: Props) {
+export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots = [], hotspotsHit = [], hideLegend = false, mobileTopOffset = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef    = useRef<any>(null);
 
@@ -23,6 +24,45 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [showHotspots, setShowHotspots] = useState(true);
   const [selectedHotspot, setSelectedHotspot] = useState<string | null>(null);
+
+  // Mobile / Touch screen scroll trap prevention
+  const [isMobile, setIsMobile] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const touchScreen = window.matchMedia("(pointer: coarse)").matches;
+      const smallScreen = window.innerWidth < 768;
+      setIsMobile(touchScreen || smallScreen);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Ajustar la resolución del canvas de WebGL de forma dinámica en móviles
+  useEffect(() => {
+    if (!modelsLoaded || !viewerRef.current || !containerRef.current) return;
+
+    const handleResize = () => {
+      if (!viewerRef.current || !containerRef.current) return;
+      const v = viewerRef.current;
+      const container = containerRef.current;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+
+      if (isMobile) {
+        // Renderizar a 1.2x CSS píxeles para ahorrar procesamiento en GPU móvil
+        v.resize(w * 1.2, h * 1.2);
+      } else {
+        v.resize();
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [modelsLoaded, isMobile]);
 
   // 1. Carga inicial de modelos (Solo se ejecuta al recibir datos nuevos)
   useEffect(() => {
@@ -147,14 +187,20 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
           });
         }
 
-        if (viewMode === "surface") v.addSurface($3d.SurfaceType.VDW, { opacity: 0.5, color: "white" }, { model: 0 });
-        else if (viewMode === "charges") {
+        // En móviles, restringir la superficie únicamente a los residuos del bolsillo para optimizar polígonos
+        const surfaceSelector = (isMobile && pocketResis.size > 0)
+          ? { model: 0, predicate: (atom: any) => pocketResis.has(`${atom.chain}:${atom.resi}`) }
+          : { model: 0 };
+
+        if (viewMode === "surface") {
+          v.addSurface($3d.SurfaceType.VDW, { opacity: isMobile ? 0.35 : 0.5, color: "white" }, surfaceSelector);
+        } else if (viewMode === "charges") {
           protAtoms.forEach((p: any) => {
             if (["ASP", "GLU"].includes(p.resn)) p.color = "red";
             else if (["ARG", "LYS", "HIS"].includes(p.resn)) p.color = "blue";
             else p.color = "white";
           });
-          v.addSurface($3d.SurfaceType.VDW, { opacity: 0.65 }, { model: 0 });
+          v.addSurface($3d.SurfaceType.VDW, { opacity: isMobile ? 0.45 : 0.65 }, surfaceSelector);
         }
       }
     }
@@ -168,8 +214,23 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
   return (
     <>
       <div className="relative overflow-hidden rounded-2xl border border-surface-800 bg-surface-950 shadow-2xl" style={{ height, width: "100%", position: "relative" }}>
-        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+        <div ref={containerRef} style={{ width: "100%", height: "100%" }} className="[&_canvas]:!w-full [&_canvas]:!h-full" />
         
+        {isMobile && !isInteractive && hasData && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-surface-950/85 backdrop-blur-[2px] gap-2 p-4 transition-all duration-300">
+            <span className="text-2xl animate-bounce">🖐️</span>
+            <p className="text-[11px] text-surface-300 text-center font-medium px-4">
+              Cámara 3D bloqueada para permitir el desplazamiento táctil de la página.
+            </p>
+            <button
+              onClick={() => setIsInteractive(true)}
+              className="mt-1 px-3 py-2 bg-brand-600 text-white rounded-lg text-xs font-semibold hover:bg-brand-500 transition-colors shadow-md shadow-brand-500/10"
+            >
+              🔄 Activar Vista 3D
+            </button>
+          </div>
+        )}
+
         {!modelsLoaded && hasData && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-surface-950/50 backdrop-blur-sm">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
@@ -185,7 +246,7 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
 
         {hasData && (
           <>
-            <div style={{ position: "absolute", top: "12px", right: "12px", zIndex: 10, display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "8px", maxWidth: "90%" }}>
+            <div style={{ position: "absolute", top: (isMobile && mobileTopOffset) ? "72px" : "12px", right: "12px", zIndex: 10, display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "8px", maxWidth: "90%" }}>
               <div className="flex bg-surface-950/80 rounded-lg p-1 border border-surface-700 backdrop-blur-md">
                 {["standard", "surface", "charges"].map((m: any) => (
                   <button key={m} onClick={() => setViewMode(m)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${viewMode === m ? 'bg-brand-600 text-white' : 'text-surface-400 hover:text-white'}`}>
@@ -206,6 +267,15 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
                 <span>🎯 Hotspot: {selectedHotspot}</span>
                 <button onClick={() => setSelectedHotspot(null)} className="ml-2 opacity-60">✕</button>
               </div>
+            )}
+
+            {isMobile && isInteractive && (
+              <button
+                onClick={() => setIsInteractive(false)}
+                className="absolute bottom-28 right-3 z-30 px-2.5 py-1.5 bg-surface-900/90 text-surface-300 rounded-md text-[9px] font-bold border border-surface-700 hover:text-white transition-colors backdrop-blur-md"
+              >
+                🔒 Bloquear Cámara
+              </button>
             )}
           </>
         )}

@@ -2,23 +2,40 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { KetcherEditor } from "../../components/KetcherEditor";
-import { MethodDisclaimer } from "../../components/MethodDisclaimer";
-import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
-import { ProgressBar } from "../../components/ProgressBar";
-import { PropertiesPanel } from "../../components/PropertiesPanel";
-import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
-import { ScoreCard } from "../../components/ScoreCard";
-import { ScientificWarnings } from "../../components/ScientificWarnings";
-import { MolecularInsight } from "../../components/MolecularInsight";
-import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus, getTargets, Target } from "../../lib/api";
-import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../lib/types";
-import { useAuth } from "../../lib/auth";
+import { KetcherEditor } from "@/components/KetcherEditor";
+import { MethodDisclaimer } from "@/components/MethodDisclaimer";
+import { MoleculeViewer3D } from "@/components/MoleculeViewer3D";
+import { ProgressBar } from "@/components/ProgressBar";
+import { PropertiesPanel } from "@/components/PropertiesPanel";
+import { ReproducibilityInfo } from "@/components/ReproducibilityInfo";
+import { ScoreCard } from "@/components/ScoreCard";
+import { ScientificWarnings } from "@/components/ScientificWarnings";
+import { MolecularInsight } from "@/components/MolecularInsight";
+import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus, getTargets, Target } from "@/lib/api";
+import type { JobStatus, MolecularSuggestion, ValidationResult } from "@/lib/types";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/lib/config";
+import { useInterface } from "@/context/InterfaceContext";
+import dynamic from "next/dynamic";
+
+const ProEvaluation = dynamic(() => import("@/components/interfaces/pro/ProEvaluation"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-screen items-center justify-center bg-[#02050b] text-indigo-400 font-sans p-6">
+      <div className="text-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent mx-auto mb-4" />
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">Cargando evaluación pro...</span>
+      </div>
+    </div>
+  )
+});
 
 const POLL_INTERVAL_MS = 2000;
 
 export default function EvaluationPage() {
+  const { interfaceMode } = useInterface();
+
   // --- Input state ---
   const [smiles, setSmiles] = useState("CC(=O)Oc1ccccc1C(=O)O");
   const [target, setTarget] = useState("");
@@ -116,6 +133,24 @@ export default function EvaluationPage() {
     try {
       setBusy(true);
       await downloadCertificate(status.result.molecule_id);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }, [status]);
+
+  const handleDownloadComplex = useCallback(async () => {
+    if (!status?.result?.molecule_id) return;
+    try {
+      setBusy(true);
+      const url = `${API_URL}/evaluation/files/complex/${status.result.molecule_id}`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `complex_${status.result.molecule_id}.pdb`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (err) {
       alert((err as Error).message);
     } finally {
@@ -297,7 +332,12 @@ export default function EvaluationPage() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (
+    gridCenter?: [number, number, number],
+    gridSize?: [number, number, number],
+    customHotspots?: string[],
+    peptideDockingEngine?: "diffpepdock" | "colabfold"
+  ) => {
     setBusy(true);
     setError(null);
     setStatus(null);
@@ -316,7 +356,7 @@ export default function EvaluationPage() {
         return;
       }
 
-      const result = await submitEvaluation(smiles, target, isControl);
+      const result = await submitEvaluation(smiles, target, isControl, gridCenter, gridSize, customHotspots, peptideDockingEngine);
       setTaskId(result.task_id);
       setStatus({
         task_id: result.task_id,
@@ -375,12 +415,59 @@ export default function EvaluationPage() {
     }
   };
 
+  if (interfaceMode === "PRO") {
+    return (
+      <ProEvaluation 
+        smiles={smiles}
+        setSmiles={setSmiles}
+        target={target}
+        setTarget={setTarget}
+        targets={targets}
+        loadingTargets={loadingTargets}
+        validation={validation}
+        setValidation={setValidation}
+        taskId={taskId}
+        setTaskId={setTaskId}
+        status={status}
+        setStatus={setStatus}
+        busy={busy}
+        setBusy={setBusy}
+        error={error}
+        setError={setError}
+        isControl={isControl}
+        setIsControl={setIsControl}
+        isSaved={isSaved}
+        setIsSaved={setIsSaved}
+        proteinData={proteinData}
+        poseData={poseData}
+        suggestions={suggestions}
+        loadingSuggestions={loadingSuggestions}
+        handleSave={handleSave}
+        handleCertify={handleCertify}
+        handleDownloadCertificate={handleDownloadCertificate}
+        handleDownloadComplex={handleDownloadComplex}
+        handleValidate={handleValidate}
+        handleSubmit={handleSubmit}
+        handleReset={handleReset}
+        handleUseSuggestion={handleUseSuggestion}
+        startPolling={startPolling}
+        stopPolling={stopPolling}
+        showWalletInput={showWalletInput}
+        setShowWalletInput={setShowWalletInput}
+        customWallet={customWallet}
+        setCustomWallet={setCustomWallet}
+      />
+    );
+  }
+
   return (
     <main className="space-y-6 pb-12">
       <section>
-        <h1 className="text-2xl font-bold text-white">Evaluación molecular</h1>
+        <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          🕹️ Laboratorio Virtual MolDesign AI
+        </h1>
         <p className="mt-1 text-sm text-surface-400">
-          Pipeline: validación (RDKit) → propiedades (SA) → conformer 3D → docking (Vina) → rescoring (ML) → interpretación IA → certificación On-Chain (Solana) | Correlación Certificada
+          Pipeline Científico de 3 Niveles: Validación (RDKit) → Screening (Vina+XGBoost Nivel 1) → Análisis Topológico (GNN Nivel 2) → Refinamiento Físico (OpenMM Nivel 3) → Blockchain (Solana).
         </p>
       </section>
 
@@ -507,7 +594,7 @@ export default function EvaluationPage() {
 
                     {/* Subcategorías (Ej: dentro de Oncología) */}
                     {selectedCategory === "HUMANOS" && activeCategory === "oncologia" && (
-                      <div className="flex gap-2 mt-2 border-t border-surface-800/60 pt-2 animate-in fade-in slide-in-from-top-1">
+                      <div className="grid grid-cols-2 gap-2 mt-2 border-t border-surface-800/60 pt-2 animate-in fade-in slide-in-from-top-1">
                         {[
                           { id: "cancer_mama", name: "Cáncer de Mama", icon: "🎀" },
                           { id: "inmunoterapia", name: "Inmunoterapia", icon: "🛡️" }
@@ -520,14 +607,14 @@ export default function EvaluationPage() {
                               setTarget("");
                             }}
                             disabled={!!taskId && !isTerminal}
-                            className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
+                            className={`w-full flex items-center justify-center gap-1 px-2 py-2 rounded-lg border text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 min-w-0 truncate ${
                               activeSubcategory === sub.id
                                 ? "bg-brand-500/10 border-brand-500/80 text-brand-300"
                                 : "bg-surface-950 border-surface-850 text-surface-400 hover:border-surface-800"
                             }`}
                           >
                             <span>{sub.icon}</span>
-                            <span>{sub.name}</span>
+                            <span className="truncate">{sub.name}</span>
                           </button>
                         ))}
                       </div>
@@ -601,14 +688,14 @@ export default function EvaluationPage() {
                                   type="button"
                                   onClick={() => setTarget(t.pdb_id)}
                                   disabled={!!taskId && !isTerminal}
-                                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all duration-200 ${
+                                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all duration-200 min-w-0 ${
                                     isSelected
                                       ? "bg-brand-500/10 border-brand-500 text-brand-300 shadow-[0_0_12px_rgba(20,241,149,0.12)] font-semibold"
                                       : "bg-surface-950/80 border-surface-850/80 text-surface-300 hover:border-surface-800 hover:bg-surface-950"
                                   }`}
                                 >
-                                  <div className="flex flex-col min-w-0 pr-2">
-                                    <div className="flex items-center gap-1.5">
+                                  <div className="flex flex-col min-w-0 pr-2 overflow-hidden">
+                                    <div className="flex items-center gap-1.5 min-w-0">
                                       <span className="font-mono text-xs text-brand-400 font-bold">{t.pdb_id}</span>
                                       <span className="text-xs truncate">{t.name}</span>
                                     </div>
@@ -729,7 +816,7 @@ export default function EvaluationPage() {
               
               <div className="space-y-1">
                 <button
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit()}
                   disabled={busy || !canEvaluate || (!!taskId && !isTerminal)}
                   className="w-full rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -801,6 +888,7 @@ export default function EvaluationPage() {
               isSaved={isSaved}
               solanaSignature={status.result.blockchain_tx_id}
               onDownloadCertificate={handleDownloadCertificate}
+              onDownloadComplex={handleDownloadComplex}
               isControl={status.result.is_control}
               saScore={status.result.sa_score}
               saReasons={status.result.sa_reasons}
@@ -810,6 +898,7 @@ export default function EvaluationPage() {
               specificity={status.result.specificity_score}
               affinityMultiplier={status.result.affinity_multiplier}
               specificityMultiplier={status.result.specificity_multiplier}
+              gnnScore={status.result.gnn_score}
             />
             
             <div className="flex flex-col gap-5">

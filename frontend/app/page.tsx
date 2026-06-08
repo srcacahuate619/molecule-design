@@ -11,18 +11,20 @@ const PIPELINE_STEPS = [
   { step: 2, icon: "📊", title: "Propiedades", desc: "MW, LogP, TPSA, QED y Accesibilidad Sintética (SA).", detail: "Cálculo de descriptores físico-químicos basados en fragmentos moleculares." },
   { step: 3, icon: "🧬", title: "Conformer 3D", desc: "Generación de estructuras tridimensionales de baja energía.", detail: "Uso del algoritmo ETKDG para obtener la geometría más probable del ligando." },
   { step: 4, icon: "🎯", title: "Docking Físico", desc: "AutoDock Vina contra múltiples receptores (Multi-Target).", detail: "Simulación de fuerzas electrostáticas y de van der Waals en sitios activos calibrados." },
-  { step: 5, icon: "🧠", title: "Rescoring ML", desc: "Corrección de afinidad via Machine Learning.", detail: "Modelo entrenado con 5,000 complejos de PDBbind para reducir falsos positivos." },
-  { step: 6, icon: "📥", title: "Reporte Científico", desc: "Compilación técnica e interacciones clave en PDF de grado clínico.", detail: "Integración automática de docking, afinidad, ADME, hotspots e historial certificado." },
-  { step: 7, icon: "🔗", title: "Blockchain", desc: "Registro inmutable de autoría en la red Solana.", detail: "Certificación permanente del descubrimiento con hash SHA-256 único." },
+  { step: 5, icon: "🧠", title: "Rescoring ML (Nivel 1)", desc: "Corrección de afinidad via XGBoost.", detail: "Modelo entrenado con 5,000 complejos de PDBbind para reducir falsos positivos." },
+  { step: 6, icon: "🕸️", title: "Topología GNN (Nivel 2)", desc: "Red Neuronal de Grafos RTMScore GNN.", detail: "Evaluación continua de interacciones interatómicas y topología para eliminar falsos encajes." },
+  { step: 7, icon: "⚙️", title: "Refinamiento Físico (Nivel 3)", desc: "Relajación cuántica local mediante OpenMM/AMBER.", detail: "Minimización de energía y alivio de choques estéricos en el bolsillo de unión." },
+  { step: 8, icon: "📥", title: "Reporte Científico", desc: "Compilación técnica, descarga de complejos PDB y PDF clínico.", detail: "Integración automática de docking, afinidad, ADME, hotspots e historial certificado." },
+  { step: 9, icon: "🔗", title: "Solana Blockchain", desc: "Registro inmutable de autoría bajo licencia CC0.", detail: "Certificación permanente del descubrimiento con hash SHA-256 único en la blockchain." },
 ];
 
 const TECHNOLOGIES = [
-  { name: "AutoDock Vina", desc: "Docking de precisión", color: "border-blue-500/30 text-blue-400 shadow-blue-500/10", tooltip: "Motor físico estándar de oro para simulación de acoplamiento molecular." },
-  { name: "XGBoost", desc: "Cerebro Espacial ML", color: "border-brand-500/30 text-brand-400 shadow-brand-500/10", tooltip: "Algoritmo de Gradient Boosting para corrección estadística de afinidad." },
+  { name: "AutoDock Vina", desc: "Docking físico", color: "border-blue-500/30 text-blue-400 shadow-blue-500/10", tooltip: "Motor físico estándar de oro para simulación de acoplamiento molecular." },
+  { name: "XGBoost", desc: "ML Rescoring Nivel 1", color: "border-brand-500/30 text-brand-400 shadow-brand-500/10", tooltip: "Algoritmo de Gradient Boosting para corrección estadística de afinidad." },
+  { name: "RTMScore GNN", desc: "Topología Nivel 2", color: "border-purple-500/30 text-purple-400 shadow-purple-500/10", tooltip: "Red neuronal de grafos tridimensional para predicción de pose fina." },
+  { name: "OpenMM / AMBER", desc: "Refinamiento Nivel 3", color: "border-pink-500/30 text-pink-400 shadow-pink-500/10", tooltip: "Mecánica molecular acelerada por GPU para optimización energética." },
   { name: "RDKit", desc: "Quimioinformática", color: "border-emerald-500/30 text-emerald-400 shadow-emerald-500/10", tooltip: "Toolkit profesional para validación y descriptores moleculares." },
   { name: "Solana", desc: "Blockchain Layer-1", color: "border-purple-500/30 text-purple-400 shadow-purple-500/10", tooltip: "Red descentralizada de alta velocidad para registro de propiedad intelectual." },
-  { name: "Claude / Gemini", desc: "IA Generativa", color: "border-indigo-500/30 text-indigo-400 shadow-indigo-500/10", tooltip: "Modelos de lenguaje avanzados para síntesis de resultados científicos." },
-  { name: "3Dmol.js", desc: "Renderizado 3D", color: "border-cyan-500/30 text-cyan-400 shadow-cyan-500/10", tooltip: "Librería de visualización acelerada por WebGL para estructuras PDB." },
 ];
 
 export default function HomePage() {
@@ -256,8 +258,10 @@ export default function HomePage() {
           </div>
           <div className="space-y-4">
             {[
-              { name: "Vina Physics Engine", status: "ONLINE", color: "text-emerald-400" },
-              { name: "XGBoost ML Rescoring", status: "STABLE", color: "text-emerald-400" },
+              { name: "Vina Physics Engine (Nivel 1)", status: "ONLINE", color: "text-emerald-400" },
+              { name: "XGBoost ML Rescoring (Nivel 1)", status: "STABLE", color: "text-emerald-400" },
+              { name: "RTMScore GNN Engine (Nivel 2)", status: "ONLINE", color: "text-emerald-400" },
+              { name: "OpenMM Refinement (Nivel 3)", status: "ONLINE", color: "text-emerald-400" },
               { name: "RDKit Cheminformatics", status: "ONLINE", color: "text-emerald-400" },
               { name: "Solana Node (Devnet)", status: "SYNCED", color: "text-brand-400" },
               { name: "Scientific PDF Generator", status: "ONLINE", color: "text-emerald-400" },
