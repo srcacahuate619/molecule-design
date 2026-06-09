@@ -253,10 +253,12 @@ async def save_molecule(
 ):
     """Marca una molécula como 'guardada' para que aparezca en el listado de Guardado."""
     mol = await db.get(MoleculeORM, molecule_id)
-    if not mol or mol.user_id != current_user.id:
+    if not mol or (mol.user_id is not None and mol.user_id != current_user.id):
         raise HTTPException(status_code=404, detail="Molécula no encontrada")
     
     mol.is_saved = True
+    if mol.user_id is None:
+        mol.user_id = current_user.id
     if name:
         mol.name = name
     await db.commit()

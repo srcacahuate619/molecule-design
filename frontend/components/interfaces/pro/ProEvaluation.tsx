@@ -25,6 +25,7 @@ import AdvancedMolstarViewer from "./AdvancedMolstarViewer";
 import TargetSelectorModal from "./TargetSelectorModal";
 import type { Target } from "../../../lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../../lib/types";
+import { useAuth } from "../../../lib/auth";
 
 interface ProEvaluationProps {
   smiles: string;
@@ -112,7 +113,7 @@ export default function ProEvaluation({
   customWallet,
   setCustomWallet
 }: ProEvaluationProps) {
-  
+  const { user } = useAuth();
   const consoleRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -1095,7 +1096,11 @@ export default function ProEvaluation({
             {/* Action Buttons: Save & On-Chain Certification */}
             {status?.result && (
               <div className="space-y-2 pt-3 border-t border-white/5">
-                {isSaved ? (
+                {!user ? (
+                  <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-3 text-center text-xs text-amber-300">
+                    Para guardar el diseño y certificarlo en Solana, necesitas <a href="/login" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 font-bold">iniciar sesión</a>.
+                  </div>
+                ) : isSaved ? (
                   <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-3 text-center text-xs font-bold text-emerald-400">
                     ¡Complejo guardado exitosamente en tu Moldex!
                   </div>

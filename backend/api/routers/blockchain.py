@@ -114,9 +114,10 @@ async def certify_molecule(
             .values(blockchain_tx_id=signature)
         )
         await db.execute(stmt_update)
-        
-        # Ensure current molecule is marked as saved
+        # Ensure current molecule is marked as saved and owned by the user
         mol.is_saved = True
+        if mol.user_id is None:
+            mol.user_id = current_user.id
         
         await db.commit()
 
