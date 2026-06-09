@@ -15,15 +15,45 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
   const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
   
   useEffect(() => {
-    fetch(`${API_URL}/chem/render/${molecule.id}`, {
-      headers: { "ngrok-skip-browser-warning": "true" }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Image fetch failed");
-      return res.blob();
-    })
-    .then(blob => setImgSrc(URL.createObjectURL(blob)))
-    .catch(() => setImgSrc(""));
+    let active = true;
+    let url: string | undefined = undefined;
+
+    const headers: Record<string, string> = {
+      "ngrok-skip-browser-warning": "true"
+    };
+    try {
+      const stored = localStorage.getItem("moldesign_auth");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.token) {
+          headers["Authorization"] = `Bearer ${parsed.token}`;
+        }
+      }
+    } catch (e) {}
+
+    fetch(`${API_URL}/chem/render/${molecule.id}`, { headers })
+      .then(res => {
+        if (!res.ok) throw new Error("Image fetch failed");
+        return res.blob();
+      })
+      .then(blob => {
+        if (active) {
+          url = URL.createObjectURL(blob);
+          setImgSrc(url);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setImgSrc("");
+        }
+      });
+
+    return () => {
+      active = false;
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
   }, [molecule.id]);
 
   const getQualityColor = (score: number) => {
@@ -74,16 +104,21 @@ const MoldexCard: React.FC<MoldexCardProps> = ({ molecule, onClick, isSelected, 
 
       <div className="mb-4 flex h-32 items-center justify-center rounded-xl bg-white p-4 shadow-inner relative overflow-hidden group/img">
         {/* Render 2D de la molécula real */}
-        <img 
-          src={imgSrc || `${API_URL}/chem/render/${molecule.id}`}
-          alt={molecule.name}
-          className="h-full w-auto object-contain transition-transform duration-500 group-hover/img:scale-110"
-          loading="lazy"
-          onError={(e) => {
-            // Fallback en caso de error de renderizado
-            (e.target as any).style.display = 'none';
-          }}
-        />
+        {imgSrc ? (
+          <img 
+            src={imgSrc}
+            alt={molecule.name}
+            className="h-full w-auto object-contain transition-transform duration-500 group-hover/img:scale-110"
+            loading="lazy"
+          />
+        ) : imgSrc === undefined ? (
+          <div className="flex flex-col items-center justify-center gap-1.5">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Generando 2D...</span>
+          </div>
+        ) : (
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sin Vista Previa</div>
+        )}
         
         <div className="absolute bottom-2 right-2 bg-slate-900/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-mono font-bold text-slate-300 border border-slate-700/50 shadow-sm">
           {targetBasedName}
