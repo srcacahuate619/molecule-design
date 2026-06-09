@@ -70,13 +70,51 @@ async def ingest_target(
     summary="Listar todos los targets biológicos disponibles",
 )
 async def list_targets(db: AsyncSession = Depends(get_db)) -> list[Target]:
+    import os
+    from utils.structural import get_residue_coordinates
+
     repo = Repository(db)
     targets = await repo.get_all_targets()
     # Ensure default target is seeded if empty
     if not targets:
         await repo.ensure_default_target()
         targets = await repo.get_all_targets()
-    return [Target.model_validate(t) for t in targets]
+    
+    enriched_targets = []
+    for t in targets:
+        t_schema = Target.model_validate(t)
+        
+        # Enriquecer hotspots con coordenadas si el PDB existe
+        if t_schema.hotspots:
+            # Ruta de producción en Docker
+            pdb_path = f"/data/targets/{t.pdb_id}.pdb"
+            
+            # Rutas de desarrollo locales alternativas
+            if not os.path.exists(pdb_path):
+                base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+                pdb_path = os.path.join(base_dir, f"{t.pdb_id.lower()}.pdb")
+                if not os.path.exists(pdb_path):
+                    pdb_path = os.path.join(base_dir, f"{t.pdb_id.upper()}.pdb")
+                if not os.path.exists(pdb_path):
+                    pdb_path = os.path.join(base_dir, "data", "targets", f"{t.pdb_id}.pdb")
+            
+            if os.path.exists(pdb_path):
+                h_names = [h.get("name") for h in t_schema.hotspots if h.get("name")]
+                coords_map = get_residue_coordinates(pdb_path, h_names)
+                for h in t_schema.hotspots:
+                    name = h.get("name")
+                    lookup_name = name.upper() if name else ""
+                    if ":" in lookup_name:
+                        lookup_name = lookup_name.split(":")[-1]
+                    
+                    if lookup_name in coords_map:
+                        h["x"] = round(coords_map[lookup_name][0], 2)
+                        h["y"] = round(coords_map[lookup_name][1], 2)
+                        h["z"] = round(coords_map[lookup_name][2], 2)
+                        
+        enriched_targets.append(t_schema)
+        
+    return enriched_targets
 
 
 class AlphaFoldLookupRequest(BaseModel):

@@ -73,6 +73,10 @@ async def _run_full_evaluation_async(
     molecule_name: str | None = None,
     is_control: bool = False,
     user_id: str | None = None,
+    grid_center: tuple[float, float, float] | None = None,
+    grid_size: tuple[float, float, float] | None = None,
+    custom_hotspots: list[str] | None = None,
+    peptide_docking_engine: str | None = "diffpepdock",
 ) -> dict[str, Any]:
     async with get_db_session() as db:
         repository = Repository(db)
@@ -128,44 +132,211 @@ async def _run_full_evaluation_async(
                 celery_task_id=task_id,
             )
 
-            await cache.set_job_progress(task_id, 20, "conformer")
-            conformer = await generate_conformer(smiles)
-            log.info({
-                "event": "conformer listo para docking",
-                "conformer_path": conformer["conformer_path"]
-            })
+            # Pre-calcular hotspots en scope
+            box_center = tuple(grid_center) if grid_center is not None else (target.grid_center_x, target.grid_center_y, target.grid_center_z)
+            box_size = tuple(grid_size) if grid_size is not None else (target.grid_size_x, target.grid_size_y, target.grid_size_z)
 
-            await repository.set_molecule_status(molecule.id, MoleculeStatus.DOCKING)
-            await cache.set_job_progress(task_id, 55, "docking")
-            docking = await run_vina_docking(
-                smiles_hash=molecule.smiles_hash,
-                target_pdb_id=target.pdb_id,
-                target_chain=target.chain,
-                target_center=(target.grid_center_x, target.grid_center_y, target.grid_center_z),
-                target_size=(target.grid_size_x, target.grid_size_y, target.grid_size_z),
-                hotspots=target.hotspots,
-            )
+            active_hotspots = target.hotspots
+            if custom_hotspots is not None:
+                target_hotspots_map = {h.get("name"): h.get("importance", 1.0) for h in (target.hotspots or [])}
+                active_hotspots = [
+                    {"name": h_name, "importance": target_hotspots_map.get(h_name, 1.0)}
+                    for h_name in custom_hotspots
+                ]
+
+            # Detección autónoma de tipo de molécula (péptido o organometálica)
+            is_peptide = False
+            is_organometallic = False
+            metals_in_mol = set()
+            
+            try:
+                from rdkit import Chem
+                mol = Chem.MolFromSmiles(smiles)
+                if mol:
+                    # Contar enlaces amida C(=O)N
+                    amide_pat = Chem.MolFromSmarts("C(=O)N")
+                    amide_count = len(mol.GetSubstructMatches(amide_pat))
+                    is_peptide = (properties.molecular_weight > 1000 or properties.rotatable_bonds > 32 or amide_count >= 3)
+                    
+                    # Detectar metales
+                    metals_in_mol = {atom.GetSymbol() for atom in mol.GetAtoms()} & {
+                        "Fe", "Cu", "Zn", "Mn", "Co", "Ni", "Cr", "V", "Ti", "Mo", "W", "Pt"
+                    }
+                    is_organometallic = len(metals_in_mol) > 0
+            except Exception as e:
+                log.warning("Fallo al inspeccionar tipo de molécula", error=str(e))
+
+            scientific_warnings = []
+            docking = None
+
+            # Nivel 3: Docking Peptídico Autónomo
+            if is_peptide:
+                log.info({"event": "routing_to_level_3_peptide", "molecule_id": str(molecule.id), "engine": peptide_docking_engine})
+                await cache.set_job_progress(task_id, 40, "peptide_folding")
+                
+                from utils.file_handlers import StoragePath, download_pdb_from_rcsb, download_text, object_exists, upload_text
+                raw_path = StoragePath.target_raw(target.pdb_id)
+                
+                temp_pdb_path = ""
+                try:
+                    if await object_exists(raw_path):
+                        pdb_content = await download_text(raw_path)
+                    else:
+                        pdb_content = await download_pdb_from_rcsb(target.pdb_id)
+                        await upload_text(pdb_content, raw_path)
+                    
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(suffix=".pdb", delete=False, mode="w", encoding="utf-8") as temp_pdb:
+                        temp_pdb.write(pdb_content)
+                        temp_pdb_path = temp_pdb.name
+                except Exception as e:
+                    log.warning("No se pudo preparar PDB temporal del target para Nivel 3", error=str(e))
+
+                ml_res = None
+                try:
+                    if peptide_docking_engine == "colabfold" and temp_pdb_path:
+                        from services.colabfold.service import get_colabfold_service
+                        ml_res = await get_colabfold_service().predict(temp_pdb_path, smiles)
+                    elif temp_pdb_path:
+                        from services.diffpepdock.service import get_diffpepdock_service
+                        ml_res = await get_diffpepdock_service().predict(
+                            temp_pdb_path, smiles, grid_center=grid_center, grid_size=grid_size
+                        )
+                finally:
+                    # [FIX #2] Limpiar el archivo temporal del disco para evitar leak de espacio
+                    if temp_pdb_path:
+                        import os
+                        try:
+                            os.unlink(temp_pdb_path)
+                        except OSError:
+                            pass
+
+                if ml_res and ml_res.success and ml_res.poses:
+                    log.info("Predicción de Nivel 3 completada con éxito")
+                    from rdkit import Chem
+                    from chem.conformer import _mol_to_sdf_string
+                    from utils.refinement import refine_receptor_peptide_complex
+                    from core.config import get_settings
+                    
+                    settings = get_settings()
+                    sdf_parts = []
+                    for p in ml_res.poses:
+                        # Refinamiento estructural con restricciones.
+                        # [FIX #4] ColabFoldPose usa 'complex_pdb', DiffPepDockPose usa 'ligand_pdb'.
+                        # getattr con fallback garantiza compatibilidad con ambos tipos de resultado.
+                        peptide_pdb = getattr(p, "ligand_pdb", None) or getattr(p, "complex_pdb", "")
+                        if settings.peptide_refinement_enabled and pdb_content:
+                            try:
+                                peptide_pdb = refine_receptor_peptide_complex(pdb_content, peptide_pdb)
+                            except Exception as re_err:
+                                log.warning("Fallo inesperado al llamar refine_receptor_peptide_complex", error=str(re_err))
+
+                        mol_pep = Chem.MolFromPDBBlock(peptide_pdb, sanitize=False)
+                        if mol_pep:
+                            try:
+                                Chem.SanitizeMol(mol_pep)
+                            except Exception:
+                                pass
+                            mol_pep.SetProp("SMILES", smiles)
+                            mol_pep.SetProp("_Name", f"Pose_{p.rank}")
+                            sdf_parts.append(_mol_to_sdf_string(mol_pep, smiles))
+                    
+                    sdf_content = "".join(sdf_parts)
+                    poses_path = StoragePath.docking_poses(molecule.smiles_hash, target.pdb_id)
+                    await upload_text(sdf_content, poses_path)
+                    
+                    if peptide_docking_engine == "colabfold":
+                        best_affinity = -10.0 * (ml_res.best_iptm if ml_res.best_iptm is not None else 0.7)
+                        scientific_warnings.append(
+                            f"Modo Docking Peptídico Activo (ColabFold): Complejo plegado de novo. "
+                            f"Confianza de interfaz (ipTM): {ml_res.best_iptm:.2f}, pLDDT medio: {ml_res.best_plddt:.1f}."
+                        )
+                    else:
+                        conf = ml_res.best_confidence if ml_res.best_confidence is not None else 4.0
+                        best_affinity = max(-12.0, min(-4.0, -1.5 * conf))
+                        scientific_warnings.append(
+                            f"Modo Docking Peptídico Activo (DiffPepDock): Poses de acoplamiento generadas por difusión. "
+                            f"Confianza del modelo: {conf:.2f}."
+                        )
+                    
+                    from core.models import DockingPose, DockingResult
+                    poses = []
+                    for i, p in enumerate(ml_res.poses):
+                        aff = best_affinity + (i * 0.5)
+                        poses.append(DockingPose(rank=p.rank, affinity=aff, rmsd_lb=p.rmsd if p.rmsd else 0.0, rmsd_ub=p.rmsd if p.rmsd else 0.0))
+                    
+                    docking = DockingResult(
+                        best_affinity=best_affinity,
+                        poses=poses,
+                        poses_file_path=poses_path,
+                        parsing_source="sdf",
+                        vina_version=f"{peptide_docking_engine.upper()}-v1.0",
+                        vina_random_seed=42,
+                        scientific_warnings=scientific_warnings,
+                    )
+                else:
+                    msg = ml_res.error if ml_res else "Sin respuesta del servicio"
+                    log.warning("Fallo en Nivel 3, cayendo a Vina estándar", error=msg)
+                    scientific_warnings.append(f"Fallo en Docking Peptídico ({msg}). Se usó AutoDock Vina como fallback.")
+
+            # Nivel 4: Detección de compuestos organometálicos
+            # [FIX] El warning anterior implicaba que xtb+AD4 estaban corriendo.
+            # Honestidad: los detectamos, pero actualmente corremos Vina como aproximación.
+            # AD4 + cargas GFN2-xTB está planificado para una versión futura.
+            if is_organometallic and not is_peptide:
+                log.info({"event": "metal_detected_vina_fallback", "molecule_id": str(molecule.id), "metals": list(metals_in_mol)})
+                scientific_warnings.append(
+                    f"⚠️ Metales de transición detectados: {list(metals_in_mol)}. "
+                    "Se usa AutoDock Vina como aproximación. "
+                    "El docking cuántico con GFN2-xTB + AutoDock 4 está en desarrollo "
+                    "y se activará automáticamente en una versión futura. "
+                    "Los resultados de afinidad pueden ser menos precisos para compuestos de coordinación."
+                )
+
+            # Si no se ejecutó Nivel 3, corremos Vina de forma estándar
+            if docking is None:
+                await cache.set_job_progress(task_id, 20, "conformer")
+                conformer = await generate_conformer(smiles)
+                log.info({
+                    "event": "conformer listo para docking",
+                    "conformer_path": conformer["conformer_path"]
+                })
+
+                await repository.set_molecule_status(molecule.id, MoleculeStatus.DOCKING)
+                await cache.set_job_progress(task_id, 55, "docking")
+
+                docking = await run_vina_docking(
+                    smiles_hash=molecule.smiles_hash,
+                    target_pdb_id=target.pdb_id,
+                    target_chain=target.chain,
+                    target_center=box_center,
+                    target_size=box_size,
+                    hotspots=active_hotspots,
+                )
+                
+                # Unir advertencias si existen
+                if scientific_warnings:
+                    docking.scientific_warnings.extend(scientific_warnings)
 
             await cache.set_job_progress(task_id, 80, "scoring")
             
-            # --- [NUEVO PASO] ML Rescoring Correction ---
-            # Intentamos corregir el score de Vina con el "Cerebro Espacial" (XGBoost)
+            # --- [NUEVO PASO] ML Rescoring Correction + GNN (Nivel 2) ---
+            # Paso 1: XGBoost rescoring corrige la afinidad de Vina.
+            # Paso 2: RTMScore GNN evalúa la geometría continua de la pose.
+            gnn_score_value: float | None = None
             try:
-                # El microservicio necesita los bloques PDBQT de las poses
-                # docking.poses ya contiene los datos necesarios
                 ml_result = await get_ml_rescore(
                     smiles=smiles,
                     target_pdb_path=f"/data/targets/{target.pdb_id}.pdb",
                     poses=[p.model_dump() for p in docking.poses],
                     properties=properties,
-                    grid_center=[target.grid_center_x, target.grid_center_y, target.grid_center_z],
-                    grid_size=[target.grid_size_x, target.grid_size_y, target.grid_size_z]
+                    grid_center=list(box_center),
+                    grid_size=list(box_size),
+                    run_gnn=True,  # [FIX] Activa RTMScore GNN (Nivel 2)
                 )
-                
+
                 if not ml_result.get("fallback"):
-                    # El modelo devuelve pKi (score_a). 
-                    # Convertimos pKi a kcal/mol para inyectarlo en el normalizador.
-                    # DeltaG = -1.36 * pKi (aprox a 300K)
+                    # --- XGBoost: corregir afinidad ---
                     pki_a = ml_result.get("score_a", 0.0)
                     if pki_a > 0:
                         corrected_kcal = -1.36 * pki_a
@@ -175,20 +346,35 @@ async def _run_full_evaluation_async(
                             "ml_pki": pki_a,
                             "ml_kcal_equivalent": corrected_kcal
                         })
-                        # Inyectamos la afinidad corregida
                         docking.best_affinity = corrected_kcal
-                        # También guardamos warnings científicos del modelo si los hay
-                        if ml_result.get("warnings"):
-                            docking.scientific_warnings.extend(ml_result["warnings"])
+
+                    # --- GNN: capturar score geométrico ---
+                    raw_gnn = ml_result.get("gnn_score")
+                    if raw_gnn is not None:
+                        gnn_score_value = float(raw_gnn)
+                        log.info({
+                            "event": "gnn_score_captured",
+                            "gnn_score": gnn_score_value,
+                        })
+
+                    # Warnings científicos del microservicio
+                    if ml_result.get("warnings"):
+                        docking.scientific_warnings.extend(ml_result["warnings"])
+
             except Exception as ml_err:
                 log.warning({"event": "ml_rescoring_skipped", "error": str(ml_err)})
 
+            # Leer specificity_floor del target (default 0.5 si no existe en DB)
+            target_specificity_floor = getattr(target, "specificity_floor", None) or 0.5
+
             breakdown = calculate_score_breakdown(
-                docking, 
-                properties, 
+                docking,
+                properties,
                 is_control=is_control,
-                target_hotspots=target.hotspots,
-                affinity_threshold=target.affinity_threshold if target.affinity_threshold is not None else -7.5
+                target_hotspots=active_hotspots,
+                affinity_threshold=target.affinity_threshold if target.affinity_threshold is not None else -7.5,
+                specificity_floor=target_specificity_floor,
+                gnn_score=gnn_score_value,
             )
 
             # --- [NUEVO] Programar limpieza automática si el score es bajo (Umbral ajustado a 50 para conservación) ---
@@ -201,7 +387,7 @@ async def _run_full_evaluation_async(
                 heavy_atom_count=properties.heavy_atom_count,
                 log_p=properties.log_p,
                 docking_poses=[p.model_dump() for p in docking.poses],
-                hotspots=target.hotspots,
+                hotspots=active_hotspots,
                 hotspots_hit=docking.hotspots_hit
             )
             # Combinamos advertencias técnicas con las científicas de valor añadido
@@ -211,7 +397,10 @@ async def _run_full_evaluation_async(
                 molecule_id=molecule.id,
                 properties=properties,
                 docking=docking,
-                scores=breakdown.model_dump(),
+                scores={
+                    **breakdown.model_dump(),
+                    "gnn_score": gnn_score_value,  # persistir en DB
+                },
                 is_control=is_control,
                 celery_task_id=task_id,
             )
@@ -324,6 +513,10 @@ def run_full_evaluation(
     molecule_name: str | None = None,
     is_control: bool = False,
     user_id: str | None = None,
+    grid_center: tuple[float, float, float] | None = None,
+    grid_size: tuple[float, float, float] | None = None,
+    custom_hotspots: list[str] | None = None,
+    peptide_docking_engine: str | None = "diffpepdock",
 ) -> dict[str, Any]:
     """
     Celery task que ejecuta el pipeline completo de evaluación.
@@ -339,6 +532,10 @@ def run_full_evaluation(
         molecule_name=molecule_name,
         is_control=is_control,
         user_id=user_id,
+        grid_center=grid_center,
+        grid_size=grid_size,
+        custom_hotspots=custom_hotspots,
+        peptide_docking_engine=peptide_docking_engine,
     ))
 
 
@@ -348,8 +545,22 @@ def submit_evaluation_job(
     molecule_name: str | None = None,
     is_control: bool = False,
     user_id: str | None = None,
+    grid_center: tuple[float, float, float] | None = None,
+    grid_size: tuple[float, float, float] | None = None,
+    custom_hotspots: list[str] | None = None,
+    peptide_docking_engine: str | None = "diffpepdock",
 ):
-    return run_full_evaluation.delay(smiles=smiles, target_pdb_id=target_pdb_id, molecule_name=molecule_name, is_control=is_control, user_id=user_id)
+    return run_full_evaluation.delay(
+        smiles=smiles,
+        target_pdb_id=target_pdb_id,
+        molecule_name=molecule_name,
+        is_control=is_control,
+        user_id=user_id,
+        grid_center=grid_center,
+        grid_size=grid_size,
+        custom_hotspots=custom_hotspots,
+        peptide_docking_engine=peptide_docking_engine,
+    )
 
 
 async def get_job_status(task_id: str) -> JobStatus:

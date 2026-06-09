@@ -1,10 +1,10 @@
-# Arquitectura de Moldex (formerly MolDesign) 🏗️🌐
+# Arquitectura de MolDesign AI (con el módulo interno Moldex) 🏗️🌐
 
-Este documento describe la arquitectura técnica, el flujo de datos y las decisiones de diseño del ecosistema Moldex.
+Este documento describe la arquitectura técnica, el flujo de datos y las decisiones de diseño del ecosistema MolDesign AI.
 
-## 1. Pipeline End-to-End (E2E) v5.2
+## 1. Pipeline End-to-End (E2E) v6.3
 
-El motor de Moldex sigue un flujo lineal pero altamente validado para transformar un SMILES en un reporte científico certificado con auditoría profunda.
+El motor de MolDesign AI sigue un flujo lineal pero altamente validado para transformar un SMILES en un reporte científico certificado con auditoría profunda.
 
 ```mermaid
 graph TD
@@ -17,7 +17,10 @@ graph TD
     G --> H[Docking AutoDock Vina]
     H --> I[Pose Quality Filter]
     I --> J[ML Rescoring XGBoost]
-    J --> K[Auditoría Científica: LE, LLE & Hotspots]
+    J --> JO{¿Activar Nivel 2 GNN?}
+    JO -- Sí --> JP[Nivel 2 GNN: GNN RTMScore]
+    JO -- No --> K[Auditoría Científica: LE, LLE & Hotspots]
+    JP --> K
     K --> L[Filtro 'Potency Floor' vs Target Threshold]
     L --> M[Scoring Compuesto Final]
     M --> N[AI Report & Certificación Solana]
@@ -25,15 +28,16 @@ graph TD
 
 ## 2. Microservicio de ML Rescoring
 
-Debido a los requisitos científicos (ODDT, ProLIF, XGBoost), el rescoring opera en un microservicio dedicado (contenedor `rescoring`).
+Debido a los requisitos científicos (ODDT, ProLIF, XGBoost, PyTorch, DGL), el rescoring opera en un microservicio dedicado (contenedor `rescoring`).
 
 ### Pipeline de Rescoring Interno
 1.  **Pose Quality Filter**: 3 checks binarios (Contención en grid, contacto proteína-ligando < 4Å, enterramiento de átomos).
-2.  **Feature Extraction**: Extracción de 176 descriptores (interacciones 3D, shell counts, ECIF-lite).
+2.  **Feature Extraction**: Extracción de 1200 descriptores en v4 (interacciones 3D, shell counts, ECIF-lite, Morgan FPs).
 3.  **Modelo A (Ranking)**: Predicción del score de ranking basada en interacciones específicas.
 4.  **Modelo NULL (Control)**: Predicción basada SOLO en propiedades 1D/2D para detectar sesgo de ligando.
 5.  **Delta de Especificidad**: `Score_A - Score_NULL`. Mide cuánto de la afinidad es debida al encaje geométrico real.
-6.  **Hotspot Matching**: Identificación de contactos con residuos críticos biológicos (Threshold 5.0Å).
+6.  **Nivel 2 GNN RTMScore**: Inferencia profunda basada en grafos utilizando un Residue-Atom Graph Transformer y predicción de densidad de distancias GMM en el bolsillo.
+7.  **Hotspot Matching**: Identificación de contactos con residuos críticos biológicos (Threshold 5.0Å).
 - **Dominio de Aplicabilidad (Mahalanobis)**: Check automático de si la molécula es similar a los datos de entrenamiento (PDBbind). Si es demasiado exótica, el sistema degrada la confianza del ML para evitar la extrapolación ciega.
 - **Interpretación por Likelihood Ratios (LR)**: En lugar de dar un número frío, el sistema comunica cuánto más probable es encontrar actividad real dado el score obtenido (basado en el panel de calibración de 40 compuestos).
 

@@ -417,10 +417,12 @@ class Repository:
         if existing is not None:
             return existing
 
+        from api.routers.auth import _hash_password
+        
         user = UserORM(
             email="demo@moldesign.local",
             username="demo",
-            hashed_password="mvp-bootstrap-user",
+            hashed_password=_hash_password("demo123"),
             is_active=True,
         )
         self.db.add(user)
@@ -644,6 +646,7 @@ class Repository:
             result.adme_score = safe_float(scores.get("adme_score"))
             result.druglikeness_score = safe_float(scores.get("druglikeness_score"))
             result.total_score = safe_float(scores.get("total_score"))
+            result.gnn_score = safe_float(scores.get("gnn_score"))  # RTMScore GNN (Nivel 2)
             result.specificity_score = safe_float(scores.get("specificity_score"))
             result.ligand_efficiency = safe_float(scores.get("ligand_efficiency"))
             result.ligand_lipophilicity_efficiency = safe_float(scores.get("lipophilic_efficiency"))

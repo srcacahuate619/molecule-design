@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 
 from rdkit import Chem
 from rdkit import RDLogger
-from rdkit.Chem import Descriptors, rdMolDescriptors
+from rdkit.Chem import Descriptors, rdMolDescriptors, SaltRemover
 from rdkit.Chem.rdchem import Mol
 
 from core.config import get_settings
@@ -313,6 +313,68 @@ def _check_fragments(state: _ValidationState) -> None:
             "para la evaluación."
         )
 
+def _desalinate_and_clean_fragments(state: _ValidationState) -> None:
+    """
+    Realiza la desalinización automática (contraion stripping) y
+    selección del fragmento principal (en caso de mezclas o solventes).
+    """
+    if state.mol is None or not state.is_valid:
+        return
+
+    # 1. Aplicar SaltRemover de RDKit
+    try:
+        remover = SaltRemover.SaltRemover()
+        stripped = remover.StripMol(state.mol)
+    except Exception as e:
+        log.warning("Error en SaltRemover, continuando con la molécula original", error=str(e))
+        stripped = state.mol
+
+    # Si se removió todo (ej. entrada era solo sal/contraiones inorgánicos),
+    # conservar la molécula original para que los siguientes validadores reporten el error apropiadamente
+    if stripped is None or stripped.GetNumAtoms() == 0:
+        stripped = state.mol
+
+    # Verificar si hubo cambios por desalinización
+    was_desalinated = stripped.GetNumAtoms() < state.mol.GetNumAtoms()
+
+    # 2. Manejar múltiples fragmentos si quedan después de la desalinización
+    fragments = Chem.GetMolFrags(stripped, asMols=True)
+    if len(fragments) > 1:
+        if settings.strict_single_fragment_only:
+            state.add_error(
+                f"La molécula contiene {len(fragments)} fragmentos desconectados. "
+                "En modo científico estricto se rechazan sales/mezclas para evitar "
+                "ambigüedad en docking y scoring."
+            )
+            return
+
+        # Seleccionar el fragmento más grande por número de átomos pesados
+        largest = max(fragments, key=lambda m: m.GetNumHeavyAtoms())
+        
+        # Verificar si la desalinización ocurrió y reportar advertencias
+        if was_desalinated:
+            state.add_warning(
+                "La molécula contiene contraiones/sales que fueron removidos automáticamente. "
+                f"Adicionalmente, se detectaron múltiples fragmentos y se seleccionó el fragmento orgánico más grande "
+                f"de {largest.GetNumHeavyAtoms()} átomos pesados."
+            )
+        else:
+            state.add_warning(
+                f"La molécula contiene {len(fragments)} fragmentos desconectados (posiblemente una sal o mezcla). "
+                f"Se seleccionó el fragmento más grande de {largest.GetNumHeavyAtoms()} átomos pesados "
+                "para la evaluación."
+            )
+        state.mol = largest
+    else:
+        if was_desalinated:
+            state.add_warning(
+                "La molécula contiene contraiones/sales que fueron removidos automáticamente (desalinización)."
+            )
+        state.mol = stripped
+
+    # Actualizar el heavy atom count inicial
+    state.heavy_atom_count = state.mol.GetNumHeavyAtoms()
+
 
 def _canonicalize(state: _ValidationState) -> None:
     """
@@ -377,12 +439,14 @@ def validate_smiles(smiles: str) -> ValidationResult:
 
     # Los pasos siguientes solo corren si el parseo fue exitoso
     if state.is_valid and state.mol is not None:
-        _check_atoms(state)
-        _check_chemical_plausibility(state)
-        _check_size(state)
-        _check_molecular_weight(state)
-        _check_fragments(state)
-        _canonicalize(state)
+        _desalinate_and_clean_fragments(state)
+        if state.is_valid and state.mol is not None:
+            _check_atoms(state)
+            _check_chemical_plausibility(state)
+            _check_size(state)
+            _check_molecular_weight(state)
+            _check_fragments(state)
+            _canonicalize(state)
 
     result = ValidationResult(
         is_valid=state.is_valid,

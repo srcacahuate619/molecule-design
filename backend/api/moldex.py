@@ -56,6 +56,7 @@ async def get_moldex(
                 "mw": res.molecular_weight,
                 "tpsa": res.tpsa,
                 "score": res.total_score,
+                "gnn_score": res.gnn_score,
                 "lipinski_pass": res.lipinski_pass,
                 "veber_pass": res.veber_pass,
             },

@@ -37,7 +37,7 @@ La plataforma sigue una política de **"Registro para Conservar"**:
 
 - **Acceso Anónimo**: Los usuarios no registrados comparten la cuenta técnica `demo`. 
 - **Restricción de Guardado**: Los anónimos no pueden marcar moléculas como `is_saved`. Esto previene que la cuenta demo se sature con miles de moléculas de diferentes usuarios.
-- **Consecuencia**: Todas las evaluaciones de usuarios anónimos con score `< 60` desaparecerán tras 1 hora. Solo los "Hits" excepcionales (> 60) permanecerán visibles en el Moldex global.
+- **Consecuencia**: Todas las evaluaciones de usuarios anónimos con score `< 60` desaparecerán tras 1 hora. Solo los "Hits" excepcionales (> 60) permanecerán visibles en el Bioteca Moldex global.
 
 ## 4. Integridad Referencial
 El sistema utiliza borrado en cascada (`ON DELETE CASCADE`) a nivel de base de datos. Al eliminar una molécula, se eliminan automáticamente:

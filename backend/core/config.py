@@ -143,6 +143,29 @@ class Settings(BaseSettings):
                     "DiffDock es opcional y su ausencia nunca bloquea el pipeline.",
     )
 
+    diffpepdock_api_url: str | None = Field(
+        default=None,
+        description="URL del servidor DiffPepDock para docking de péptidos (Nivel 3).",
+    )
+
+    colabfold_api_url: str | None = Field(
+        default=None,
+        description="URL del servidor ColabFold/AlphaFold-Multimer para docking de péptidos (Nivel 3).",
+    )
+
+    peptide_refinement_enabled: bool = Field(
+        default=True,
+        description="Flag para activar/desactivar la minimización y refinamiento post-docking en Nivel 3."
+    )
+
+    diffpepdock_prior_weight: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Fuerza del sesgo del sitio activo en DiffPepDock (1.0 = enfocado, 0.0 = ciego)."
+    )
+
+
     # ── RDKit / Química ──────────────────────────────────────────────────────
 
     # Límites de validación molecular.
@@ -225,6 +248,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = Field(default=60, ge=5)
     jwt_refresh_token_expire_days: int = Field(default=7, ge=1)
+    
+    # ── Rate Limiting ────────────────────────────────────────────────────────
+    anonymous_rate_limit: int = Field(
+        default=2, 
+        description="Límite de evaluaciones gratuitas permitidas para usuarios anónimos por IP."
+    )
 
     # ── CORS ─────────────────────────────────────────────────────────────────
 
@@ -234,6 +263,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:5173",
+        "http://192.168.1.64:3000",
+        "http://192.168.1.64:3001",
         "https://molecule-design.vercel.app"
     ]
 

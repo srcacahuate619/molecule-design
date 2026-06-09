@@ -12,6 +12,7 @@ El resultado es una métrica de priorización basada en estándares de la indust
 
 from __future__ import annotations
 
+import math
 import uuid
 from typing import Any
 
@@ -78,8 +79,18 @@ def calculate_score_breakdown(
     is_control: bool = False,
     target_hotspots: list[dict] | None = None,
     affinity_threshold: float = -7.5,
+    specificity_floor: float = 0.5,
+    gnn_score: float | None = None,
 ) -> ScoreBreakdown:
-    """Calcula el breakdown completo del score para una evaluación."""
+    """Calcula el breakdown completo del score para una evaluación.
+
+    Args:
+        gnn_score: Score de RTMScore GNN (Nivel 2). Si es None, no se aplica
+                   el factor de corrección geométrica continua.
+        specificity_floor: Mínimo del multiplier de especificidad (configurable
+                           por target). Default 0.5; targets con hotspots muy
+                           conocidos pueden bajar a 0.1 para mayor penalización.
+    """
     
     # Afinidad ahora evalúa Ligand Efficiency (LE) y Lipophilic Efficiency (LLE)
     affinity_score = normalize_affinity(
@@ -111,9 +122,11 @@ def calculate_score_breakdown(
         if total_importance > 0:
             specificity_score = (hits_importance / total_importance) * 100
         
-        # El multiplicador reduce el score final si la especificidad es baja.
-        # Rango: 0.5 (si hit=0) a 1.0 (si hit=total).
-        specificity_multiplier = 0.5 + (0.5 * specificity_score / 100.0)
+        # El multiplicador usa el specificity_floor configurable por target.
+        # Floor=0.5 (default): si no hay hits, el score baja 50%.
+        # Floor=0.1: targets con hotspots críticos bien conocidos penalizan mucho más.
+        specificity_floor = max(0.1, min(0.9, specificity_floor))  # clamp defensivo
+        specificity_multiplier = specificity_floor + ((1.0 - specificity_floor) * specificity_score / 100.0)
 
     # El score físico es esencialmente el QED ponderado
     physico_score = (adme_score * settings.score_weight_adme) + (druglikeness_score * settings.score_weight_druglikeness)
@@ -134,7 +147,24 @@ def calculate_score_breakdown(
     else:
         # El score base se multiplica por la especificidad
         base_score = (affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
-        total_score = clamp_score(base_score * specificity_multiplier)
+        base_score_with_specificity = base_score * specificity_multiplier
+
+        # --- [NUEVO] Factor GNN (RTMScore Nivel 2) ---
+        # El GNN devuelve la suma de probabilidades GMM: un valor alto = buena
+        # geometría de pose, bajo = clash estérico. Lo normalizamos a un factor
+        # multiplicador en [0.7, 1.15] para no distorsionar el rango 0-100.
+        # - Si gnn_score es None (GNN no disponible), factor = 1.0 (sin efecto)
+        # - Si gnn_score > ~50, ampliación leve (geometría excelente)
+        # - Si gnn_score < ~5, penalización moderada (poses con clashes)
+        if gnn_score is not None:
+            # Sigmoide centrada en 20.0 (valor típico de una pose correcta)
+            raw_factor = 1.0 / (1.0 + math.exp(-0.05 * (gnn_score - 20.0)))
+            # Mapear [0, 1] → [0.7, 1.15]
+            gnn_factor = 0.7 + (raw_factor * 0.45)
+        else:
+            gnn_factor = 1.0
+
+        total_score = clamp_score(base_score_with_specificity * gnn_factor)
 
     strongest, weakest = _pick_dimensions(
         affinity_score,
@@ -151,6 +181,7 @@ def calculate_score_breakdown(
         adme_score=adme_score,
         druglikeness_score=druglikeness_score,
         total_score=total_score,
+        gnn_score=round(gnn_score, 4) if gnn_score is not None else None,
         specificity_score=specificity_score,
         ligand_efficiency=le_raw,
         lipophilic_efficiency=lle_raw,

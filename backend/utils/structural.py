@@ -152,3 +152,45 @@ def discover_pocket_from_pdb(pdb_content: str, target_chain: str = "A", ligand_c
         "grid_center": (round(cx, 2), round(cy, 2), round(cz, 2)),
         "suggested_hotspots": final_hotspots
     }
+
+
+def get_residue_coordinates(pdb_path: str | Path, residue_names: list[str]) -> dict[str, tuple[float, float, float]]:
+    """
+    Lee un archivo PDB y encuentra las coordenadas del átomo CA (C-alpha)
+    para cada residuo especificado en residue_names.
+    Si no hay CA, toma el primer átomo del residuo.
+    """
+    pdb_path = Path(pdb_path)
+    if not pdb_path.exists():
+        return {}
+
+    coords = {}
+    res_names_set = set()
+    for r in residue_names:
+        name_clean = r.upper()
+        if ":" in name_clean:
+            name_clean = name_clean.split(":")[-1]
+        res_names_set.add(name_clean)
+    
+    with open(pdb_path, "r") as f:
+        for line in f:
+            if line.startswith(("ATOM", "HETATM")):
+                res_name = line[17:20].strip().upper()
+                res_seq = line[22:26].strip()
+                res_id = f"{res_name}{res_seq}"
+                
+                if res_id in res_names_set:
+                    atom_name = line[12:16].strip().upper()
+                    try:
+                        x = float(line[30:38])
+                        y = float(line[38:46])
+                        z = float(line[46:54])
+                    except ValueError:
+                        continue
+                    
+                    # Preferir CA (carbono alfa)
+                    if res_id not in coords or atom_name == "CA":
+                        coords[res_id] = (x, y, z)
+                        
+    return coords
+

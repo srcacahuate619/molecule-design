@@ -26,6 +26,7 @@ class RescoreRequest(BaseModel):
     qed: float
     grid_center: List[float] | None = None
     grid_size: List[float] | None = None
+    run_gnn: bool = False  # Activa RTMScore GNN (Nivel 2) cuando True
 
 async def get_ml_rescore(
     smiles: str,
@@ -34,9 +35,15 @@ async def get_ml_rescore(
     properties: Any,
     grid_center: List[float] | None = None,
     grid_size: List[float] | None = None,
+    run_gnn: bool = True,  # Por defecto activo — el microservicio lo maneja con fallback si no hay pesos
 ) -> dict:
     """
     Llama al microservicio de rescoring ML para obtener la afinidad corregida.
+
+    Args:
+        run_gnn: Si True, el microservicio también ejecuta RTMScore GNN (Nivel 2)
+                 y devuelve `gnn_score`. Si el modelo no está disponible, el
+                 microservicio lo ignora sin error.
     """
     url = f"{settings.rescoring_url}/rescore"
     
@@ -64,11 +71,12 @@ async def get_ml_rescore(
         rotatable_bonds=properties.rotatable_bonds,
         qed=properties.qed,
         grid_center=grid_center,
-        grid_size=grid_size
+        grid_size=grid_size,
+        run_gnn=run_gnn,
     )
     
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:  # timeout aumentado por GNN
             response = await client.post(
                 url, 
                 json=request_data.model_dump(),

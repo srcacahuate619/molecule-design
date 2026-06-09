@@ -73,7 +73,7 @@ Para superar el límite físico de resolución en rangos de potencia estrechos (
                              │
                              ▼
  ┌────────────────────────────────────────────────────────┐
- │   Nivel 4: Docking Cuántico de Metales (xtb + AD4)     │  ← Metaloenzimas / Coordinación
+ │   Nivel 4: Detección de Metales (Fallback Vina)        │  ← Metaloenzimas / Coordinación
  │   (Cálculo semiempírico de cargas electrónicas)        │  ← En Producción [v6.4]
  └────────────────────────────────────────────────────────┘
 ```
@@ -81,7 +81,7 @@ Para superar el límite físico de resolución en rangos de potencia estrechos (
 1.  **Nivel 1 (Filtro Rápido - 17s/molécula) — [En Producción]:** AutoDock Vina + Rescoring XGBoost (contactos discretos ProLIF + descriptores electroquímicos globales ECIF-lite). Descarta compuestos inactivos o con propiedades ADME pobres.
 2.  **Nivel 2 (Red Neuronal de Grafos - 8s/molécula) — [En Producción v6.3]:** Inferencia profunda basada en grafos con **RTMScore** (Residue-Atom Graph Transformer Module). Modela al complejo proteína-ligando como un grafo y predice la densidad de probabilidad de las distancias de contacto mediante un Modelo de Mezclas Gaussianas (GMM). Aporta una corrección biofísica continua contra falsos positivos tridimensionales.
 3.  **Nivel 3 (Docking Peptídico y Refinamiento - 1m/molécula) — [En Producción v6.4]:** Docking de péptidos y macromoléculas flexibles mediante redes de difusión generativa (**DiffPepDock** con sesgo del sitio activo) o co-plegado co-evolutivo (**ColabFold**). Aplica una capa final de refinamiento físico en solvente implícito mediante **AMBER14SB/OpenMM** (fijando el esqueleto de la proteína) con caída controlada a **RDKit UFF** para aliviar choques estéricos.
-4.  **Nivel 4 (Docking Cuántico de Metales - 2m/molécula) — [En Producción v6.4]:** Mapeo de cargas parciales y polarización electrónica en complejos de coordinación metálica mediante cálculos semiempíricos **xtb (GFN2-xTB)**, enrutando el acoplamiento tridimensional a **AutoDock 4 (AD4)** que cuenta con calibración biofísica explícita para metales de transición.
+4.  **Nivel 4 (Detección de Metales de Transición) — [En Desarrollo (xTB+AD4 planificado)]:** El sistema intercepta compuestos organometálicos. Actualmente mapea los iones metálicos y utiliza **AutoDock Vina** como aproximación primaria ("fallback"), con planes de integrar cálculos cuánticos semiempíricos (**GFN2-xTB**) y **AutoDock 4 (AD4)** explícito en la fase 6.5.
 
 ---
 
@@ -435,7 +435,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8010
 | v6.2 | Ingestión de 9 Targets Oncológicos y UI de Selección interactiva | ✅ |
 | v6.2.1 | **Modificación del Frontend**: Implementación dual de **Modo Gamer** y **Modo Pro** | ✅ |
 | v6.3 | **Integración de Nivel 2 GNN**: Rescoring de grafos RTMScore (Graph Transformer + GMM) | ✅ |
-| v6.4 (actual) | **Nivel 3 & Nivel 4**: Motores Peptídicos (DiffPepDock/ColabFold + OpenMM) y Docking Cuántico de Metales (xtb + AD4). *Validado con Benchmark Robusto PIK3CA WT (N=95, ρ=+0.450)* | ✅ |
+| v6.4 (actual) | **Nivel 3**: Motores Peptídicos (DiffPepDock/ColabFold + OpenMM) y Detección de Metales. *Validado con Benchmark Robusto PIK3CA WT (N=95, ρ=+0.450)* | ✅ |
 | v6.5 | 3D-RISM desolvatación (AmberTools) | 📋 |
 | v6.6 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
 

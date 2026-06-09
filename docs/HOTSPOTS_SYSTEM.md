@@ -33,9 +33,12 @@ Originalmente el sistema usaba 4.0 Å, pero fue ampliado a **5.0 Å** tras valid
 ## 4. Integración en el Scoring (Specificity Score)
 
 La especificidad no es solo visual; afecta el score final (0-100):
-- **Cálculo**: Se calcula el porcentaje de importancia de los hotspots impactados.
-- **Multiplicador**: El score total se escala mediante un multiplicador de especificidad que va de **0.5x** (0 hits) a **1.0x** (todos los hits logrados).
-- **Impacto**: Una molécula con excelente afinidad pero 0 hits de especificidad verá su score final reducido a la mitad, penalizando el "binding inespecífico".
+- **Cálculo del Score de Especificidad**: Se calcula como el porcentaje de importancia de los hotspots impactados respecto al total de importancia de todos los hotspots configurados para el receptor:
+  $$specificity\_score = \frac{\sum Hits\_Importance}{\sum Total\_Importance} \times 100$$
+- **Cálculo del Multiplicador de Especificidad**: El score total se modula mediante un multiplicador que escala el score base:
+  $$specificity\_multiplier = specificity\_floor + \left((1.0 - specificity\_floor) \times \frac{specificity\_score}{100.0}\right)$$
+- **Suelo de Especificidad Configurable (`specificity_floor`)**: Cada target define su propio suelo de penalización (por defecto **0.5x**, limitando el castigo al 50%). Para targets con hotspots muy conocidos y críticos, el valor se puede configurar dinámicamente en el rango de `[0.1, 0.9]` (con un clamp defensivo). Si `specificity_floor` se establece en `0.1`, una molécula con 0 hits de especificidad verá su score base reducido a solo el 10% (penalización del 90%).
+- **Impacto**: Una molécula con excelente afinidad pero 0 hits de especificidad para un receptor estándar verá su score final reducido a la mitad, penalizando severamente el "binding inespecífico".
 
 ## 5. Alerta de Fragmento (Fragment Warning)
 

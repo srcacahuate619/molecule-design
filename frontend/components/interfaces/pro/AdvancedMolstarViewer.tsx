@@ -98,7 +98,7 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
         containerRef.current.innerHTML = "";
 
         viewer = await Viewer.create(containerRef.current, {
-          layoutIsExpanded: true,
+          layoutIsExpanded: false,
           layoutShowControls: false,
           layoutShowRemoteState: false,
           layoutShowSequence: false,

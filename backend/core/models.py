@@ -111,10 +111,11 @@ class TargetORM(Base):
     organism          = Column(String(100), nullable=True)
     resolution        = Column(Float, nullable=True)
     hotspots          = Column(JSONB, nullable=True) # Lista de residuos críticos: [{"name": "MET97", "importance": 1.0}, ...]
-    affinity_threshold = Column(Float, nullable=True, default=-7.5) # [NUEVO] Suelo de afinidad absoluta
+    affinity_threshold = Column(Float, nullable=True, default=-7.5) # Suelo de afinidad absoluta
+    specificity_floor  = Column(Float, nullable=True, default=0.5)  # [NUEVO] Mínimo del multiplier de especificidad (0.1–0.5)
     is_hot             = Column(Boolean, default=False, nullable=False)
-    spearman_rho       = Column(Float, nullable=True, default=0.512) # [NUEVO] Métrica de calibración ML
-    calibration_date   = Column(DateTime(timezone=True), nullable=True) # [NUEVO] Fecha del benchmark
+    spearman_rho       = Column(Float, nullable=True, default=0.512)
+    calibration_date   = Column(DateTime(timezone=True), nullable=True)
 
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
     prepared_file_path = Column(String(500), nullable=True)
@@ -265,6 +266,7 @@ class EvaluationResultORM(Base):
     adme_score       = Column(Float, nullable=True)
     druglikeness_score = Column(Float, nullable=True)
     total_score      = Column(Float, nullable=True, index=True)  # score final del juego
+    gnn_score        = Column(Float, nullable=True)              # score GNN RTMScore (Nivel 2)
     is_control       = Column(Boolean, default=False)           # si es True, se ignoran penalizaciones ADME
 
     # ── Reporte IA ───────────────────────────────────────────────────────────
@@ -434,6 +436,7 @@ class EvaluationResultRead(BaseModel):
     adme_score:         float | None
     druglikeness_score: float | None
     total_score:        float | None   # 0–100, el score del juego
+    gnn_score:          float | None = None  # Score GNN RTMScore (Nivel 2, opcional)
     specificity_score:  float | None = None
     hotspots_hit:       list[str] | None = None
     target_hotspots:    list[dict] | None = None
@@ -489,6 +492,7 @@ class ScoreBreakdown(BaseModel):
     adme_score:         float = Field(..., ge=0, le=100)
     druglikeness_score: float = Field(..., ge=0, le=100)
     total_score:        float = Field(..., ge=0, le=100)
+    gnn_score:          float | None = Field(None, description="Score RTMScore GNN (Nivel 2). None si el GNN no está disponible.")
     specificity_score:  float | None = None
     ligand_efficiency:  float | None = None
     lipophilic_efficiency: float | None = None
@@ -524,6 +528,12 @@ class Target(BaseModel):
     is_hot: bool = False
     spearman_rho: float | None = 0.512
     calibration_date: datetime | None = None
+    grid_center_x: float | None = None
+    grid_center_y: float | None = None
+    grid_center_z: float | None = None
+    grid_size_x: float | None = None
+    grid_size_y: float | None = None
+    grid_size_z: float | None = None
 
     model_config = {"from_attributes": True}
 

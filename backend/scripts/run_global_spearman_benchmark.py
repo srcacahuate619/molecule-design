@@ -289,7 +289,7 @@ def print_markdown_report(run_id, summary_data):
     
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    report_content = f"""# Reporte de Validación Científica Global: Spearman Benchmark
+    report_content = fr"""# Reporte de Validación Científica Global: Spearman Benchmark
 
 *   **Identificador de Corrida (Run ID):** `{run_id}`
 *   **Fecha de Certificación:** `{timestamp} UTC`
@@ -308,7 +308,7 @@ El presente documento certifica la precisión biofísica del motor de MolDesign 
     for row in summary_data:
         report_content += f"| {row['name']} | `{row['target']}` | {row['n']} | **{row['rho']}** | {row['p_value']:.6f} | {row['mae']} | {row['status']} |\n"
         
-    report_content += """
+    report_content += fr"""
 ---
 
 ## 🔍 Conclusiones y Rigor Científico

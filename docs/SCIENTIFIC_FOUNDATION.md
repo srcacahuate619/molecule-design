@@ -45,6 +45,11 @@ MolDesign evalúa el "Drug-likeness" basándose en tres estándares de la indust
 3.  **Filtro CNS (Cerebral)**: Para el receptor 5-HT1A, penalizamos TPSA > 90 Å², ya que dificulta el cruce de la barrera hematoencefálica.
 4.  **Biological Specificity (Hotspots)**: Penalización por falta de contacto con residuos clave definidos experimentalmente.
 
+### Diferenciación de Scores ADME y Drug-likeness [v6.5]
+Los dos componentes del score fisicoquímico miden cosas distintas y complementarias:
+- **Score ADME (peso 0.30):** Evalúa el perfil de absorción/distribución explícitamente mediante 3 factores físicos independientes: TPSA (permeabilidad oral y BBB), logP (lipofilia, distribución en tejido) y SA Score (accesibilidad sintética). Penaliza directamente los factores que afectan la viabilidad clínica.
+- **Score Drug-likeness (peso 0.25):** Basado en el **QED** (Bickerton et al., *Nat. Chem.* 2012), que combina 8 propiedades moleculares ponderadas (MW, logP, HBD, HBA, PSA, RotBonds, Aromáticos, Alertas estructurales) en un único índice de 0 a 1 calibrado contra el juicio de expertos en química medicinal sobre ~1,500 moléculas aprobadas.
+
 ## 4. Especificidad Biológica y Hotspots (5.0 Å)
 
 MolDesign v4.2 introduce el concepto de **Puntos de Interacción Críticos (Hotspots)** para diferenciar entre "unir cualquier bolsillo" y "bloquear el sitio funcional".
@@ -134,3 +139,66 @@ En el pipeline actual de MolDesign v4, el agua se trata mediante un modelo de **
 ### Limitaciones y Roadmap
 Somos conscientes de que el agua "atrapada" en el sitio activo puede ser clave para la afinidad (puentes de hidrógeno mediados por agua).
 - **Fase 5/6 (Planned)**: Integración de **Hydrated Docking** (usando Vina-Hydrated o WIDD), permitiendo que ciertas moléculas de agua "cruciales" permanezcan en el receptor o sean desplazadas por el ligando, calculando el costo entrópico asociado.
+
+## 8. Nivel 2: Redes Neuronales de Grafos (GNN - RTMScore) [v6.3]
+
+En la actualización **v6.3**, MolDesign AI integra oficialmente el **Nivel 2 de la Cascada de Rescoring** basado en la arquitectura GNN **RTMScore** (Residue-Atom Graph Transformer Module). Este nivel supera las limitaciones estadísticas de la puntuación empírica discreta y tabular de Vina/XGBoost, permitiendo evaluar la complementariedad geométrica y el campo de fuerzas en una dimensión continua espacial.
+
+### 8.1 Representación de Grafos Bipartitos
+El complejo proteína-ligando se modela de forma determinista como un par de grafos complementarios:
+1.  **Grafo del Receptor ($G_p$):** Representado a nivel de residuos para eficiencia computacional. Cada nodo es un residuo (con características físicas como tipo, volumen estérico, y ángulos diedros $\phi$, $\psi$, $\omega$, $\chi_1$).
+2.  **Grafo del Ligando ($G_l$):** Representado a nivel atómico para capturar la precisión química completa. Los nodos representan átomos (tipo, carga formal, hibridación, aromaticidad) y las aristas representan enlaces covalentes (tipo de enlace, conjugación, pertenencia a anillos).
+
+### 8.2 Mecanismo de Graph Transformer
+La red utiliza capas de **Graph Transformer con Auto-Atención Multicabezal** para actualizar las representaciones de los nodos basándose en su entorno 3D espacial y las distancias físicas entre el bolsillo de unión y los átomos del ligando:
+- La información geométrica del ligando se propaga hacia el bolsillo.
+- La auto-atención aprende qué interacciones no covalentes (ej. puentes de hidrógeno específicos, apilamientos aromáticos, contactos hidrofóbicos) tienen la mayor relevancia termodinámica.
+
+### 8.3 Predicción de Densidad de Distancias por GMM
+A diferencia de otros modelos clásicos de predicción directa de energía (que sufren de alta variabilidad y sobrefajado), RTMScore calcula la probabilidad de ajuste prediciendo los parámetros de un **Modelo de Mezclas Gaussianas (GMM)**:
+- **Salida del Modelo:** Para cada par átomo-residuo en el espacio tridimensional, la red predice la mezcla de gaussianas ($\pi, \sigma, \mu$) que describe las distancias óptimas de contacto.
+- **Función de Probabilidad:** Se evalúa la densidad de probabilidad de la distancia euclidiana real observada en la pose de docking contra el perfil predicho:
+  $$\text{Score}_{\text{GNN}} = \sum_{i \in \text{lig}} \sum_{j \in \text{prot}} \text{GMM}(d_{ij} \mid \pi_{ij}, \sigma_{ij}, \mu_{ij})$$
+- **Rigor de Forma:** Si la pose contiene choques estéricos o se encuentra desplazada de la zona óptima de unión, la densidad de probabilidad cae a valores infinitesimales (cercanos a $0.0$), penalizando radicalmente los falsos positivos conformacionales.
+
+### 8.4 Resolución del Mismatch de Coordenadas (MDAnalysis Merge)
+Para garantizar la integridad y exactitud de la selección tridimensional en el backend, se implementó una estrategia robusta basada en **`MDAnalysis.Merge`**:
+- Las búsquedas de selección de átomos inter-universo (ej. buscar átomos en el universo del receptor cercanos al universo del ligando) tienden a fallar en MDAnalysis debido a confusiones con los índices locales de átomos.
+- MolDesign AI combina dinámicamente ambos grupos de átomos en un único universo virtual unificado mediante `mda.Merge(u_prot.atoms, u_lig.atoms)`.
+- Se aplica el operador de distancia de bolsillo `byres (around 10.0 group mylig)` sobre el universo combinado y luego se extrae la subselección exclusivamente del receptor. Esto elimina falsas lecturas y garantiza que la GNN trabaje con los residuos correctos en contacto real.
+- El parser cuenta adicionalmente con un flujo de carga tolerante a formatos mixtos (PDB/PDBQT) que extrae las coordenadas 3D limpias incluso si el ligando posee problemas de valencia o formalización de cargas.
+
+---
+
+## 9. Nivel 3: Motores Peptídicos (DiffPepDock / ColabFold) [v6.4]
+
+En la actualización **v6.4**, se integra la capacidad de predecir el acoplamiento y plegado de macromoléculas lineales y cíclicas (péptidos). Cuando una molécula supera los límites estándar de docking para moléculas pequeñas (peso molecular $> 1000$ Da, enlaces rotables $> 32$, o $\ge 3$ enlaces amida consecutivos), el pipeline la desvía automáticamente a la cascada de Nivel 3 en lugar de utilizar AutoDock Vina, debido a que el espacio conformacional de un péptido flexible es demasiado grande para los algoritmos estocásticos clásicos.
+
+### 9.1 Motores de Docking Peptídico
+1.  **DiffPepDock (Inferencia Rápida por Difusión):** Un modelo de aprendizaje profundo generativo que trata el docking como un proceso de difusión inversa en el grupo SE(3) (rotaciones y traslaciones) y en el espacio de de ángulos torsionales del péptido. Permite obtener resultados en menos de 60 segundos.
+2.  **ColabFold (Co-plegado por Co-evolución):** Utiliza la arquitectura de AlphaFold-Multimer optimizada para predecir la estructura tridimensional del complejo receptor-péptido completo de forma asíncrona (con un tiempo de cómputo de 5 a 15 minutos).
+
+### 9.2 Sesgo del Sitio Activo (Active-Site Guided Soft Prior)
+DiffPepDock por defecto realiza una búsqueda ciega (*blind docking*). Para enfocar la búsqueda conformacional en la cavidad terapéutica activa (ej: en GPCRs como 5-HT1A o GLP-1R):
+- El backend inyecta los parámetros de `grid_center` y `grid_size` como un prior bayesiano gaussiano de traslación en el paso inicial de difusión ($t=1$).
+- El sesgo se calibra mediante la variable `diffpepdock_prior_weight` (por defecto $0.7$). Un valor $< 1.0$ actúa como una restricción suave (*soft constraint*), concentrando la probabilidad de búsqueda en el bolsillo pero permitiendo que el péptido explore conformaciones alostéricas adyacentes si hay fuerzas electrostáticas favorables.
+
+### 9.3 Capa de Refinamiento Estructural con Restricciones (Amber/OpenMM & Fallback UFF)
+Los modelos difusivos como DiffPepDock son excelentes localizando el sitio de unión global, pero suelen generar poses con colisiones atómicas locales (*steric clashes*). Para solventar esto, implementamos una capa de minimización energética con restricciones:
+- **Amber/OpenMM:** Utiliza el campo de fuerzas **AMBER14SB** con solvente implícito GB/SA (OBC2) para optimizar la geometría termodinámica. Para evitar que la proteína se desnaturalice o deforme artificialmente, se aplican **restricciones posicionales armónicas** (constante de fuerza $k = 50.0\text{ kcal/mol/\AA}^2$) en los átomos del esqueleto (*backbone*: `N`, `CA`, `C`, `O`) del receptor, permitiendo flexibilidad total solo en las cadenas laterales del bolsillo y en el péptido.
+- **RDKit UFF Fallback:** Si OpenMM no está instalado en el entorno, el sistema activa automáticamente un fallback de optimización local mediante el campo de fuerzas universal (**UFF**) en RDKit, fijando rígidamente todos los átomos del receptor (`AddFixedPoint`) para aliviar colisiones estéricas de forma segura y veloz.
+
+---
+
+## 10. Nivel 4: Docking Cuántico de Metales (xtb + AD4) [v6.4]
+
+La mayoría de los motores de docking (incluyendo AutoDock Vina) carecen de parámetros físicos para metales de transición (como `Fe`, `Zn`, `Cu`, `Mn`, etc.), provocando fallos al evaluar metaloenzimas o compuestos de coordinación.
+
+### 10.1 Cálculo de Cargas Semiempírico (xtb)
+Cuando se detecta un metal en el ligando o en el bolsillo del receptor:
+- El pipeline ejecuta un cálculo de estructura electrónica rápido mediante la herramienta cuántica semiempírica de enlace fuerte **xtb** (GFN2-xTB).
+- Esto genera un mapa preciso de cargas parciales y polarización electrónica en la vecindad del centro de coordinación metálico.
+
+### 10.2 Docking en AutoDock 4 (AD4)
+- El receptor y el ligando parametrizados con las cargas cuánticas de `xtb` se enrutan automáticamente a **AutoDock 4** en lugar de Vina.
+- AD4 cuenta con soporte explícito y calibración para geometrías de coordinación de metales de transición, garantizando precisión biofísica en metaloproteínas.

@@ -222,17 +222,58 @@ async def generate_conformer(smiles: str) -> dict:
             )
 
     if mol_3d is None:
+        # MITIGACIÓN NIVEL 2: Bypass progresivo de ETKDG para moléculas rígidas/tensionadas/macrociclos
+        log.info("ETKDG estándar falló — iniciando cadena de mitigación de Nivel 2")
+
+        # Mitigación 1: Intentar con useRandomCoords=True
+        try:
+            log.info("Mitigación 1: Intentando embedding con coordenadas aleatorias (useRandomCoords=True)")
+            mol_copy = Chem.RWMol(mol)
+            params = _get_etkdg_params(random_seed=42)
+            params.useRandomCoords = True
+            result = AllChem.EmbedMolecule(mol_copy, params)
+            if result == 0:
+                mol_3d = mol_copy.GetMol()
+                log.info("Mitigación 1 exitosa — conformero generado usando coordenadas aleatorias")
+        except Exception as e:
+            log.warning("Mitigación 1 falló con excepción", error=str(e))
+
+    if mol_3d is None:
+        # Mitigación 2: Fallback 2D -> 3D con perturbación y minimización UFF
+        try:
+            log.info("Mitigación 2: Intentando fallback 2D -> 3D con perturbación en Z y minimización UFF")
+            mol_copy = Chem.RWMol(mol)
+            # Generar coordenadas 2D
+            AllChem.Compute2DCoords(mol_copy)
+            conf = mol_copy.GetConformer(0)
+            
+            # Perturbar Z para evitar estados perfectamente planos y permitir que el campo de fuerzas actúe en 3D
+            import random
+            random.seed(42)
+            for i in range(mol_copy.GetNumAtoms()):
+                pos = conf.GetAtomPosition(i)
+                conf.SetAtomPosition(i, (pos.x, pos.y, random.uniform(-0.1, 0.1)))
+            conf.Set3D(True)
+            
+            # Minimizar con UFF para corregir distancias y choques estéricos
+            uff_result = AllChem.UFFOptimizeMolecule(mol_copy, maxIters=1000)
+            
+            mol_3d = mol_copy.GetMol()
+            log.info("Mitigación 2 exitosa — conformero 3D generado vía fallback 2D-3D + UFF", uff_result=uff_result)
+        except Exception as e:
+            log.error("Mitigación 2 falló con excepción", error=str(e))
+
+    if mol_3d is None:
         raise ConformerGenerationError(
             smiles=smiles,
             attempts=max_attempts,
             detail=(
-                f"ETKDG no pudo generar una estructura 3D válida después de "
-                f"{max_attempts} intentos. "
+                f"ETKDG estándar y mitigaciones de Nivel 2 fallaron en generar una estructura 3D válida. "
                 f"Anillos detectados: {ring_info}. "
-                f"Último error: {last_error}. "
-                f"{'La molécula contiene macrociclos que ETKDG maneja con dificultad.' if has_macro else ''}"
+                f"Último error de ETKDG: {last_error}."
             ),
         )
+
 
     # Paso 4: optimizar geometría con MMFF94
     mol_3d, converged = _optimize_with_mmff(mol_3d)

@@ -72,17 +72,104 @@ def normalize_affinity(
     return clamp_score(base_score)
 
 
+
 def calculate_adme_score(properties: PhysicochemicalProperties) -> float:
     """
-    Score ADME basado en QED.
-    Rango 0.0 a 1.0 → mapeado a 0–100.
+    Score ADME basado en el perfil de absorción/distribución estimado.
+
+    Compuesto de tres factores:
+      - TPSA: penaliza absorción oral pobre (>90Å²) y BBB impenetrable (>120Å²)
+      - logP: penaliza lipofilia extrema (<0 o >4.5) que afecta distribución y toxicidad
+      - SA Score: penaliza complejidad sintética elevada (>4.0)
+
+    A diferencia del QED (que da un único score holístico de drug-likeness),
+    este score captura el perfil ADME de forma más mecánicamente interpretable.
+
+    Rango: 0–100 (100 = perfil ADME ideal)
     """
-    return clamp_score(properties.qed * 100.0)
+    score = 100.0
+
+    # 1. Penalización TPSA — absorción oral e intestinal
+    tpsa = properties.tpsa
+    if tpsa > 120.0:
+        # Rango pobre de BBB o absorción oral muy limitada
+        score -= min(30.0, (tpsa - 120.0) * 0.75)
+    elif tpsa > 90.0:
+        # Absorción oral limitada (Veber: TPSA≤140 para biodisponibilidad oral)
+        score -= (tpsa - 90.0) * 0.5
+
+    # 2. Penalización logP — lipofilia extrema en ambos sentidos
+    log_p = properties.log_p
+    if log_p > 4.5:
+        # Riesgo de hERG, acumulación en tejido graso, baja solubilidad
+        score -= min(25.0, (log_p - 4.5) * 5.0)
+    elif log_p < 0.0:
+        # Hidrofilia extrema → posible baja permeabilidad celular
+        score -= min(15.0, abs(log_p) * 3.0)
+
+    # 3. Penalización SA Score — accesibilidad sintética
+    sa = properties.sa_score
+    if sa > 5.0:
+        # Difícil de sintetizar → costo de desarrollo elevado
+        score -= min(20.0, (sa - 5.0) * 4.0)
+    elif sa > 4.0:
+        # Complejidad moderada-alta
+        score -= (sa - 4.0) * 2.0
+
+    return clamp_score(score)
 
 
 def calculate_druglikeness_score(properties: PhysicochemicalProperties) -> float:
     """
-    Score Drug-likeness basado en QED.
+    Score de Drug-likeness basado en QED (Bickerton et al., Nat. Chem. 2012).
+
+    QED combina 8 propiedades moleculares ponderadas (MW, logP, HBD, HBA,
+    PSA, RotBonds, Aromáticos, Alertas estructurales) en una métrica unificada
+    de 0 a 1 que reproduce el juicio de expertos en química medicinal.
+
+    Rango mapeado: 0–100 (100 = QED=1.0, molécula drug-like ideal)
     """
     return clamp_score(properties.qed * 100.0)
+
+
+def normalize_logp(log_p: float) -> float:
+    """
+    Normaliza el logP usando una función simétrica respecto al óptimo de 2.5.
+    Mantiene compatibilidad con auditorías y tests de regresión.
+    """
+    dist = abs(log_p - 2.5)
+    score = 0.0 if dist >= 3.5 else (1.0 - dist / 3.5) * 100.0
+    return clamp_score(score)
+
+
+def normalize_tpsa(tpsa: float) -> float:
+    """
+    Normaliza el TPSA con una ventana óptima de 20-90 Å².
+    Mantiene compatibilidad con auditorías y tests de regresión.
+    """
+    if tpsa >= 140.0:
+        score = 0.0
+    elif 20.0 <= tpsa <= 90.0:
+        score = 100.0
+    elif tpsa < 20.0:
+        score = (tpsa / 20.0) * 100.0
+    else:
+        score = ((140.0 - tpsa) / 50.0) * 100.0
+    return clamp_score(score)
+
+
+def normalize_rotatable_bonds(rotatable_bonds: int) -> float:
+    """
+    Normaliza la flexibilidad molecular (rotatable bonds).
+    Mantiene compatibilidad con auditorías y tests de regresión.
+    """
+    if rotatable_bonds <= 3:
+        score = 100.0
+    elif rotatable_bonds >= 15:
+        score = 0.0
+    elif rotatable_bonds <= 10:
+        score = 100.0 - ((rotatable_bonds - 3) / 7.0) * 40.0
+    else:
+        score = 60.0 - ((rotatable_bonds - 10) / 5.0) * 60.0
+    return clamp_score(score)
 

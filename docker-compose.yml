@@ -92,7 +92,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: production
-    container_name: moldesign_worker
     restart: unless-stopped
     command: celery -A api.celery_app worker --loglevel=info --pool=solo --concurrency=1
     env_file:

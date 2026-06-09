@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import uuid
 
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
@@ -23,15 +24,14 @@ log = get_logger(__name__)
 router = APIRouter(prefix="/evaluation", tags=["Evaluación científica"])
 
 
+from slowapi.util import get_remote_address
+
 def get_real_ip(request: Request) -> str:
     """
-    Obtiene la IP real del cliente, incluso si está detrás de un proxy (Nginx, Cloudflare, etc.)
+    Obtiene la IP de forma segura delegando al utilitario de slowapi.
+    Evita vulnerabilidad de IP spoofing mediante X-Forwarded-For crudo.
     """
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        # X-Forwarded-For puede ser una lista (client, proxy1, proxy2)
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "127.0.0.1"
+    return get_remote_address(request)
 
 
 class EvaluationSubmitRequest(BaseModel):
@@ -39,6 +39,11 @@ class EvaluationSubmitRequest(BaseModel):
     target_pdb_id: str = Field(default="7E2Y", min_length=4, max_length=10)
     molecule_name: str | None = Field(default=None, max_length=200)
     is_control: bool = Field(default=False, description="Si es True, se ignora el score químico (ADME/Drug-likeness) al calcular el score total.")
+    grid_center: tuple[float, float, float] | None = Field(default=None, description="Centro de la Grid Box override (X, Y, Z)")
+    grid_size: tuple[float, float, float] | None = Field(default=None, description="Tamaño de la Grid Box override (dX, dY, dZ)")
+    custom_hotspots: list[str] | None = Field(default=None, description="Lista de hotspots seleccionados por el usuario")
+    patient_profile: dict | None = Field(default=None, description="Datos clínicos y genómicos del paciente (Capa 0)")
+    peptide_docking_engine: Literal["diffpepdock", "colabfold"] | None = Field(default="diffpepdock", description="Motor de docking peptídico a utilizar en Nivel 3")
 
 
 class EvaluationSubmitResponse(BaseModel):
@@ -61,7 +66,10 @@ async def get_limit_status(
     ip_address = get_real_ip(req)
     limit = await repository.get_anonymous_limit(ip_address)
 
-    MAX_REQUESTS = 2
+    from core.config import get_settings
+    settings = get_settings()
+    MAX_REQUESTS = settings.anonymous_rate_limit
+    
     count = limit.request_count if limit else 0
 
     return {
@@ -73,7 +81,6 @@ async def get_limit_status(
 
 
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -95,14 +102,14 @@ async def submit_evaluation(
 
     repository = Repository(db)
 
-    # Lógica de límites para anónimos (MVP v4.0)
+    # Lógica de límites para anónimos
     if current_user is None:
         ip_address = get_real_ip(request)
         limit = await repository.get_anonymous_limit(ip_address)
         
-        # Límite especial para el desarrollador/propietario (10 moléculas)
-        # Para el resto de IPs, se mantiene el límite de 2
-        MAX_REQUESTS = 1000
+        from core.config import get_settings
+        settings = get_settings()
+        MAX_REQUESTS = settings.anonymous_rate_limit
         
         if limit and limit.request_count >= MAX_REQUESTS:
             log.warning("límite anónimo alcanzado", ip=ip_address, count=limit.request_count)
@@ -124,6 +131,10 @@ async def submit_evaluation(
             molecule_name=data.molecule_name,
             is_control=data.is_control,
             user_id=str(current_user.id) if current_user else None,
+            grid_center=data.grid_center,
+            grid_size=data.grid_size,
+            custom_hotspots=data.custom_hotspots,
+            peptide_docking_engine=data.peptide_docking_engine,
         )
     except (ConnectionError, ConnectionRefusedError, TimeoutError) as exc:
         log.error(
@@ -170,17 +181,12 @@ async def get_evaluation_status(task_id: str) -> JobStatus:
     # Patch: inject poseData fetching directly via HTTP from public MinIO bucket
     if status_obj and status_obj.result and getattr(status_obj.result, 'poses_file_path', None):
         try:
-            import httpx
+            from utils.file_handlers import download_text
             object_name = status_obj.result.poses_file_path
-            # Endpoint local de MinIO en la red de Docker
-            url = f"http://172.17.0.1:9005/docking-poses/{object_name}"
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.get(url, timeout=5.0)
-                if response.status_code == 200:
-                    pose_data = response.text
-                else:
-                    pose_data = None
+            try:
+                pose_data = await download_text(object_name)
+            except Exception:
+                pose_data = None
         except Exception as e:
             pose_data = None
             
