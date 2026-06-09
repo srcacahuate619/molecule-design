@@ -64,6 +64,12 @@ def _resolve_executable(path_or_name: str) -> str | None:
         return found
 
     scripts_dir = Path(sys.executable).resolve().parent
+    
+    # Try scripts_dir / path_or_name directly (e.g. for files with extensions in the bin/scripts folder)
+    direct_candidate = scripts_dir / path_or_name
+    if direct_candidate.exists():
+        return str(direct_candidate)
+
     windows_candidate = scripts_dir / f"{path_or_name}.exe"
     if windows_candidate.exists():
         return str(windows_candidate)

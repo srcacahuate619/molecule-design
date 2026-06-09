@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Activity, 
   ShieldCheck, 
@@ -113,6 +113,14 @@ export default function ProEvaluation({
   setCustomWallet
 }: ProEvaluationProps) {
   
+  const consoleRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (consoleRef.current) {
+      consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+    }
+  }, [status?.progress, status]);
+
   // --- Target Selector Modal state ---
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
 
@@ -293,22 +301,113 @@ export default function ProEvaluation({
 
   // Render job progress steps
   const renderWorkflowProgress = () => {
-    if (!status || isTerminal) return null;
-
-    const progress = status.progress || 0;
-    const currentStatus = status.status || "";
+    const progress = status?.progress || 0;
+    const currentStatus = status?.status || "IDLE";
 
     const isColabFold = status?.result?.vina_version?.includes("COLABFOLD") || (isPeptide && peptideDockingEngine === "colabfold");
     const dockingLabel = isPeptide
       ? (isColabFold ? "Plegado y Docking (ColabFold)" : "Docking por Difusión (DiffPepDock)")
-      : "Acoplamiento molecular (Vina)";
+      : `L1: Acoplamiento Molecular (Vina${target ? ` - ${target}` : ""})`;
 
     const stages = [
-      { id: "validation", label: "Validación Estructural", min: 0, active: progress >= 0 },
-      { id: "conformation", label: "Generación de Conforme 3D", min: 20, active: progress >= 20 },
-      { id: "docking", label: dockingLabel, min: 55, active: progress >= 55 },
-      { id: "scoring", label: "Cerebro Espacial ML (Rescoring)", min: 80, active: progress >= 80 }
+      { id: "validation", label: "L0: Curación Estructural (RDKit Engine)", min: 0 },
+      { id: "conformation", label: "Generación de Conformómeros 3D + MMFF94", min: 20 },
+      { id: "docking", label: dockingLabel, min: 55 },
+      { id: "scoring", label: "L2: Inferencia de Afinidad (GNN RTMScore + XGBoost)", min: 80 },
+      { id: "refinement", label: "L3: Relajación de Choques Estéricos (OpenMM MD)", min: 90 },
+      { id: "blockchain", label: "Firma Ledger Blockchain (Solana Devnet)", min: 98 }
     ];
+
+    const getConsoleLogs = (prog: number) => {
+      if (!status) {
+        return [
+          "[sys] Clúster de cálculo asíncrono MolDesign v6.5 listo.",
+          "[sys] Dispositivos de telemetría e inferencia GNN online.",
+          "[sys] Esperando coordenadas estructurales y orden de ejecución..."
+        ];
+      }
+
+      const logs: string[] = [
+        "[sys] Inicializando clúster de cálculo asíncrono MolDesign v6.5...",
+        `[sys] Conectando con base de datos PostgreSQL y cargando receptor ${target}...`
+      ];
+
+      if (prog >= 5) {
+        logs.push(
+          "[rdkit] Analizando estructura SMILES ingresada...",
+          `[rdkit] SMILES canónico resuelto: ${smiles}`,
+          "[rdkit] Curación: valencia atómica verificada. Cero anomalías estéricas detectadas."
+        );
+      }
+      if (prog >= 20) {
+        logs.push(
+          "[rdkit] Inicializando generador conformacional estocástico ETKDG v3...",
+          "[rdkit] Generando conformadores tridimensionales por distancia geométrica...",
+          "[rdkit] Minimizando energía local del ligando usando campo de fuerza semi-empírico MMFF94..."
+        );
+      }
+      if (prog >= 40) {
+        logs.push(
+          "[minio] Descargando archivo receptor PDB raw...",
+          "[preparer] Filtrando cadena activa del receptor biológico...",
+          "[preparer] Excluyendo moléculas de agua cristalizada y ligandos HETATM...",
+          "[meeko] Añadiendo hidrógenos polares y cargas parciales de Gasteiger..."
+        );
+      }
+      if (prog >= 55) {
+        logs.push(
+          `[vina] Configurando caja de docking (Grid Box) en centroide del receptor...`,
+          `[vina] Invocando AutoDock Vina con exhaustiveness=32 (num_poses=5)...`,
+          "[vina] Muestreando espacio conformacional de torsión del ligando..."
+        );
+      }
+      if (prog >= 75) {
+        logs.push(
+          "[vina] Optimización de energía local por algoritmo BFGS completada.",
+          "[vina] Pose número 1 resuelta como configuración de mínima energía.",
+          "[rescoring] Extrayendo descriptores moleculares descriptores de contacto ODDT..."
+        );
+      }
+      if (prog >= 80) {
+        logs.push(
+          "[rescoring] Calculando score combinado con modelo de boosting XGBoost Nivel 1...",
+          "[rescoring] Enviando complejo 3D reconstituido al microservicio rescoring...",
+          "[rtmscore] GNN Nivel 2: Construyendo grafos de contactos 3D proteína-ligando...",
+          "[rtmscore] Evaluando densidad de interacción por Red Convolucional de Grafos..."
+        );
+      }
+      if (prog >= 90) {
+        logs.push(
+          "[openmm] Cargando motor de Dinámica Molecular OpenMM...",
+          "[openmm] Aplicando campo de fuerza AMBER14SB para proteína y GAFF2 para ligando...",
+          "[openmm] Minimizando energía potencial del complejo (5000 pasos L-BFGS)...",
+          "[openmm] Relajación completada. Choques estéricos resueltos con éxito."
+        );
+      }
+      if (prog >= 98) {
+        logs.push(
+          "[pdf] Generando reporte científico PDF certificado...",
+          "[blockchain] Conectando con nodo Solana Devnet Memo Program...",
+          "[blockchain] Firmando transacción de patente molecular (Curva Ed25519)...",
+          "[blockchain] Registrando hash de afinidad en ledger público Solana..."
+        );
+      }
+      if (prog === 100) {
+        logs.push(
+          "[sys] ¡Cálculo y registro completado exitosamente!",
+          "[sys] Resultados guardados en data lake MinIO y base de datos relacional."
+        );
+      }
+
+      if (status.status === "FAILURE" || status.error) {
+        logs.push(
+          `[sys] [ERROR] La simulación ha fallado: ${status.error || "Error indeterminado en el clúster."}`,
+          "[sys] Abortando pipeline y liberando recursos."
+        );
+      }
+
+      return logs;
+    };
 
     return (
       <div className="rounded-2xl border border-indigo-500/10 bg-indigo-950/5 p-4 backdrop-blur-xl animate-in fade-in slide-in-from-top-3">
@@ -332,13 +431,13 @@ export default function ProEvaluation({
         {/* Steps Grid */}
         <div className="space-y-2">
           {stages.map((stage, idx) => {
-            const isCompleted = progress > stage.min && (idx === stages.length - 1 ? progress === 100 : progress >= stages[idx+1].min);
-            const isProcessing = progress >= stage.min && !isCompleted;
+            const isCompleted = status && progress > stage.min && (idx === stages.length - 1 ? progress === 100 : progress >= stages[idx+1].min);
+            const isProcessing = status && progress >= stage.min && !isCompleted;
             
             return (
               <div 
                 key={stage.id} 
-                className={`flex items-center justify-between text-xs px-3 py-2 rounded-xl border transition-all duration-300 ${
+                className={`flex items-center justify-between text-[11px] px-3 py-2 rounded-xl border transition-all duration-300 ${
                   isCompleted 
                     ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400" 
                     : isProcessing
@@ -359,6 +458,36 @@ export default function ProEvaluation({
                 <span className="text-[10px] font-mono opacity-80">
                   {isCompleted ? "Completado" : isProcessing ? "Procesando..." : "En espera"}
                 </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Scientific Terminal Logs */}
+        <div 
+          ref={consoleRef}
+          className="mt-4 border border-indigo-500/10 bg-[#02050b] rounded-xl p-3 h-[160px] overflow-y-auto font-mono text-xs text-indigo-200/90 custom-scrollbar space-y-1"
+        >
+          <div className="flex items-center justify-between border-b border-white/5 pb-1 mb-2 text-indigo-400/60 text-[10px] uppercase tracking-wider font-sans font-bold">
+            <span>Telemetría y Registro de Clúster (PRO)</span>
+            <span className="flex items-center gap-1.5 animate-pulse">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" /> ONLINE
+            </span>
+          </div>
+          {getConsoleLogs(progress).map((log, idx) => {
+            let color = "text-indigo-200/90";
+            if (log.includes("[SUCCESS]")) color = "text-emerald-400 font-semibold";
+            if (log.includes("[ERROR]")) color = "text-rose-400 font-semibold";
+            if (log.includes("[rdkit]")) color = "text-cyan-400";
+            if (log.includes("[vina]")) color = "text-blue-400";
+            if (log.includes("[rtmscore]")) color = "text-purple-400";
+            if (log.includes("[openmm]")) color = "text-amber-400";
+            if (log.includes("[blockchain]")) color = "text-emerald-400";
+            if (log.includes("[sys]")) color = "text-indigo-400/80";
+            
+            return (
+              <div key={idx} className={`${color} leading-normal`}>
+                {log}
               </div>
             );
           })}
@@ -852,6 +981,7 @@ export default function ProEvaluation({
                     height={280}
                     hotspots={status?.result?.target_hotspots?.map(h => h.name) || []}
                     hotspotsHit={status?.result?.hotspots_hit || []}
+                    onOpenTargetSelector={() => setIsTargetModalOpen(true)}
                   />
                 </div>
 

@@ -100,6 +100,55 @@ async def main():
             "center": (0.40, 12.39, 17.77),
             "size": (25.0, 25.0, 25.0),
             "name": "Thymidylate Synthase (Raltitrexed)"
+        },
+        {
+            "pdb_id": "4I5I",
+            "chain": "A",
+            "center": (42.96, -21.41, 18.53),
+            "size": (25.0, 25.0, 25.0),
+            "name": "SIRT1 (Conformación Activa)"
+        },
+        {
+            "pdb_id": "6D8X",
+            "chain": "A",
+            "center": (1.39, -4.32, -19.36),
+            "size": (25.0, 25.0, 25.0),
+            "name": "PPAR-gamma (Conformación Activa)"
+        },
+        {
+            "pdb_id": "5IKR",
+            "chain": "A",
+            "center": (38.96, 2.35, 61.50),
+            "size": (25.0, 25.0, 25.0),
+            "name": "COX-2 (Conformación Inhibida)"
+        },
+        {
+            "pdb_id": "4RER",
+            "chain": "A",
+            "center": (45.94, -30.22, 5.12),
+            "size": (25.0, 25.0, 25.0),
+            "name": "AMPK (Conformación Activa)"
+        },
+        {
+            "pdb_id": "5VEW",
+            "chain": "A",
+            "center": (20.56, 30.93, 27.96),
+            "size": (30.0, 30.0, 30.0),
+            "name": "GLP-1R TMD (Conformación Inactiva)"
+        },
+        {
+            "pdb_id": "1ERE",
+            "chain": "A",
+            "center": (9.27, 46.29, 131.21),
+            "size": (25.0, 25.0, 25.0),
+            "name": "ER-alpha (Conformación Activa)"
+        },
+        {
+            "pdb_id": "4EKL",
+            "chain": "A",
+            "center": (28.03, 5.22, 10.89),
+            "size": (25.0, 25.0, 25.0),
+            "name": "AKT1 (Conformación Activa)"
         }
     ]
 

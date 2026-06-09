@@ -33,6 +33,74 @@ const ProEvaluation = dynamic(() => import("../../components/interfaces/pro/ProE
 
 const POLL_INTERVAL_MS = 2000;
 
+const PIPELINE_STEPS = [
+  {
+    index: 0,
+    step: "LEVEL 0",
+    title: "Curación Estructural",
+    tech: "RDKit Engine",
+    desc: "Valida la valencia atómica, hibridación, estados de protonación y quiralidad tridimensional de la molécula ingresada.",
+    icon: "🔬",
+    colors: {
+      COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
+      ACTIVE: "border-brand-500 bg-brand-500/10 text-brand-300 shadow-[0_0_12px_rgba(20,241,149,0.1)] animate-pulse",
+      IDLE: "border-surface-800/80 bg-surface-950/40 text-surface-500 opacity-60"
+    }
+  },
+  {
+    index: 1,
+    step: "LEVEL 1",
+    title: "Screening Virtual",
+    tech: "AutoDock Vina + XGBoost",
+    desc: "Simulación de docking rígido contra la diana y predicción de energía libre (kcal/mol) por Gradient Boosting con descriptores ODDT.",
+    icon: "🤖",
+    colors: {
+      COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
+      ACTIVE: "border-brand-500 bg-brand-500/10 text-brand-300 shadow-[0_0_12px_rgba(20,241,149,0.1)] animate-pulse",
+      IDLE: "border-surface-800/80 bg-surface-950/40 text-surface-500 opacity-60"
+    }
+  },
+  {
+    index: 2,
+    step: "LEVEL 2",
+    title: "Análisis Topológico",
+    tech: "GNN RTMScore",
+    desc: "Inferencia tridimensional mediante redes de grafos de contacto receptor-ligando para refinar el score y descartar falsos positivos.",
+    icon: "🧠",
+    colors: {
+      COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
+      ACTIVE: "border-brand-500 bg-brand-500/10 text-brand-300 shadow-[0_0_12px_rgba(20,241,149,0.1)] animate-pulse",
+      IDLE: "border-surface-800/80 bg-surface-950/40 text-surface-500 opacity-60"
+    }
+  },
+  {
+    index: 3,
+    step: "LEVEL 3",
+    title: "Refinamiento Dinámico",
+    tech: "OpenMM MD Engine",
+    desc: "Dinámica molecular por minimización de gradientes conjugados con AMBER14SB para disipar choques estéricos y optimizar puentes de H.",
+    icon: "⚡",
+    colors: {
+      COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
+      ACTIVE: "border-brand-500 bg-brand-500/10 text-brand-300 shadow-[0_0_12px_rgba(20,241,149,0.1)] animate-pulse",
+      IDLE: "border-surface-800/80 bg-surface-950/40 text-surface-500 opacity-60"
+    }
+  },
+  {
+    index: 4,
+    step: "SECURE",
+    title: "Consenso Ledger",
+    tech: "Solana Devnet",
+    desc: "Generación de firma criptográfica y registro del hash molecular inmutable sobre el Memo Program de la red Solana.",
+    icon: "⛓️",
+    colors: {
+      COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
+      ACTIVE: "border-brand-500 bg-brand-500/10 text-brand-300 shadow-[0_0_12px_rgba(20,241,149,0.1)] animate-pulse",
+      IDLE: "border-surface-800/80 bg-surface-950/40 text-surface-500 opacity-60"
+    }
+  }
+];
+
 export default function EvaluationPage() {
   const { interfaceMode } = useInterface();
 
@@ -82,6 +150,44 @@ export default function EvaluationPage() {
   // --- Derived State ---
   const isTerminal = status?.status === "SUCCESS" || status?.status === "FAILURE";
   const canEvaluate = !!validation?.is_valid && target.length >= 4;
+
+  const getStepState = (stepIndex: number) => {
+    if (!status) return "IDLE";
+    if (isTerminal) {
+      if (status.status === "SUCCESS") {
+        return "COMPLETED";
+      }
+      return "IDLE";
+    }
+
+    const progress = status.progress;
+    if (stepIndex === 0) { // RDKit
+      if (progress > 25) return "COMPLETED";
+      if (progress >= 1 && progress <= 25) return "ACTIVE";
+      return "IDLE";
+    }
+    if (stepIndex === 1) { // Vina + XGBoost
+      if (progress > 60) return "COMPLETED";
+      if (progress > 25 && progress <= 60) return "ACTIVE";
+      return "IDLE";
+    }
+    if (stepIndex === 2) { // GNN RTMScore
+      if (progress > 80) return "COMPLETED";
+      if (progress > 60 && progress <= 80) return "ACTIVE";
+      return "IDLE";
+    }
+    if (stepIndex === 3) { // OpenMM
+      if (progress > 95) return "COMPLETED";
+      if (progress > 80 && progress <= 95) return "ACTIVE";
+      return "IDLE";
+    }
+    if (stepIndex === 4) { // Solana
+      if (progress === 100 || status.status === "done") return "COMPLETED";
+      if (progress > 95 && progress < 100) return "ACTIVE";
+      return "IDLE";
+    }
+    return "IDLE";
+  };
 
   const { user } = useAuth();
   const router = useRouter();
@@ -462,13 +568,61 @@ export default function EvaluationPage() {
 
   return (
     <main className="space-y-6 pb-12">
-      <section>
-        <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-          🕹️ Laboratorio Virtual MolDesign AI
-        </h1>
-        <p className="mt-1 text-sm text-surface-400">
-          Pipeline Científico de 3 Niveles: Validación (RDKit) → Screening (Vina+XGBoost Nivel 1) → Análisis Topológico (GNN Nivel 2) → Refinamiento Físico (OpenMM Nivel 3) → Blockchain (Solana).
-        </p>
+      <section className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            🕹️ Laboratorio Virtual MolDesign AI
+          </h1>
+          <p className="mt-1 text-xs text-surface-400 font-medium">
+            Pipeline de cómputo híbrido y certificación criptográfica en tiempo real.
+          </p>
+        </div>
+
+        {/* Pipeline Steps Tracker */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {PIPELINE_STEPS.map((s) => {
+            const stepState = getStepState(s.index);
+            const cardStyle = s.colors[stepState];
+            
+            return (
+              <div
+                key={s.step}
+                className={`rounded-2xl border p-4 backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden ${cardStyle}`}
+              >
+                {/* Visual indicator lines on active */}
+                {stepState === "ACTIVE" && (
+                  <span className="absolute top-0 left-0 w-full h-[2px] bg-brand-500 animate-pulse" />
+                )}
+                
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest font-mono opacity-60">
+                      {s.tech}
+                    </span>
+                    <span className="text-sm">{s.icon}</span>
+                  </div>
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider mb-1">
+                    {s.title}
+                  </h3>
+                  <p className="text-[10px] leading-relaxed text-slate-400 font-medium">
+                    {s.desc}
+                  </p>
+                </div>
+                
+                <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[9px] font-black tracking-widest opacity-40 font-mono">
+                    {s.step}
+                  </span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider font-mono">
+                    {stepState === "COMPLETED" && <span className="text-emerald-400 flex items-center gap-0.5">✓ Listo</span>}
+                    {stepState === "ACTIVE" && <span className="text-brand-400 flex items-center gap-1 animate-pulse"><span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-ping inline-block" />Corriendo</span>}
+                    {stepState === "IDLE" && <span className="text-surface-600">Espera</span>}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       <section className="space-y-4 rounded-2xl border border-surface-800 bg-surface-900 p-5">
@@ -539,7 +693,8 @@ export default function EvaluationPage() {
                           { id: "neurologia", name: "Neurología", icon: "🧠" },
                           { id: "oncologia", name: "Oncología", icon: "🧬" },
                           { id: "cardiologia", name: "Cardiología", icon: "❤️" },
-                          { id: "endocrinologia", name: "Endocrinología", icon: "🩸" }
+                          { id: "endocrinologia", name: "Endocrinología", icon: "🩸" },
+                          { id: "nutricion", name: "Nutrición", icon: "🥑" }
                         ].map((cat) => (
                           <button
                             key={cat.id}
@@ -551,6 +706,8 @@ export default function EvaluationPage() {
                             }}
                             disabled={!!taskId && !isTerminal}
                             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all duration-200 ${
+                              cat.id === "nutricion" ? "col-span-2" : ""
+                            } ${
                               activeCategory === cat.id
                                 ? "bg-brand-500/5 border-brand-500/60 text-brand-300"
                                 : "bg-surface-950 border-surface-800/80 text-surface-300 hover:border-surface-700"
@@ -636,8 +793,8 @@ export default function EvaluationPage() {
                                 filteredTargets = targets.filter(t => t.pdb_id === "7E2Y");
                               } else if (activeCategory === "oncologia") {
                                 if (activeSubcategory === "cancer_mama") {
-                                  // Los 8 targets de cáncer de mama
-                                  const breastCancerPdbIds = ["3ERT", "5L2I", "2W96", "4JPS", "3O96", "3PP0", "4ZZZ", "1HVY"];
+                                  // Los 10 targets de cáncer de mama (activos e inactivos)
+                                  const breastCancerPdbIds = ["3ERT", "1ERE", "5L2I", "2W96", "4JPS", "3O96", "4EKL", "3PP0", "4ZZZ", "1HVY"];
                                   filteredTargets = targets.filter(t => breastCancerPdbIds.includes(t.pdb_id));
                                 } else if (activeSubcategory === "inmunoterapia") {
                                   filteredTargets = targets.filter(t => t.pdb_id === "3OSK");
@@ -646,6 +803,9 @@ export default function EvaluationPage() {
                                 filteredTargets = targets.filter(t => t.pdb_id === "2P4E" || t.pdb_id === "6U26");
                               } else if (activeCategory === "endocrinologia") {
                                 filteredTargets = targets.filter(t => t.name.toUpperCase().includes("GLP"));
+                              } else if (activeCategory === "nutricion") {
+                                const nutritionPdbIds = ["4I5I", "6D8X", "5IKR", "4RER"];
+                                filteredTargets = targets.filter(t => nutritionPdbIds.includes(t.pdb_id));
                               }
                             } else if (selectedCategory === "PATOGENOS") {
                               if (activeCategory === "bacterias_pared") {
@@ -671,16 +831,29 @@ export default function EvaluationPage() {
                             return sortedTargets.map((t) => {
                               const isSelected = target === t.pdb_id;
                               
-                              // Subtítulo clínico en el botón para guiar al usuario
-                              let breastSubtype = "";
-                              if (t.pdb_id === "3ERT") breastSubtype = "Receptor Hormonal (ER-α)";
-                              else if (t.pdb_id === "5L2I") breastSubtype = "Ciclo Celular (CDK6)";
-                              else if (t.pdb_id === "2W96") breastSubtype = "Ciclo Celular (CDK4)";
-                              else if (t.pdb_id === "4JPS") breastSubtype = "Vía PI3K (PIK3CA WT)";
-                              else if (t.pdb_id === "3O96") breastSubtype = "Vía AKT (AKT1)";
-                              else if (t.pdb_id === "3PP0") breastSubtype = "Receptor RTK (HER2)";
-                              else if (t.pdb_id === "4ZZZ") breastSubtype = "Reparación ADN (PARP1)";
-                              else if (t.pdb_id === "1HVY") breastSubtype = "Quimioterapia (TS)";
+                              // Subtítulo clínico/nutricional en el botón para guiar al usuario
+                              let targetSubtype = "";
+                              if (t.pdb_id === "3ERT") targetSubtype = "Receptor Estrogénico Inactivo (ER-α)";
+                              else if (t.pdb_id === "1ERE") targetSubtype = "Receptor Estrogénico Activo (ER-α)";
+                              else if (t.pdb_id === "3O96") targetSubtype = "Vía AKT Inactiva (AKT1)";
+                              else if (t.pdb_id === "4EKL") targetSubtype = "Vía AKT Activa (AKT1)";
+                              else if (t.pdb_id === "5L2I") targetSubtype = "Ciclo Celular (CDK6)";
+                              else if (t.pdb_id === "2W96") targetSubtype = "Ciclo Celular (CDK4)";
+                              else if (t.pdb_id === "4JPS") targetSubtype = "Vía PI3K (PIK3CA WT)";
+                              else if (t.pdb_id === "3PP0") targetSubtype = "Receptor RTK (HER2)";
+                              else if (t.pdb_id === "4ZZZ") targetSubtype = "Reparación ADN (PARP1)";
+                              else if (t.pdb_id === "1HVY") targetSubtype = "Quimioterapia (TS)";
+                              else if (t.pdb_id === "7E2Y") targetSubtype = "Receptor de Serotonina (5-HT1A)";
+                              else if (t.pdb_id === "3OSK") targetSubtype = "Inhibidor Checkpoint (CTLA-4)";
+                              else if (t.pdb_id === "2P4E") targetSubtype = "PCSK9 Sitio Ortostérico";
+                              else if (t.pdb_id === "6U26") targetSubtype = "PCSK9 Sitio Alostérico";
+                              else if (t.pdb_id === "6B3J") targetSubtype = "GLP-1R Extracelular Activo (ECD)";
+                              else if (t.pdb_id === "6X1A") targetSubtype = "GLP-1R Transmembrana Activo (TMD)";
+                              else if (t.pdb_id === "5VEW") targetSubtype = "GLP-1R Transmembrana Inactivo (TMD)";
+                              else if (t.pdb_id === "4I5I") targetSubtype = "Sirtuina SIRT1 Activa (Longevidad)";
+                              else if (t.pdb_id === "6D8X") targetSubtype = "Receptor PPAR-γ Activo (Metabolismo)";
+                              else if (t.pdb_id === "5IKR") targetSubtype = "Enzima COX-2 Inhibida (Antiinflamatorio)";
+                              else if (t.pdb_id === "4RER") targetSubtype = "Complejo AMPK Activo (Energía Celular)";
 
                               return (
                                 <button
@@ -699,8 +872,8 @@ export default function EvaluationPage() {
                                       <span className="font-mono text-xs text-brand-400 font-bold">{t.pdb_id}</span>
                                       <span className="text-xs truncate">{t.name}</span>
                                     </div>
-                                    {breastSubtype && (
-                                      <span className="text-[10px] text-surface-400 font-medium mt-0.5">{breastSubtype}</span>
+                                    {targetSubtype && (
+                                      <span className="text-[10px] text-surface-400 font-medium mt-0.5">{targetSubtype}</span>
                                     )}
                                   </div>
                                   {t.is_hot && (

@@ -274,6 +274,114 @@ async def main():
                 {"name": "MET311", "importance": 0.78},
                 {"name": "TRP109", "importance": 0.77}
             ]
+        },
+        {
+            "pdb_id": "4I5I",
+            "name": "SIRT1 (Conformación Activa - Longevidad)",
+            "chain": "A",
+            "description": "Sirtuina 1 humana (gen de la longevidad) en estado catalítico activo unido a NAD+ y análogo de activador alostérico (EX-527). Blanco principal para polifenoles y fitonutrientes antienvejecimiento.",
+            "grid_center_x": 42.96, "grid_center_y": -21.41, "grid_center_z": 18.53,
+            "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
+            "requires_cns": False, "structural_family": "Deacetylase", "organism": "Homo sapiens",
+            "resolution": 2.5, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "is_hot": False,
+            "hotspots": [
+                {"name": "PHE273", "importance": 1.0},
+                {"name": "PHE297", "importance": 0.9},
+                {"name": "ILE347", "importance": 0.8}
+            ]
+        },
+        {
+            "pdb_id": "6D8X",
+            "name": "PPAR-gamma (Conformación Activa - Metabolismo)",
+            "chain": "A",
+            "description": "Receptor activado por proliferadores de peroxisomas gamma (PPAR-γ) unido a agonista completo GW1929. Regulador clave del metabolismo de lípidos, glucosa y sensibilidad a insulina.",
+            "grid_center_x": 1.39, "grid_center_y": -4.32, "grid_center_z": -19.36,
+            "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
+            "requires_cns": False, "structural_family": "Nuclear Receptor", "organism": "Homo sapiens",
+            "resolution": 1.9, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "is_hot": False,
+            "hotspots": [
+                {"name": "HIS323", "importance": 1.0},
+                {"name": "HIS449", "importance": 1.0},
+                {"name": "TYR473", "importance": 1.0}
+            ]
+        },
+        {
+            "pdb_id": "5IKR",
+            "name": "COX-2 (Conformación Inhibida - Antiinflamatorio)",
+            "chain": "A",
+            "description": "Ciclooxigenasa-2 humana (COX-2) en complejo con el inhibidor Ácido Mefenámico. Blanco molecular para fitoquímicos con actividad antiinflamatoria y analgésica.",
+            "grid_center_x": 38.96, "grid_center_y": 2.35, "grid_center_z": 61.50,
+            "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
+            "requires_cns": False, "structural_family": "Enzyme", "organism": "Homo sapiens",
+            "resolution": 2.34, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "is_hot": False,
+            "hotspots": [
+                {"name": "ARG120", "importance": 1.0},
+                {"name": "TYR355", "importance": 0.9},
+                {"name": "SER530", "importance": 0.8}
+            ]
+        },
+        {
+            "pdb_id": "4RER",
+            "name": "AMPK (Conformación Activa - Energética Celular)",
+            "chain": "A",
+            "description": "Proteína quinasa activada por AMP (AMPK) humana unida al activador alostérico A-769662. Sensor energético celular crítico regulador del metabolismo de carbohidratos.",
+            "grid_center_x": 45.94, "grid_center_y": -30.22, "grid_center_z": 5.12,
+            "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
+            "requires_cns": False, "structural_family": "Kinase", "organism": "Homo sapiens",
+            "resolution": 2.9, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "is_hot": False,
+            "hotspots": [
+                {"name": "ASP139", "importance": 1.0},
+                {"name": "PHE223", "importance": 0.8}
+            ]
+        },
+        {
+            "pdb_id": "5VEW",
+            "name": "GLP-1R TMD (Conformación Inactiva - Bloqueado)",
+            "chain": "A",
+            "description": "Receptor GLP-1 (Dominio Transmembranal) en estado inactivo estabilizado por el modulador alostérico negativo PF-06305591. Útil para cribado comparativo de especificidad funcional.",
+            "grid_center_x": 20.56, "grid_center_y": 30.93, "grid_center_z": 27.96,
+            "grid_size_x": 30.0, "grid_size_y": 30.0, "grid_size_z": 30.0,
+            "requires_cns": False, "structural_family": "GPCR", "organism": "Homo sapiens",
+            "resolution": 3.0, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "is_hot": False,
+            "hotspots": [
+                {"name": "PHE367", "importance": 1.0},
+                {"name": "LEU360", "importance": 0.9}
+            ]
+        },
+        {
+            "pdb_id": "1ERE",
+            "name": "ER-alpha LBD (Conformación Activa - Estimulado)",
+            "chain": "A",
+            "description": "Receptor de estrógeno alfa humano (LBD) en estado activo unido a la hormona natural Estradiol. Modelo clásico para el estudio de fitoestrógenos nutricionales.",
+            "grid_center_x": 9.27, "grid_center_y": 46.29, "grid_center_z": 131.21,
+            "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
+            "requires_cns": False, "structural_family": "Nuclear Receptor", "organism": "Homo sapiens",
+            "resolution": 2.3, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "is_hot": False,
+            "hotspots": [
+                {"name": "GLU353", "importance": 1.0},
+                {"name": "ARG394", "importance": 1.0}
+            ]
+        },
+        {
+            "pdb_id": "4EKL",
+            "name": "AKT1 (Conformación Activa - Fosforilado)",
+            "chain": "A",
+            "description": "Quinasa AKT1 humana fosforilada y activa unida a inhibidor competitivo de ATP. Permite evaluar la modulación directa de la supervivencia celular por nutracéuticos.",
+            "grid_center_x": 28.03, "grid_center_y": 5.22, "grid_center_z": 10.89,
+            "grid_size_x": 25.0, "grid_size_y": 25.0, "grid_size_z": 25.0,
+            "requires_cns": False, "structural_family": "Kinase", "organism": "Homo sapiens",
+            "resolution": 2.0, "spearman_rho": 0.0, "affinity_threshold": -7.5,
+            "is_hot": False,
+            "hotspots": [
+                {"name": "ALA230", "importance": 1.0},
+                {"name": "GLU234", "importance": 0.8}
+            ]
         }
     ]
 
