@@ -98,7 +98,7 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
         containerRef.current.innerHTML = "";
 
         viewer = await Viewer.create(containerRef.current, {
-          layoutIsExpanded: false,
+          layoutIsExpanded: true,
           layoutShowControls: false,
           layoutShowRemoteState: false,
           layoutShowSequence: false,
@@ -148,7 +148,7 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
       {/* Canvas container - explicitly position and constrain parent dimensions, forcing canvas children to fill */}
       <div 
         ref={containerRef} 
-        className="w-full h-full [&_canvas]:!w-full [&_canvas]:!h-full [&_.msp-plugin]:!w-full [&_.msp-plugin]:!h-full [&_.msp-plugin-container]:!w-full [&_.msp-plugin-container]:!h-full" 
+        className="w-full h-full" 
         style={{ position: "relative", width: "100%", height: "100%", minHeight: `${height}px` }} 
       />
 
