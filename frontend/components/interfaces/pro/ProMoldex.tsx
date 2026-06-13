@@ -41,6 +41,7 @@ export default function ProMoldex({
 }: Props) {
   const [activeView, setActiveView] = useState<"LIST" | "3D" | "INFO">("3D");
   const [activeTab, setActiveTab] = useState<"THERMO" | "GRID" | "ALERTS">("THERMO");
+  const [sortMode, setSortMode] = useState<"DATE_DESC" | "SCORE_DESC" | "SCORE_ASC">("DATE_DESC");
 
   // Filtrado de moléculas
   const filteredMolecules = useMemo(() => {
@@ -50,8 +51,18 @@ export default function ProMoldex({
       const matchesSearch = name.includes(search.toLowerCase()) || smiles.includes(search);
       const matchesTarget = targetFilter === "ALL" || m.target?.pdb_id === targetFilter;
       return matchesSearch && matchesTarget;
+    }).sort((a, b) => {
+      if (sortMode === "DATE_DESC") {
+        const dateA = new Date(a.evaluated_at || a.created_at || 0).getTime();
+        const dateB = new Date(b.evaluated_at || b.created_at || 0).getTime();
+        return dateB - dateA;
+      } else if (sortMode === "SCORE_DESC") {
+        return (b.metrics?.score || 0) - (a.metrics?.score || 0);
+      } else {
+        return (a.metrics?.score || 0) - (b.metrics?.score || 0);
+      }
     });
-  }, [molecules, search, targetFilter]);
+  }, [molecules, search, targetFilter, sortMode]);
 
   // Eficiencia Lipofílica (LLE) termodinámica corregida: LLE = (-Affinity / 1.36) - LogP
   const computedLLE = useMemo(() => {
@@ -119,20 +130,55 @@ export default function ProMoldex({
           </div>
 
           {/* Target Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {targets.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTargetFilter(t)}
-                className={`flex-shrink-0 rounded-lg px-2.5 py-1 text-[8px] font-bold uppercase tracking-wider border transition-all ${
-                  targetFilter === t
-                    ? "bg-indigo-600/10 border-indigo-500/30 text-indigo-400"
-                    : "bg-[#080d1a] border-white/5 text-slate-500 hover:text-slate-300"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+          <div className="flex items-center justify-between overflow-x-auto pb-1 no-scrollbar gap-2 w-full">
+            <div className="flex items-center gap-1.5">
+              {targets.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setTargetFilter(t);
+                    const newFiltered = molecules.filter((m) => {
+                      const name = m.name?.toLowerCase() || "";
+                      const smiles = m.smiles || "";
+                      const matchesSearch = name.includes(search.toLowerCase()) || smiles.includes(search);
+                      const matchesTarget = t === "ALL" || m.target?.pdb_id === t;
+                      return matchesSearch && matchesTarget;
+                    }).sort((a, b) => {
+                      if (sortMode === "DATE_DESC") {
+                        const dateA = new Date(a.evaluated_at || a.created_at || 0).getTime();
+                        const dateB = new Date(b.evaluated_at || b.created_at || 0).getTime();
+                        return dateB - dateA;
+                      } else if (sortMode === "SCORE_DESC") {
+                        return (b.metrics?.score || 0) - (a.metrics?.score || 0);
+                      } else {
+                        return (a.metrics?.score || 0) - (b.metrics?.score || 0);
+                      }
+                    });
+                    if (newFiltered.length > 0) {
+                      setSelectedId(newFiltered[0].id);
+                    }
+                  }}
+                  className={`flex-shrink-0 rounded-lg px-2.5 py-1 text-[8px] font-bold uppercase tracking-wider border transition-all ${
+                    targetFilter === t
+                      ? "bg-indigo-600/10 border-indigo-500/30 text-indigo-400"
+                      : "bg-[#080d1a] border-white/5 text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => {
+                const nextSort = sortMode === "DATE_DESC" ? "SCORE_DESC" : sortMode === "SCORE_DESC" ? "SCORE_ASC" : "DATE_DESC";
+                setSortMode(nextSort);
+              }}
+              className="flex-shrink-0 flex items-center gap-1 rounded-lg px-2 py-1 text-[8px] font-bold uppercase tracking-wider border border-white/5 bg-[#080d1a] text-slate-400 hover:text-slate-200 hover:border-white/20 transition-all ml-auto"
+              title="Cambiar ordenamiento"
+            >
+              {sortMode === "DATE_DESC" ? "🕒 RECIENTES" : sortMode === "SCORE_DESC" ? "⬇️ MAYOR SCORE" : "⬆️ MENOR SCORE"}
+            </button>
           </div>
         </div>
 

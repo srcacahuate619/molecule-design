@@ -31,6 +31,7 @@ export default function MoldexPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [targetFilter, setTargetFilter] = useState("ALL");
+  const [sortMode, setSortMode] = useState<"DATE_DESC" | "SCORE_DESC" | "SCORE_ASC">("DATE_DESC");
   
   // Panel States
   const [showLeftPanel, setShowLeftPanel] = useState(true);
@@ -132,8 +133,18 @@ export default function MoldexPage() {
                            smiles.includes(search);
       const matchesTarget = targetFilter === "ALL" || m.target?.pdb_id === targetFilter;
       return matchesSearch && matchesTarget;
+    }).sort((a, b) => {
+      if (sortMode === "DATE_DESC") {
+        const dateA = new Date(a.evaluated_at || a.created_at || 0).getTime();
+        const dateB = new Date(b.evaluated_at || b.created_at || 0).getTime();
+        return dateB - dateA;
+      } else if (sortMode === "SCORE_DESC") {
+        return (b.metrics?.score || 0) - (a.metrics?.score || 0);
+      } else {
+        return (a.metrics?.score || 0) - (b.metrics?.score || 0);
+      }
     });
-  }, [molecules, search, targetFilter]);
+  }, [molecules, search, targetFilter, sortMode]);
 
   const targets = useMemo(() => {
     const t = new Set(molecules.map(m => m.target?.pdb_id).filter(Boolean));
@@ -287,18 +298,52 @@ export default function MoldexPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                {targets.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setTargetFilter(t)}
-                    className={`flex-shrink-0 rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
-                      targetFilter === t ? 'bg-indigo-500 border-indigo-400 text-white' : 'bg-black/40 border-white/5 text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 no-scrollbar w-full">
+                <div className="flex items-center gap-2">
+                  {targets.map(t => (
+                    <button
+                      key={t}
+                      onClick={() => {
+                        setTargetFilter(t);
+                        const newFiltered = molecules.filter(m => {
+                          const name = m.name?.toLowerCase() || "";
+                          const smiles = m.smiles || "";
+                          const matchesSearch = name.includes(search.toLowerCase()) || smiles.includes(search);
+                          const matchesTarget = t === "ALL" || m.target?.pdb_id === t;
+                          return matchesSearch && matchesTarget;
+                        }).sort((a, b) => {
+                          if (sortMode === "DATE_DESC") {
+                            const dateA = new Date(a.evaluated_at || a.created_at || 0).getTime();
+                            const dateB = new Date(b.evaluated_at || b.created_at || 0).getTime();
+                            return dateB - dateA;
+                          } else if (sortMode === "SCORE_DESC") {
+                            return (b.metrics?.score || 0) - (a.metrics?.score || 0);
+                          } else {
+                            return (a.metrics?.score || 0) - (b.metrics?.score || 0);
+                          }
+                        });
+                        if (newFiltered.length > 0) {
+                          setSelectedId(newFiltered[0].id);
+                        }
+                      }}
+                      className={`flex-shrink-0 rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest border transition-all ${
+                        targetFilter === t ? 'bg-indigo-500 border-indigo-400 text-white' : 'bg-black/40 border-white/5 text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => {
+                    const nextSort = sortMode === "DATE_DESC" ? "SCORE_DESC" : sortMode === "SCORE_DESC" ? "SCORE_ASC" : "DATE_DESC";
+                    setSortMode(nextSort);
+                  }}
+                  className="flex-shrink-0 flex items-center gap-1 rounded-full px-4 py-2 text-[9px] font-black uppercase tracking-widest border border-white/5 bg-black/40 text-slate-400 hover:text-slate-200 transition-all ml-auto"
+                >
+                  {sortMode === "DATE_DESC" ? "🕒 RECIENTES" : sortMode === "SCORE_DESC" ? "⬇️ MAYOR SCORE" : "⬆️ MENOR SCORE"}
+                </button>
               </div>
             </div>
           </div>
