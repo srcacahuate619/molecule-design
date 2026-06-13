@@ -1,3 +1,12 @@
+## Sesión: 2026-06-13 - Corrección de Fuga de Datos en Nivel 2 (ML Rescoring)
+### 1. Solución a la Corrupción de Features (Data Leakage)
+- **Aislamiento de Features 3D**: Se eliminó el `FEATURE_GROUP_B` (Vina Scores) de los inputs del modelo XGBoost. Anteriormente, el modelo sufría de *Data Leakage*, ya que aprendía a predecir `0.0` simplemente observando si la afinidad de Vina era `0.0`, ignorando por completo la especificidad biológica 3D.
+- **Validación por Ablación**: Al forzar al modelo a aprender exclusivamente de los descriptores RDKit y de los contactos 3D calculados por ProLIF, la contribución de la especificidad espacial (Modelo A vs Modelo Nulo) mejoró drásticamente en **+0.061** unidades de correlación de rango.
+
+### 2. Corrección de Extracción RDKit
+- **Bug Fix**: Se corrigió un error crítico en `train_orchestrator.py` donde se extraía el Peso Molecular (`mw`) en lugar de la Lipofilia (`logp`) para el descriptor de LogP, lo que estaba envenenando al modelo nulo y destruyendo la lógica del Delta (Modelo A - Modelo Nulo).
+- **Spearman Recovery**: Tras la recapacitación de la red neuronal y XGBoost con los descriptores limpios, el coeficiente de Spearman en validación cruzada rebotó inmediatamente al rango `[0.60 - 0.73]`.
+
 ## Sesión: 2026-05-15 - Éxito Spearman GLP-1R (6B3J) [FINAL]
 ### 1. Calibración Blindada Exitosa
 - **Spearman ρ = 0.4303**: Se logró una señal predictiva fuerte en el receptor GLP-1R tras 50 evaluaciones a ciegas.

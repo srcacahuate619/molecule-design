@@ -41,6 +41,8 @@ artifacts/
 *.tar.gz
 *.docx
 *.json
+PATENTES_Y_SECRETOS_IMPI.md
+docs/PATENTES_Y_SECRETOS_IMPI.md
 !package.json
 !composer.json
 

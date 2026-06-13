@@ -112,6 +112,12 @@ Para garantizar la reproducibilidad matemática e industrial de cada pose y dock
 3.  **Aislamiento Térmico**: Concurrencia restringida a 1 hilo de Celery worker, asegurando la reproducibilidad libre de ruidos por fluctuaciones de CPU.
 
 
+### 5.3 Prevención de Fuga de Datos (Data Leakage) en Rescoring
+Para garantizar que el modelo aprenda auténtica física estructural y no tome "atajos matemáticos", la arquitectura de XGBoost en MolDesign aísla estrictamente sus descriptores:
+- **Exclusión de Puntuación Vina**: La afinidad termodinámica calculada por Vina (`FEATURE_GROUP_B`) está estrictamente censurada de los inputs del modelo XGBoost.
+- **Razón Científica**: Si se incluye, el modelo sufre de *Data Leakage*. Al ver un score de Vina de `0.0` (debido a colisiones severas o penalizaciones por tensión de anillo), el modelo de ML simplemente aprenderá a predecir `0.0` ignorando las características 3D (contactos H-bond, pi-stacking) que debe analizar.
+- **Física Pura**: Al censurar a Vina, obligamos al árbol de decisión a comprender por sí mismo la topología del bolsillo mediante los vectores de ProLIF y RDKit.
+
 ## 5. Física de la Tensión de Anillo y SA Score
 
 El **SA Score (Synthetic Accessibility)** se calcula mediante un algoritmo de fragmentación de RDKit (Ertl & Schuffenhauer), pero en MolDesign v4 lo hemos endurecido:

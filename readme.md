@@ -2,6 +2,7 @@
 
 **Plataforma de Descubrimiento Farmacológico In Silico — Docking Físico · ML Rescoring · Certificación Blockchain**
 
+[![Versión](https://img.shields.io/badge/Versión-v6.5-blue.svg)]()
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Python: 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)]()
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
@@ -12,9 +13,9 @@
 
 > *"Democratizando el diseño de fármacos mediante rigor científico, transparencia total y registro inmutable de autoría."*
 
-**MolDesign AI** es una plataforma *Open Science* para el cribado virtual de moléculas contra blancos biológicos de relevancia terapéutica. Combina un pipeline de **docking físico real** (AutoDock Vina), **rescoring por Machine Learning** (XGBoost, 176 features 3D), **auditoría científica profunda** (LE, LLE, Hotspot Analysis) y **certificación inmutable de autoría** en la blockchain de Solana. Los resultados completos se exportan como **Reporte Científico PDF** generado automáticamente.
+**MolDesign AI (v6.5)** es una plataforma *Open Science* para el cribado virtual de moléculas contra blancos biológicos de relevancia terapéutica. Combina un pipeline de **docking físico real** (AutoDock Vina), **rescoring por Machine Learning** (XGBoost, 176 features 3D), **auditoría científica profunda** (LE, LLE, Hotspot Analysis) y **certificación inmutable de autoría** en la blockchain de Solana. Los resultados completos se exportan como **Reporte Científico PDF** generado automáticamente.
 
-El módulo **Moldex** sirve como la interfaz principal de evaluación y registro histórico de moléculas.
+El módulo **Moldex** sirve como la interfaz principal de evaluación y registro histórico de moléculas. *(Nota v6.5: Interfaz Dual interactiva "Pro" y "Academy", detalles en [CHANGELOG_v6.5.md](docs/CHANGELOG_v6.5.md)).*
 
 ---
 
@@ -49,9 +50,9 @@ MolDesign resuelve esto con:
 
 ---
 
-## Arquitectura de Cribado Multi-Nivel "Micro-Analítica"
+## Enrutador Físico Adaptativo (Cribado Multi-Nivel)
 
-Para superar el límite físico de resolución en rangos de potencia estrechos (donde las pequeñas diferencias experimentales caen dentro de la incertidumbre típica del docking de $\pm 1.5$ a $2.0 \text{ kcal/mol}$), MolDesign está estructurado bajo una **hoja de ruta de cribado en múltiples capas de resolución**:
+Para superar el límite físico de resolución empírica y optimizar el uso de recursos, MolDesign emplea un **Enrutador Físico Adaptativo** que analiza la molécula entrante y la envía al motor de simulación correcto:
 
 ```
  ┌────────────────────────────────────────────────────────┐
@@ -81,7 +82,10 @@ Para superar el límite físico de resolución en rangos de potencia estrechos (
 1.  **Nivel 1 (Filtro Rápido - 17s/molécula) — [En Producción]:** AutoDock Vina + Rescoring XGBoost (contactos discretos ProLIF + descriptores electroquímicos globales ECIF-lite). Descarta compuestos inactivos o con propiedades ADME pobres.
 2.  **Nivel 2 (Red Neuronal de Grafos - 8s/molécula) — [En Producción v6.3]:** Inferencia profunda basada en grafos con **RTMScore** (Residue-Atom Graph Transformer Module). Modela al complejo proteína-ligando como un grafo y predice la densidad de probabilidad de las distancias de contacto mediante un Modelo de Mezclas Gaussianas (GMM). Aporta una corrección biofísica continua contra falsos positivos tridimensionales.
 3.  **Nivel 3 (Docking Peptídico y Refinamiento - 1m/molécula) — [En Producción v6.4]:** Docking de péptidos y macromoléculas flexibles mediante redes de difusión generativa (**DiffPepDock** con sesgo del sitio activo) o co-plegado co-evolutivo (**ColabFold**). Aplica una capa final de refinamiento físico en solvente implícito mediante **AMBER14SB/OpenMM** (fijando el esqueleto de la proteína) con caída controlada a **RDKit UFF** para aliviar choques estéricos.
-4.  **Nivel 4 (Detección de Metales de Transición) — [En Desarrollo (xTB+AD4 planificado)]:** El sistema intercepta compuestos organometálicos. Actualmente mapea los iones metálicos y utiliza **AutoDock Vina** como aproximación primaria ("fallback"), con planes de integrar cálculos cuánticos semiempíricos (**GFN2-xTB**) y **AutoDock 4 (AD4)** explícito en la fase 6.5.
+4.  **Nivel 4 (Detección de Metales de Transición) — [En Producción v6.5]:** El sistema intercepta compuestos organometálicos (que Vina no puede modelar correctamente). Aplica cálculos cuánticos semiempíricos ultrarrápidos (**GFN2-xTB**) para obtener cargas parciales de alta precisión e inyectarlas en un motor de docking clásico compatible con organometálicos (**AutoDock 4 con Scoring AD4**).
+
+### Auto-Recalibración Dinámica
+Para evitar el "Scoring Bias" intrínseco de cada receptor, MolDesign cuenta con un sistema de **Auto-Recalibración Dinámica de la Especificidad**. El sistema ingiere rutinariamente ligandos endógenos de control validado in vitro, evalúa la precisión (vía Benchmark de Spearman), y auto-ajusta el *specificity_floor* y los multiplicadores de la plataforma para asegurar consistencia predictiva sin intervención humana.
 
 ---
 
@@ -435,9 +439,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8010
 | v6.2 | Ingestión de 9 Targets Oncológicos y UI de Selección interactiva | ✅ |
 | v6.2.1 | **Modificación del Frontend**: Implementación dual de **Modo Gamer** y **Modo Pro** | ✅ |
 | v6.3 | **Integración de Nivel 2 GNN**: Rescoring de grafos RTMScore (Graph Transformer + GMM) | ✅ |
-| v6.4 (actual) | **Nivel 3**: Motores Peptídicos (DiffPepDock/ColabFold + OpenMM) y Detección de Metales. *Validado con Benchmark Robusto PIK3CA WT (N=95, ρ=+0.450)* | ✅ |
-| v6.5 | 3D-RISM desolvatación (AmberTools) | 📋 |
-| v6.6 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
+| v6.4 | **Nivel 3**: Motores Peptídicos (DiffPepDock/ColabFold + OpenMM) y Detección de Metales. *Validado con Benchmark Robusto PIK3CA WT (N=95, ρ=+0.450)* | ✅ |
+| v6.5 (actual) | **Capa de Presentación**: Interfaz Dual (Pro/Academy), Modales Interactivos en Cascada, depuración estética de la UX/UI | ✅ |
+| v6.6 | 3D-RISM desolvatación (AmberTools) | 📋 |
+| v6.7 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
 
 Ver detalles técnicos en [`docs/MVP_ROADMAP.md`](docs/MVP_ROADMAP.md) — Sección 16 (Fase 6.0).
 

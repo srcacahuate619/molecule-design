@@ -29,19 +29,17 @@ El sistema está diseñado como una arquitectura de microservicios, orquestada p
 
 ---
 
-## ⚙️ Flujo de Trabajo Paso a Paso (Pipeline E2E)
-El proceso es lineal y altamente controlado:
+## ⚙️ Flujo de Trabajo (Enrutador Físico Adaptativo)
+El proceso no es lineal, sino dinámico e inteligente:
 
-1.  **Input Molecular:** El usuario ingresa un SMILES $\rightarrow$ Se valida la química básica (RDKit).
-2.  **Generación 3D:** Se genera una conformación bioactiva (ETKDG v3).
-3.  **Docking Inicial:** AutoDock Vina calcula las poses iniciales y puntuaciones empíricas.
-4.  **Filtrado de Pose:** Se aplican filtros geométricos rigurosos (contacto, enterramiento) para descartar resultados físicamente imposibles.
-5.  **Rescoring ML:** El servicio `rescoring/` toma las poses filtradas y aplica el modelo XGBoost ($\text{Modelo A} - \text{Modelo NULL}$) para obtener una afinidad corregida.
-6.  **Scoring Compuesto:** Se calcula el Score final (0-100) ponderando la afinidad, ADME y Drug-likeness.
-7.  **Output Científico:** El sistema genera un reporte detallado que incluye:
-    *   El score compuesto.
-    *   La fuente de cada componente del score.
-    *   Un *hash* SHA-256 asociado a la transacción en Solana, certificando el hallazgo.
+1.  **Input Molecular & Validación:** El usuario ingresa un SMILES $\rightarrow$ Se validan propiedades (RDKit, SA Score, Lipinski).
+2.  **Enrutamiento Físico (Niveles 1-4):**
+    *   **Nivel 1 (Orgánico Rápido):** Docking con AutoDock Vina + ML Rescoring (XGBoost).
+    *   **Nivel 2 (Validación 3D):** Inferencia basada en grafos con RTMScore para corregir falsos positivos estéricos.
+    *   **Nivel 3 (Peptídico):** Si es un péptido, se enruta a DiffPepDock/ColabFold + refinamiento OpenMM.
+    *   **Nivel 4 (Organometálico):** Si detecta metales de transición, usa GFN2-xTB para extraer cargas cuánticas y acopla con AutoDock 4 (AD4).
+3.  **Auditoría & Auto-Recalibración:** Se aplican filtros de Hotspots y se ejecuta el sistema de *Auto-Recalibración Dinámica* que ajusta matemáticamente el umbral de especificidad con ligandos endógenos.
+4.  **Output Científico & Blockchain:** El sistema genera un PDF con la fuente de cada componente y un *hash* SHA-256 en Solana Devnet.
 
 ---
 
