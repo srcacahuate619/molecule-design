@@ -106,10 +106,10 @@ export default function ProMoldex({
       {/* 1. COLUMN LEFT: Hoja de cálculo de Bioteca (Spreadsheet) */}
       <aside
         className={`w-full md:w-[340px] flex-shrink-0 border-r border-white/5 bg-[#03060c] flex flex-col transition-all duration-300 ${
-          activeView === "LIST" ? "block absolute inset-x-0 bottom-0 top-[52px] z-40" : "hidden md:flex h-full"
+          activeView === "LIST" ? "block absolute inset-x-0 bottom-0 top-[52px] z-40 overflow-y-auto md:overflow-hidden" : "hidden md:flex h-full md:overflow-hidden"
         }`}
       >
-        <div className="p-5 border-b border-white/5 space-y-3">
+        <div className="p-5 border-b border-white/5 space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-[10px] font-black uppercase tracking-[0.25em] text-white flex items-center gap-2">
               <Database size={12} className="text-indigo-500" /> Bioteca Científica
@@ -183,7 +183,7 @@ export default function ProMoldex({
         </div>
 
         {/* Spreadsheet Table Body */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
+        <div className="md:flex-1 md:overflow-y-auto custom-scrollbar p-2">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 text-[8px] font-black uppercase tracking-wider text-slate-500">

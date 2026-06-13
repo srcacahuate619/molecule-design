@@ -279,9 +279,9 @@ export default function MoldexPage() {
             x: showLeftPanel ? 0 : -320
           }}
           transition={{ type: "spring", stiffness: 300, damping: 35 }}
-          className={`border-r border-white/5 bg-[#0a0f1d]/95 md:bg-[#0a0f1d]/40 backdrop-blur-xl pointer-events-auto overflow-hidden flex flex-col ${isMobile ? 'absolute inset-x-0 bottom-0 top-[60px] z-40' : 'h-full'} ${isMobile && activeView !== 'LIST' ? 'pointer-events-none' : ''}`}
+          className={`border-r border-white/5 bg-[#0a0f1d]/95 md:bg-[#0a0f1d]/40 backdrop-blur-xl pointer-events-auto flex flex-col ${isMobile ? 'absolute inset-x-0 bottom-0 top-[60px] z-40 overflow-y-auto' : 'h-full md:overflow-hidden'} ${isMobile && activeView !== 'LIST' ? 'pointer-events-none' : ''}`}
         >
-          <div className="p-8 border-b border-white/5 min-w-[320px]">
+          <div className="p-8 border-b border-white/5 min-w-[320px] shrink-0">
             <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2 mb-8">
               <FlaskConical size={24} className="text-indigo-500" />
               MOLDEX <span className="text-[10px] bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/35 tracking-widest uppercase font-black">Bioteca</span>
@@ -348,7 +348,7 @@ export default function MoldexPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar min-w-[320px]">
+          <div className={`p-6 space-y-4 custom-scrollbar min-w-[320px] ${isMobile ? '' : 'flex-1 overflow-y-auto'}`}>
             <AnimatePresence mode="popLayout">
               {filteredMolecules.map((m) => (
                 <MoldexCard 
