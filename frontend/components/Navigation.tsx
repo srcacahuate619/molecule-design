@@ -92,9 +92,12 @@ export function Navigation() {
 
       {/* Mobile Menu Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-[200] md:hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="absolute inset-0" onClick={() => setIsOpen(false)} />
-          <div className="relative w-full max-w-sm bg-[#05080f] border border-white/10 rounded-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom-10 zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[200] md:hidden animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsOpen(false)} />
+          
+          {/* Modal Centrado Absoluto */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm bg-[#05080f] border border-white/10 rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
             
             <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-black/40">
               <span className="text-xs font-black text-white tracking-[0.2em] uppercase flex items-center gap-2">
