@@ -93,10 +93,8 @@ const extractReferenceLigand = (pdbStr: string): string | null => {
 const patchSdfTitle = (sdfStr: string): string => {
   const lines = sdfStr.split("\n");
   if (lines.length > 0) {
-    const firstLine = lines[0].trim();
-    if (!firstLine || firstLine.toLowerCase() === "unknown" || firstLine.toLowerCase() === "vina" || firstLine === "UNL") {
-      lines[0] = "Mi Diseño MolDesign (Candidato)";
-    }
+    // Forcefully overwrite the SDF title to ensure Molstar reads it
+    lines[0] = "Candidato_Ligando_MolDesign";
   }
   return lines.join("\n");
 };
@@ -165,8 +163,8 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
         let candidate = structures.find((s: any) => {
           const label1 = (s.cell?.obj?.label || "").toLowerCase();
           const label2 = (s.cell?.obj?.data?.label || "").toLowerCase();
-          return label1.includes("candidato") || label1.includes("diseño") || label1.includes("ligando") || label1.includes("sdf") ||
-                 label2.includes("candidato") || label2.includes("diseño") || label2.includes("ligando") || label2.includes("sdf");
+          return label1.includes("candidato") || label1.includes("diseño") || label1.includes("ligando") || label1.includes("sdf") || label1.includes("unknown") ||
+                 label2.includes("candidato") || label2.includes("diseño") || label2.includes("ligando") || label2.includes("sdf") || label2.includes("unknown");
         });
 
         if (!candidate && poseData && structures.length > 1) {
