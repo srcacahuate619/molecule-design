@@ -50,6 +50,12 @@ Los dos componentes del score fisicoquímico miden cosas distintas y complementa
 - **Score ADME (peso 0.30):** Evalúa el perfil de absorción/distribución explícitamente mediante 3 factores físicos independientes: TPSA (permeabilidad oral y BBB), logP (lipofilia, distribución en tejido) y SA Score (accesibilidad sintética). Penaliza directamente los factores que afectan la viabilidad clínica.
 - **Score Drug-likeness (peso 0.25):** Basado en el **QED** (Bickerton et al., *Nat. Chem.* 2012), que combina 8 propiedades moleculares ponderadas (MW, logP, HBD, HBA, PSA, RotBonds, Aromáticos, Alertas estructurales) en un único índice de 0 a 1 calibrado contra el juicio de expertos en química medicinal sobre ~1,500 moléculas aprobadas.
 
+### Protocolo Endógeno vs. Diseño de Fármacos Sintéticos [v6.6]
+El sistema de puntuación tiene dos modos de operación distintos, diseñados para reflejar la diferencia fundamental entre el desarrollo de un fármaco clínico y el estudio biológico de la naturaleza:
+
+1.  **Fármaco Sintético (`is_control = False`, Por Defecto)**: El sistema asume que el compuesto será administrado a un humano (ej. vía oral). El **Total Score** es un promedio ponderado de Afinidad (45%), ADME (30%) y Druglikeness (25%). Moléculas con excelente afinidad pero pésimas propiedades de absorción son fuertemente penalizadas, ya que fracasarían en ensayos in vivo. De la misma forma, moléculas fáciles de absorber obtienen una bonificación en el puntaje, pero solo si cumplen con el requisito de especificidad biológica (ver Hotspots).
+2.  **Protocolo Endógeno / Control (`is_control = True`)**: Al activarse, le indica al motor de puntuación que la molécula es un ligando endógeno biológico (como la *Serotonina* o la *Melatonina*), o un control de cristalografía. Dado que la naturaleza no selecciona estos ligandos en base a su "biodisponibilidad oral" (el cuerpo los inyecta/sintetiza directamente en los sitios requeridos), el sistema **ignora por completo las bonificaciones y penalizaciones de ADME y Druglikeness**. El Total Score refleja **exclusivamente la fuerza bruta y afinidad termodinámica** (Ligand Efficiency) de la unión molecular. Esto permite evaluar la física de la unión en su estado más puro, desnudando cualquier inflado de puntaje generado por propiedades fisicoquímicas óptimas.
+
 ## 4. Especificidad Biológica y Hotspots (5.0 Å)
 
 MolDesign v4.2 introduce el concepto de **Puntos de Interacción Críticos (Hotspots)** para diferenciar entre "unir cualquier bolsillo" y "bloquear el sitio funcional".
