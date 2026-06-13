@@ -23,3 +23,4 @@ dependencies:
   - prody        # ¡EXPLÍCITO! Necesario para --read_with_prody y evitar errores de importación
   - openmm>=8.1  # Refinamiento estructural AMBER14SB para complejos receptor-péptido (Nivel 3)
   - ambertools>=23  # Parámetros Amber para aminoácidos y péptidos (campo de fuerzas amber14-all.xml)
+  - xtb          # Nivel 4: Docking Cuántico, GFN2-xTB para cálculos semiempíricos de cargas
