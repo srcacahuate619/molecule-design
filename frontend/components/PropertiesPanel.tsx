@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { EvaluationResult } from "../lib/types";
 
 type Props = {
@@ -19,21 +20,41 @@ function Pill({ ok, label }: { ok: boolean | null; label: string }) {
   );
 }
 
-function Row({ label, value, unit }: { label: string; value: number | null | undefined; unit?: string }) {
+function Row({ label, value, unit, onClick }: { label: string; value: number | null | undefined; unit?: string, onClick?: () => void }) {
   if (value === null || value === undefined) return null;
   const display = typeof value === "number" ? (Number.isInteger(value) ? String(value) : value.toFixed(2)) : String(value);
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-surface-400">{label}</span>
-      <span className="tabular-nums text-gray-300">
+  
+  const content = (
+    <>
+      <span className="text-surface-400 group-hover:text-surface-200 transition-colors">{label}</span>
+      <span className="tabular-nums text-gray-300 group-hover:text-white transition-colors">
         {display}
         {unit && <span className="ml-1 text-surface-500">{unit}</span>}
       </span>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button 
+        onClick={onClick}
+        className="group flex w-full items-center justify-between text-sm hover:bg-surface-800/50 p-1.5 -mx-1.5 rounded transition-all text-left"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between text-sm p-1.5 -mx-1.5">
+      {content}
     </div>
   );
 }
 
 export function PropertiesPanel({ result }: Props) {
+  const [selectedProperty, setSelectedProperty] = useState<{title: string, desc: string, icon: string} | null>(null);
+
   const hasProps =
     result.molecular_weight !== null ||
     result.log_p !== null ||
@@ -45,19 +66,77 @@ export function PropertiesPanel({ result }: Props) {
     <section className="space-y-3 rounded-xl border border-surface-800 bg-surface-900 p-5">
       <h3 className="font-bold text-white">Propiedades fisicoquímicas</h3>
       <p className="text-xs text-surface-400">
-        Calculadas con RDKit. Valores reales, no estimaciones de IA.
+        Calculadas con RDKit. Valores reales, no estimaciones de IA. Toca una propiedad para aprender más.
       </p>
 
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-        <Row label="Peso molecular" value={result.molecular_weight} unit="Da" />
-        <Row label="LogP" value={result.log_p} />
-        <Row label="TPSA" value={result.tpsa} unit="Å²" />
-        <Row label="HBD" value={result.hbd} />
-        <Row label="HBA" value={result.hba} />
-        <Row label="Rot. bonds" value={result.rotatable_bonds} />
+      <div className="grid grid-cols-2 gap-x-6 gap-y-0.5">
+        <Row 
+          label="Peso molecular" 
+          value={result.molecular_weight} 
+          unit="Da" 
+          onClick={() => setSelectedProperty({
+            title: "Peso Molecular",
+            icon: "⚖️",
+            desc: "Es la masa total de tu molécula. En farmacología, moléculas más pequeñas (menos de 500 Da) suelen ser mejores porque pueden atravesar las paredes celulares del estómago e intestino para llegar a la sangre."
+          })}
+        />
+        <Row 
+          label="LogP" 
+          value={result.log_p} 
+          onClick={() => setSelectedProperty({
+            title: "Coeficiente de Partición (LogP)",
+            icon: "🛢️",
+            desc: "Mide qué tan 'grasosa' (lipofílica) es tu molécula. Si es muy bajo (negativo), es como agua y no atravesará las membranas celulares hechas de grasa. Si es muy alto (>5), es tan grasosa que se quedará pegada en la membrana y no circulará por la sangre."
+          })}
+        />
+        <Row 
+          label="TPSA" 
+          value={result.tpsa} 
+          unit="Å²" 
+          onClick={() => setSelectedProperty({
+            title: "Área de Superficie Polar Topológica (TPSA)",
+            icon: "🧲",
+            desc: "Mide la superficie total de la molécula que es 'polar' (suele atraer agua). Un TPSA alto (>140 Å²) hace que la molécula no pueda penetrar las células. Para drogas que actúan en el cerebro (cruzan la barrera hematoencefálica), se requiere un TPSA menor a 90 Å²."
+          })}
+        />
+        <Row 
+          label="HBD" 
+          value={result.hbd} 
+          onClick={() => setSelectedProperty({
+            title: "Donadores de Puentes de Hidrógeno (HBD)",
+            icon: "🤝",
+            desc: "Número de átomos de hidrógeno (usualmente unidos a N u O) que la molécula puede 'donar' para formar enlaces. La regla de Lipinski dice que debe ser ≤ 5 para una buena absorción oral."
+          })}
+        />
+        <Row 
+          label="HBA" 
+          value={result.hba} 
+          onClick={() => setSelectedProperty({
+            title: "Aceptores de Puentes de Hidrógeno (HBA)",
+            icon: "🤲",
+            desc: "Número de átomos (usualmente Nitrógeno u Oxígeno) que pueden 'aceptar' hidrógenos para formar enlaces. La regla de Lipinski dice que debe ser ≤ 10 para una buena absorción oral."
+          })}
+        />
+        <Row 
+          label="Rot. bonds" 
+          value={result.rotatable_bonds} 
+          onClick={() => setSelectedProperty({
+            title: "Enlaces Rotables",
+            icon: "🔄",
+            desc: "Mide la flexibilidad de la molécula. Si una molécula tiene demasiados enlaces rotables (>10), será tan inestable y flexible que le costará mucho trabajo 'encajar' con la forma exacta del receptor proteico."
+          })}
+        />
         <Row label="Átomos pesados" value={result.heavy_atom_count} />
         <Row label="Anillos" value={result.ring_count} />
-        <Row label="QED" value={result.qed} />
+        <Row 
+          label="QED" 
+          value={result.qed} 
+          onClick={() => setSelectedProperty({
+            title: "Quantitative Estimate of Drug-likeness (QED)",
+            icon: "🌟",
+            desc: "Es un puntaje global de 0 a 1 que resume qué tan similar es tu molécula a los fármacos aprobados existentes, basándose en todas sus propiedades físicas simultáneamente. 1.0 es la perfección farmacéutica."
+          })}
+        />
         <Row label="SA Score" value={result.sa_score} />
       </div>
 
@@ -73,9 +152,62 @@ export function PropertiesPanel({ result }: Props) {
       )}
 
       <div className="flex flex-wrap gap-2 pt-1">
-        <Pill ok={result.lipinski_pass} label="Lipinski" />
-        <Pill ok={result.veber_pass} label="Veber" />
+        <button 
+          onClick={() => setSelectedProperty({
+            title: "Regla de los 5 de Lipinski",
+            icon: "📜",
+            desc: "Si esta pastilla está en rojo (✗), significa que la molécula viola dos o más reglas fundamentales de absorción oral (Peso > 500, LogP > 5, HBD > 5, HBA > 10). Sería un mal candidato para una pastilla."
+          })}
+          className="hover:scale-105 transition-transform"
+        >
+          <Pill ok={result.lipinski_pass} label="Lipinski" />
+        </button>
+        <button 
+          onClick={() => setSelectedProperty({
+            title: "Reglas de Veber",
+            icon: "📜",
+            desc: "Reglas adicionales que determinan si una molécula es buena para administración oral basándose en flexibilidad (Rotatable Bonds ≤ 10) y TPSA (≤ 140 Å²)."
+          })}
+          className="hover:scale-105 transition-transform"
+        >
+          <Pill ok={result.veber_pass} label="Veber" />
+        </button>
       </div>
+
+      {/* Modal Métrica Educativa */}
+      {selectedProperty && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSelectedProperty(null)}
+        >
+          <div 
+            className="bg-surface-900 border border-indigo-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedProperty(null)}
+              className="absolute top-4 right-4 text-surface-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-3xl">{selectedProperty.icon}</span>
+              <h3 className="text-xl font-bold text-white leading-tight">{selectedProperty.title}</h3>
+            </div>
+            <p className="text-sm text-surface-300 leading-relaxed">
+              {selectedProperty.desc}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setSelectedProperty(null)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

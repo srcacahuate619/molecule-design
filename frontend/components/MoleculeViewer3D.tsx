@@ -24,6 +24,7 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [showHotspots, setShowHotspots] = useState(true);
   const [selectedHotspot, setSelectedHotspot] = useState<string | null>(null);
+  const [selectedEduLegend, setSelectedEduLegend] = useState<{title: string, desc: React.ReactNode, icon?: string} | null>(null);
 
   // Mobile / Touch screen scroll trap prevention
   const [isMobile, setIsMobile] = useState(false);
@@ -283,17 +284,75 @@ export function MoleculeViewer3D({ poseData, proteinData, height = 450, hotspots
 
       {!hideLegend && (
         <div className="mt-4 flex flex-wrap items-center justify-center gap-6 px-4 py-3 bg-surface-950/40 rounded-xl border border-surface-800/50 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setSelectedEduLegend({
+              title: "Interacción Crítica (Verde Brillante)",
+              icon: "🌟",
+              desc: "Representa un enlace fuerte entre tu molécula y la proteína (usualmente un Puente de Hidrógeno o un Enlace Iónico). Ocurre cuando átomos polares (como N, O, S) están a menos de 3.5 Å de distancia. ¡Estos son los anclajes que hacen funcionar al fármaco!"
+            })}
+            className="flex items-center gap-2 hover:scale-105 transition-transform"
+          >
             <div className="h-3 w-3 rounded-full bg-[#00ff00] shadow-[0_0_8px_#00ff00]" />
             <span className="text-[10px] font-bold text-surface-200 uppercase tracking-wider">Impacto Crítico (&lt; 3.5Å + Polar)</span>
-          </div>
-          <div className="flex items-center gap-2">
+          </button>
+          
+          <button 
+            onClick={() => setSelectedEduLegend({
+              title: "Contacto de Proximidad (Verde Oscuro)",
+              icon: "🤝",
+              desc: "Indica que tu molécula está físicamente cerca del hotspot (menos de 5.0 Å) pero no está formando un enlace fuerte (como un puente de hidrógeno). Aportan 'Fuerzas de Van der Waals' y Efecto Hidrofóbico que ayudan a estabilizar el fármaco en el bolsillo."
+            })}
+            className="flex items-center gap-2 hover:scale-105 transition-transform"
+          >
             <div className="h-3 w-3 rounded-full bg-[#10b981] opacity-60" />
-            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Contacto Proximidad (&lt; 5.0Å)</span>
-          </div>
-          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider hover:text-surface-300">Contacto Proximidad (&lt; 5.0Å)</span>
+          </button>
+          
+          <button 
+            onClick={() => setSelectedEduLegend({
+              title: "Hotspot Sin Alcanzar (Rosa)",
+              icon: "❌",
+              desc: "Este aminoácido de la proteína es muy importante para tratar la enfermedad, pero tu molécula diseñada está demasiado lejos (> 5.0 Å) para interactuar con él. En la vida real, tu fármaco podría no tener efecto o necesitar una dosis peligrosamente alta."
+            })}
+            className="flex items-center gap-2 hover:scale-105 transition-transform"
+          >
             <div className="h-3 w-3 rounded-full bg-[#ff00ff]" />
-            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">Sin Interacción (&gt; 5.0Å)</span>
+            <span className="text-[10px] font-bold text-surface-400 uppercase tracking-wider hover:text-surface-300">Sin Interacción (&gt; 5.0Å)</span>
+          </button>
+        </div>
+      )}
+
+      {/* Modal Educativo Leyenda 3D */}
+      {selectedEduLegend && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSelectedEduLegend(null)}
+        >
+          <div 
+            className="bg-surface-900 border border-indigo-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedEduLegend(null)}
+              className="absolute top-4 right-4 text-surface-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-4 mb-4">
+              {selectedEduLegend.icon && <span className="text-3xl">{selectedEduLegend.icon}</span>}
+              <h3 className="text-xl font-bold text-white leading-tight">{selectedEduLegend.title}</h3>
+            </div>
+            <p className="text-sm text-surface-300 leading-relaxed">
+              {selectedEduLegend.desc}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setSelectedEduLegend(null)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              >
+                Entendido
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -39,7 +39,7 @@ const PIPELINE_STEPS = [
     step: "LEVEL 0",
     title: "Curación Estructural",
     tech: "RDKit Engine",
-    desc: "Valida la valencia atómica, hibridación, estados de protonación y quiralidad tridimensional de la molécula ingresada.",
+    desc: "El primer paso consiste en asegurar que el diseño dibujado sea químicamente posible en el mundo real. RDKit, nuestro motor de quimioinformática, verifica que los átomos tengan la valencia correcta (por ejemplo, que el carbono no tenga más de 4 enlaces), define el estado de protonación adecuado a pH fisiológico, y establece la quiralidad tridimensional (la 'orientación' geométrica). Si la molécula falla aquí o es inestable, el proceso se detiene antes de gastar valiosos recursos computacionales.",
     icon: "🔬",
     colors: {
       COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
@@ -52,7 +52,7 @@ const PIPELINE_STEPS = [
     step: "LEVEL 1",
     title: "Screening Virtual",
     tech: "AutoDock Vina + XGBoost",
-    desc: "Simulación de docking rígido contra la diana y predicción de energía libre (kcal/mol) por Gradient Boosting con descriptores ODDT.",
+    desc: "En esta etapa simulamos físicamente cómo la molécula 3D encaja dentro de la proteína. AutoDock Vina prueba miles de posiciones y ángulos para encontrar el acoplamiento perfecto. Después, los resultados pasan por XGBoost, un algoritmo de Machine Learning que corrige estadísticamente el puntaje de afinidad aprendiendo de miles de estructuras cristalinas reales, eliminando así los falsos positivos típicos de los motores puramente físicos.",
     icon: "🤖",
     colors: {
       COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
@@ -65,7 +65,7 @@ const PIPELINE_STEPS = [
     step: "LEVEL 2",
     title: "Análisis Topológico",
     tech: "GNN RTMScore",
-    desc: "Inferencia tridimensional mediante redes de grafos de contacto receptor-ligando para refinar el score y descartar falsos positivos.",
+    desc: "Aquí usamos Redes Neuronales de Grafos (RTMScore) de aprendizaje profundo para evaluar la topología y forma de la molécula como si fuera un 'grafo' espacial. La IA analiza cómo interactúa cada átomo de tu fármaco con cada aminoácido de la proteína receptora en 3D. Esto nos permite descartar moléculas que 'parecen' encajar matemáticamente, pero que en un entorno biológico real sufrirían choques estéricos severos o serían incompatibles.",
     icon: "🧠",
     colors: {
       COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
@@ -78,7 +78,7 @@ const PIPELINE_STEPS = [
     step: "LEVEL 3",
     title: "Refinamiento Dinámico",
     tech: "OpenMM MD Engine",
-    desc: "Dinámica molecular por minimización de gradientes conjugados con AMBER14SB para disipar choques estéricos y optimizar puentes de H.",
+    desc: "A través del motor OpenMM, sometemos el complejo proteína-fármaco a dinámica molecular y minimización de gradientes conjugados. Imagina esto como 'agitar' suavemente la molécula dentro del bolsillo de la proteína para disipar cualquier tensión física acumulada. Este paso microscópico relaja la estructura, optimiza la formación de puentes de hidrógeno clave y asegura que el acoplamiento sea termodinámicamente estable a largo plazo.",
     icon: "⚡",
     colors: {
       COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
@@ -91,7 +91,7 @@ const PIPELINE_STEPS = [
     step: "SECURE",
     title: "Consenso Ledger",
     tech: "Solana Devnet",
-    desc: "Generación de firma criptográfica y registro del hash molecular inmutable sobre el Memo Program de la red Solana.",
+    desc: "Finalmente, para proteger la propiedad intelectual de tu descubrimiento de forma transparente, creamos un 'Hash SHA-256' único que actúa como la huella digital matemática de tu molécula. Esta huella se inscribe de manera inmutable en la Blockchain de Solana (Devnet), otorgándote un certificado descentralizado permanente con sello de tiempo criptográfico que demuestra tu autoría en el diseño molecular.",
     icon: "⛓️",
     colors: {
       COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
@@ -103,6 +103,10 @@ const PIPELINE_STEPS = [
 
 export default function EvaluationPage() {
   const { interfaceMode } = useInterface();
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [selectedPipelineStep, setSelectedPipelineStep] = useState<typeof PIPELINE_STEPS[0] | null>(null);
+  const [selectedBiologicalLabel, setSelectedBiologicalLabel] = useState<{title: string, desc: string, icon?: string} | null>(null);
+  const [selectedTutorialStep, setSelectedTutorialStep] = useState<{title: string, desc: string, step: number} | null>(null);
 
   // --- Input state ---
   const [smiles, setSmiles] = useState("CC(=O)Oc1ccccc1C(=O)O");
@@ -567,49 +571,52 @@ export default function EvaluationPage() {
   }
 
   return (
-    <main className="space-y-6 pb-12">
-      <section className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            🕹️ Laboratorio Virtual MolDesign AI
+    <main className="pb-12 bg-[#0b0f19] text-white min-h-screen">
+      {/* Title */}
+      <div className="mb-6 border-b border-indigo-900/50 pb-4 bg-surface-950 p-6 rounded-b-3xl shadow-xl">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+          <h1 className="text-3xl font-bold uppercase text-white flex items-center gap-3 tracking-wide">
+            <span className="text-4xl">🎓</span> MolDesign Campus Virtual
           </h1>
-          <p className="mt-1 text-xs text-surface-400 font-medium">
-            Pipeline de cómputo híbrido y certificación criptográfica en tiempo real.
+          <p className="mt-2 text-xs text-indigo-400 font-mono tracking-widest uppercase">
+            [ Entorno de Pruebas Académico ]
           </p>
         </div>
+      </div>
 
-        {/* Pipeline Steps Tracker */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {/* PIPELINE HORIZONTAL SUPERIOR */}
+      <div className="px-4 md:px-8 max-w-[1400px] mx-auto mb-8">
+        <h3 className="text-sm font-bold text-indigo-400 uppercase mb-4 tracking-widest border-b border-indigo-900/50 pb-2">
+          Pipeline de Evaluación
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {PIPELINE_STEPS.map((s) => {
             const stepState = getStepState(s.index);
             const cardStyle = s.colors[stepState];
             
             return (
-              <div
+              <button
                 key={s.step}
-                className={`rounded-2xl border p-4 backdrop-blur-xl transition-all duration-300 flex flex-col justify-between group relative overflow-hidden ${cardStyle}`}
+                onClick={() => setSelectedPipelineStep(s)}
+                className={`rounded-xl border p-3 transition-all duration-300 relative overflow-hidden flex flex-col justify-between text-left hover:scale-105 hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] hover:border-indigo-500/50 cursor-pointer ${cardStyle}`}
               >
-                {/* Visual indicator lines on active */}
                 {stepState === "ACTIVE" && (
                   <span className="absolute top-0 left-0 w-full h-[2px] bg-brand-500 animate-pulse" />
                 )}
                 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] font-black uppercase tracking-widest font-mono opacity-60">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[9px] font-black uppercase tracking-widest font-mono opacity-60 truncate pr-1">
                       {s.tech}
                     </span>
                     <span className="text-sm">{s.icon}</span>
                   </div>
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider mb-1">
+                  <h3 className="text-[10px] sm:text-xs font-black text-white uppercase tracking-wider mb-1">
                     {s.title}
                   </h3>
-                  <p className="text-[10px] leading-relaxed text-slate-400 font-medium">
-                    {s.desc}
-                  </p>
                 </div>
                 
-                <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
                   <span className="text-[9px] font-black tracking-widest opacity-40 font-mono">
                     {s.step}
                   </span>
@@ -619,11 +626,80 @@ export default function EvaluationPage() {
                     {stepState === "IDLE" && <span className="text-surface-600">Espera</span>}
                   </span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
-      </section>
+      </div>
+
+      {/* CONTENIDO PRINCIPAL (Una sola columna) */}
+      <div className="flex flex-col gap-6 px-4 md:px-8 max-w-[1400px] mx-auto">
+        
+        {/* Toggle Tutorial Button */}
+        <div className="flex justify-end">
+          <button 
+            onClick={() => setShowTutorial(!showTutorial)}
+            className="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors bg-indigo-950/30 px-3 py-1.5 rounded-lg border border-indigo-500/30"
+          >
+            {showTutorial ? "Ocultar Guía de Práctica" : "Mostrar Guía de Práctica"}
+          </button>
+        </div>
+
+        {/* Guía de Práctica (Colapsable) */}
+        {showTutorial && (
+          <section className="border border-indigo-500/30 bg-indigo-950/20 p-6 relative group rounded-xl animate-in fade-in slide-in-from-top-2">
+            <div className="absolute top-0 right-0 bg-indigo-500 text-white font-bold text-[10px] px-3 py-1 uppercase tracking-widest rounded-bl-lg rounded-tr-xl">Tutorial</div>
+            <h2 className="text-xl font-bold text-indigo-400 uppercase mb-5 flex items-center gap-2">
+              📋 Guía de Práctica
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans text-xs text-slate-300">
+              <button 
+                onClick={() => setSelectedTutorialStep({
+                  step: 1,
+                  title: "Diseño Molecular",
+                  desc: "Utiliza el editor químico inferior para esbozar tu candidato a fármaco. Puedes dibujar la estructura átomo por átomo usando la interfaz 2D, o pegar un código SMILES si ya conoces la representación en texto de tu molécula. ¡Experimenta añadiendo diferentes grupos funcionales para mejorar las propiedades!"
+                })}
+                className="text-left bg-surface-950/50 p-4 border border-surface-800 hover:border-indigo-500/50 hover:bg-surface-900 transition-colors rounded-xl shadow-lg hover:scale-[1.02]"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 font-bold font-mono">1</span>
+                  <strong className="text-white">Diseño Molecular</strong>
+                </div>
+                Utiliza el editor químico inferior para esbozar tu candidato a fármaco.
+              </button>
+              
+              <button 
+                onClick={() => setSelectedTutorialStep({
+                  step: 2,
+                  title: "Selección de Diana",
+                  desc: "Elige la proteína objetivo del catálogo según el área terapéutica. Las proteínas son las 'cerraduras' de las enfermedades. Al seleccionar un target (ej. receptores neuronales o paredes celulares bacterianas), el modelo de IA evaluará si tu molécula ('la llave') encaja perfectamente en esa cerradura específica."
+                })}
+                className="text-left bg-surface-950/50 p-4 border border-surface-800 hover:border-indigo-500/50 hover:bg-surface-900 transition-colors rounded-xl shadow-lg hover:scale-[1.02]"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 font-bold font-mono">2</span>
+                  <strong className="text-white">Selección de Diana</strong>
+                </div>
+                Elige la proteína objetivo del catálogo según el área terapéutica.
+              </button>
+              
+              <button 
+                onClick={() => setSelectedTutorialStep({
+                  step: 3,
+                  title: "Simulación",
+                  desc: "Inicia la evaluación haciendo clic en 'Ejecutar Docking'. Nuestro pipeline de inteligencia artificial procesará las propiedades fisicoquímicas, realizará simulación de docking con AutoDock Vina, ajustará la afinidad espacialmente con XGBoost, y finalmente evaluará la topología 3D con Redes Neuronales de Grafos (GNN) para obtener un Score Compuesto definitivo."
+                })}
+                className="text-left bg-surface-950/50 p-4 border border-surface-800 hover:border-indigo-500/50 hover:bg-surface-900 transition-colors rounded-xl shadow-lg hover:scale-[1.02]"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 font-bold font-mono">3</span>
+                  <strong className="text-white">Simulación</strong>
+                </div>
+                Inicia la evaluación. Nuestro pipeline de IA procesará el score.
+              </button>
+            </div>
+          </section>
+        )}
 
       <section className="space-y-4 rounded-2xl border border-surface-800 bg-surface-900 p-5">
         <div className="grid gap-5 md:grid-cols-3">
@@ -893,59 +969,69 @@ export default function EvaluationPage() {
                 if (!selected) return null;
                 return (
                   <div className="mt-3 flex flex-wrap gap-2 items-center">
-                    <div className="group relative">
-                      <span className="px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 text-[10px] uppercase tracking-tighter font-semibold cursor-help">
-                        {selected.structural_family || "Other"}
-                      </span>
-                      <div className="absolute bottom-full left-0 mb-2 hidden w-48 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
-                        <p className="font-bold text-brand-400 mb-1">Familia Estructural</p>
-                        Clasificación biológica de la proteína. Determina los parámetros del modelo de scoring ML v4.0.
-                      </div>
-                    </div>
-                    <div className="group relative">
-                      <span className={`px-2 py-0.5 rounded-full border text-[10px] tracking-tighter uppercase font-semibold cursor-help ${
-                        selected.requires_cns ? "bg-purple-500/10 text-purple-400 border-purple-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                      }`}>
-                        {selected.requires_cns ? "🧠 CNS Active" : "🛡️ Peripheral"}
-                      </span>
-                      <div className="absolute bottom-full left-0 mb-2 hidden w-48 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
-                        <p className="font-bold text-purple-400 mb-1">Requerimiento CNS</p>
-                        {selected.requires_cns 
-                          ? "Este target reside en el cerebro. El sistema aplicará penalizaciones si la molécula no cruza la barrera hematoencefálica (BBB)."
-                          : "Target periférico. No requiere cruzar la barrera hematoencefálica para su efectividad."}
-                      </div>
-                    </div>
+                    <button 
+                      onClick={() => setSelectedBiologicalLabel({
+                        title: "Familia Estructural",
+                        desc: "Clasificación biológica de la proteína. Determina los parámetros del modelo de scoring ML v4.0.",
+                        icon: "🧬"
+                      })}
+                      className="px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 text-[10px] uppercase tracking-tighter font-semibold hover:bg-brand-500/20 hover:scale-105 transition-all"
+                    >
+                      {selected.structural_family || "Other"}
+                    </button>
+                    
+                    <button
+                      onClick={() => setSelectedBiologicalLabel({
+                        title: "Requerimiento CNS",
+                        desc: selected.requires_cns 
+                          ? "Este target reside en el Sistema Nervioso Central (Cerebro). El sistema aplicará penalizaciones si la molécula diseñada no es capaz de cruzar la Barrera Hematoencefálica (BBB)."
+                          : "Target periférico. No requiere cruzar la Barrera Hematoencefálica para su efectividad terapéutica.",
+                        icon: selected.requires_cns ? "🧠" : "🛡️"
+                      })}
+                      className={`px-2 py-0.5 rounded-full border text-[10px] tracking-tighter uppercase font-semibold hover:scale-105 transition-all ${
+                        selected.requires_cns ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                      }`}
+                    >
+                      {selected.requires_cns ? "🧠 CNS Active" : "🛡️ Peripheral"}
+                    </button>
+
                     {selected.is_hot && (
-                      <div className="group relative">
-                        <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/40 text-[10px] uppercase tracking-wider font-black animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.3)]">
-                          🔥 Hot Target
-                        </span>
-                        <div className="absolute bottom-full left-0 mb-2 hidden w-40 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
-                          Proteína de alta relevancia farmacéutica actual (Trending).
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => setSelectedBiologicalLabel({
+                          title: "Hot Target (Trending)",
+                          desc: "Esta proteína es de altísima relevancia farmacéutica actual. Muchas investigaciones y startups biotecnológicas están buscando fármacos para esta diana en este momento.",
+                          icon: "🔥"
+                        })}
+                        className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/40 text-[10px] uppercase tracking-wider font-black animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.3)] hover:scale-105 transition-all hover:bg-orange-500/30"
+                      >
+                        🔥 Hot Target
+                      </button>
                     )}
+
                     {selected.organism && (
-                      <div className="group relative">
-                        <span className="px-2 py-0.5 rounded-full bg-surface-800 text-surface-400 border border-surface-700 text-[10px] tracking-tighter uppercase cursor-help">
-                          🧬 {selected.organism}
-                        </span>
-                        <div className="absolute bottom-full left-0 mb-2 hidden w-40 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
-                          <p className="font-bold text-surface-100 mb-1">Organismo</p>
-                          Fuente biológica de la estructura proteica utilizada para el docking.
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => setSelectedBiologicalLabel({
+                          title: "Organismo de Origen",
+                          desc: "Fuente biológica de la estructura proteica utilizada para el docking computacional.",
+                          icon: "🧬"
+                        })}
+                        className="px-2 py-0.5 rounded-full bg-surface-800 text-surface-400 border border-surface-700 text-[10px] tracking-tighter uppercase hover:bg-surface-700 hover:scale-105 transition-all"
+                      >
+                        🧬 {selected.organism}
+                      </button>
                     )}
+
                     {selected.resolution && (
-                      <div className="group relative">
-                        <span className="px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700 text-[10px] tracking-tighter uppercase font-mono cursor-help">
-                          ✨ {selected.resolution.toFixed(2)} Å
-                        </span>
-                        <div className="absolute bottom-full left-0 mb-2 hidden w-44 rounded-lg bg-surface-800/95 backdrop-blur-md border border-surface-700 p-2 text-[10px] leading-tight text-surface-200 shadow-xl group-hover:block z-50">
-                          <p className="font-bold text-yellow-500 mb-1">Resolución Cristalográfica</p>
-                          Calidad de la estructura. Valores menores a 2.5 Å indican alta fiabilidad para docking preciso.
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => setSelectedBiologicalLabel({
+                          title: "Resolución Cristalográfica",
+                          desc: "Es la 'calidad de imagen' de la estructura 3D obtenida por Cristalografía de Rayos X o Cryo-EM. Valores menores a 2.5 Å indican una altísima resolución geométrica, lo que garantiza simulaciones de docking muy precisas y confiables.",
+                          icon: "✨"
+                        })}
+                        className="px-2 py-0.5 rounded-full bg-surface-800 text-surface-300 border border-surface-700 text-[10px] tracking-tighter uppercase font-mono hover:bg-surface-700 hover:scale-105 transition-all"
+                      >
+                        ✨ {selected.resolution.toFixed(2)} Å
+                      </button>
                     )}
                   </div>
                 );
@@ -1113,6 +1199,120 @@ export default function EvaluationPage() {
           <pre className="whitespace-pre-wrap text-xs text-red-300">{status.error ?? "Error desconocido"}</pre>
         </section>
       )}
+      </div>
+      {/* END CONTENIDO PRINCIPAL */}
+
+      {/* Modal Pipeline Step */}
+      {selectedPipelineStep && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSelectedPipelineStep(null)}
+        >
+          <div 
+            className="bg-surface-900 border border-indigo-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedPipelineStep(null)}
+              className="absolute top-4 right-4 text-surface-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-4 mb-5">
+              <span className="text-4xl">{selectedPipelineStep.icon}</span>
+              <div>
+                <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase tracking-widest">{selectedPipelineStep.step}</span>
+                <h3 className="text-xl font-bold text-white leading-tight">{selectedPipelineStep.title}</h3>
+              </div>
+            </div>
+            <div className="bg-surface-950/80 rounded-xl p-3 mb-4 border border-surface-800">
+              <span className="text-xs font-mono text-indigo-300"><strong className="text-white">Motor:</strong> {selectedPipelineStep.tech}</span>
+            </div>
+            <p className="text-sm text-surface-300 leading-relaxed">
+              {selectedPipelineStep.desc}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setSelectedPipelineStep(null)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Etiqueta Biológica */}
+      {selectedBiologicalLabel && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSelectedBiologicalLabel(null)}
+        >
+          <div 
+            className="bg-surface-900 border border-indigo-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedBiologicalLabel(null)}
+              className="absolute top-4 right-4 text-surface-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-4 mb-4">
+              {selectedBiologicalLabel.icon && <span className="text-3xl">{selectedBiologicalLabel.icon}</span>}
+              <h3 className="text-xl font-bold text-white leading-tight">{selectedBiologicalLabel.title}</h3>
+            </div>
+            <p className="text-sm text-surface-300 leading-relaxed">
+              {selectedBiologicalLabel.desc}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setSelectedBiologicalLabel(null)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tutorial */}
+      {selectedTutorialStep && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSelectedTutorialStep(null)}
+        >
+          <div 
+            className="bg-surface-900 border border-indigo-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedTutorialStep(null)}
+              className="absolute top-4 right-4 text-surface-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-4 mb-4">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400 font-bold font-mono text-lg">{selectedTutorialStep.step}</span>
+              <h3 className="text-xl font-bold text-white leading-tight">{selectedTutorialStep.title}</h3>
+            </div>
+            <p className="text-sm text-surface-300 leading-relaxed">
+              {selectedTutorialStep.desc}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setSelectedTutorialStep(null)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }

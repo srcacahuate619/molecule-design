@@ -5,14 +5,15 @@ type ScoreBarProps = {
   value: number | null;
   weight?: string;
   color: string;
+  onClick?: () => void;
 };
 
-function ScoreBar({ label, value, weight, color }: ScoreBarProps) {
+function ScoreBar({ label, value, weight, color, onClick }: ScoreBarProps) {
   const display = value !== null && value !== undefined ? value.toFixed(1) : "—";
   const pct = value !== null && value !== undefined ? Math.max(0, Math.min(100, value)) : 0;
 
-  return (
-    <div className="space-y-1.5">
+  const content = (
+    <div className="space-y-1.5 w-full text-left">
       <div className="flex items-center justify-between text-sm">
         <span>
           <span className="font-semibold text-gray-200">{label}</span>
@@ -20,7 +21,7 @@ function ScoreBar({ label, value, weight, color }: ScoreBarProps) {
         </span>
         <span className="tabular-nums text-gray-300">{display}/100</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-surface-800">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-800">
         <div
           className="score-bar-fill h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, background: color }}
@@ -28,6 +29,20 @@ function ScoreBar({ label, value, weight, color }: ScoreBarProps) {
       </div>
     </div>
   );
+
+  if (onClick) {
+    return (
+      <button 
+        type="button" 
+        onClick={onClick} 
+        className="block w-full hover:scale-[1.02] hover:bg-surface-800/30 p-2 -mx-2 rounded-lg transition-all"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return content;
 }
 
 type ScoreCardProps = {
@@ -81,6 +96,7 @@ export function ScoreCard({
 }: ScoreCardProps) {
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   const [customName, setCustomName] = useState("");
+  const [selectedEducationalMetric, setSelectedEducationalMetric] = useState<{title: string, desc: React.ReactNode, icon?: string, math?: React.ReactNode} | null>(null);
 
   const totalDisplay =
     totalScore !== null && totalScore !== undefined
@@ -237,14 +253,55 @@ export function ScoreCard({
         )}
       </div>
 
-      <ScoreBar label="Afinidad" value={affinity} weight="45%" color="#3b82f6" />
+      <ScoreBar 
+        label="Afinidad" 
+        value={affinity} 
+        weight="45%" 
+        color="#3b82f6" 
+        onClick={() => setSelectedEducationalMetric({
+          title: "Afinidad (Energía de Unión)",
+          icon: "🧲",
+          desc: "La afinidad mide qué tan fuerte se 'pega' tu molécula a la proteína diana. En el mundo físico, esto se representa mediante la Energía Libre de Gibbs (ΔG). Mientras más negativo sea el valor de kcal/mol, más fuerte es la unión (como imanes más potentes).",
+          math: "Un ΔG de -9.0 kcal/mol es típicamente un billón de veces más afín que un ΔG de -1.0 kcal/mol."
+        })}
+      />
       
       {!isControl ? (
         <>
-          <ScoreBar label="ADME" value={adme} weight="30%" color="#8b5cf6" />
-          <ScoreBar label="Drug-likeness" value={druglikeness} weight="25%" color="#06b6d4" />
+          <ScoreBar 
+            label="ADME" 
+            value={adme} 
+            weight="30%" 
+            color="#8b5cf6" 
+            onClick={() => setSelectedEducationalMetric({
+              title: "Perfil ADME",
+              icon: "🩸",
+              desc: "ADME significa Absorción, Distribución, Metabolismo y Excreción. Este score evalúa cómo el cuerpo humano procesaría tu fármaco. Si es muy bajo, tu molécula podría ser destruida por el hígado antes de llegar a la proteína diana o ser expulsada inmediatamente por los riñones."
+            })}
+          />
+          <ScoreBar 
+            label="Drug-likeness" 
+            value={druglikeness} 
+            weight="25%" 
+            color="#06b6d4" 
+            onClick={() => setSelectedEducationalMetric({
+              title: "Similitud a Fármaco (Drug-likeness)",
+              icon: "💊",
+              desc: "Evalúa si tu molécula cumple las reglas históricas (como la Regla de los 5 de Lipinski) para ser una buena pastilla oral. Las moléculas gigantes o súper grasosas suelen ser malos fármacos porque no pueden atravesar las paredes celulares del intestino.",
+              math: "Penalizaciones comunes: Peso > 500 Da, LogP > 5, más de 10 rotaciones."
+            })}
+          />
           {specificity !== null && specificity !== undefined && (
-            <ScoreBar label="Especificidad" value={specificity} color="#f59e0b" />
+            <ScoreBar 
+              label="Especificidad" 
+              value={specificity} 
+              color="#f59e0b" 
+              onClick={() => setSelectedEducationalMetric({
+                title: "Especificidad de Diana",
+                icon: "🎯",
+                desc: "Mide qué tan enfocada está la molécula en los 'Puntos Calientes' (Hotspots) de la proteína. Un fármaco muy grande que toca todo el exterior pero no entra al bolsillo activo tendrá una baja especificidad, lo que causa efectos secundarios severos en la vida real."
+              })}
+            />
           )}
         </>
       ) : (
@@ -257,103 +314,84 @@ export function ScoreCard({
       )}
 
       {affinityKcal !== null && affinityKcal !== undefined && (
-        <div className="group relative text-xs text-surface-400">
-          <div className="flex cursor-help items-center gap-1 w-max">
-            <span>Afinidad (Vina + XGBoost):</span>
+        <div className="text-xs text-surface-400 mt-2">
+          <button 
+            onClick={() => setSelectedEducationalMetric({
+              title: "Desglose de Afinidad (Motores de IA)",
+              icon: "🤖",
+              desc: "Tu puntaje final de afinidad no viene de un solo algoritmo, sino de dos que se supervisan mutuamente para evitar 'alucinaciones' o falsos positivos.",
+              math: (
+                <div className="space-y-2 mt-2">
+                  <div className="flex justify-between border-b border-surface-700 pb-1">
+                    <span>1. AutoDock Vina (Física Pura):</span>
+                    <strong className="text-white">{rawVinaKcal !== null && rawVinaKcal !== undefined ? `${rawVinaKcal.toFixed(3)} kcal/mol` : "N/A"}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>2. XGBoost (Inteligencia Espacial):</span>
+                    <strong className="text-brand-300">{rawXgboostKcal !== null && rawXgboostKcal !== undefined ? `${rawXgboostKcal.toFixed(3)} kcal/mol` : "N/A"}</strong>
+                  </div>
+                </div>
+              )
+            })}
+            className="flex items-center gap-1 w-max hover:text-white transition-colors"
+          >
+            <span>Afinidad combinada (Vina + XGBoost):</span>
             <strong className="text-gray-300 border-b border-dashed border-gray-500 pb-0.5">
               {affinityKcal.toFixed(3)} kcal/mol
             </strong>
-          </div>
-          
-          {/* Tooltip Hover */}
-          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
-            <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
-              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-400">Desglose del Motor Físico y de IA</h4>
-              <div className="space-y-1.5 text-[11px]">
-                <div className="flex justify-between gap-4">
-                  <span className="text-surface-400">1. Motor Físico (AutoDock Vina):</span>
-                  <strong className="text-white">{rawVinaKcal !== null && rawVinaKcal !== undefined ? `${rawVinaKcal.toFixed(3)} kcal/mol` : "N/A"}</strong>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-surface-400">2. Cerebro Espacial (XGBoost):</span>
-                  <strong className="text-brand-300">{rawXgboostKcal !== null && rawXgboostKcal !== undefined ? `${rawXgboostKcal.toFixed(3)} kcal/mol` : "N/A (Fallback)"}</strong>
-                </div>
-              </div>
-              <div className="mt-2 border-t border-surface-800 pt-2 text-[9px] leading-tight text-surface-500">
-                XGBoost ajusta el puntaje de Vina utilizando patrones de interacción 3D aprendidos de PDBbind (5,000 complejos experimentales).
-              </div>
-            </div>
-            {/* Tooltip Arrow */}
-            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
-          </div>
+          </button>
         </div>
       )}
 
       {ligandEfficiency !== null && ligandEfficiency !== undefined && (
-        <div className="group relative text-xs text-surface-400">
-          <div className="flex cursor-help items-center gap-1 w-max">
+        <div className="text-xs text-surface-400 mt-2">
+          <button 
+            onClick={() => setSelectedEducationalMetric({
+              title: "Eficiencia del Ligando (LE)",
+              icon: "⚖️",
+              desc: "A veces, moléculas gigantes se unen fuerte solo por ser grandes (como velcro enorme), pero son pésimos fármacos. El 'LE' mide qué tan eficiente es CADA átomo de tu molécula generando afinidad. Fármacos inteligentes logran alta afinidad con pocos átomos.",
+              math: "LE = Afinidad / Número de Átomos Pesados. Un valor típico para fármacos orales ronda los -0.3 kcal/mol/átomo. ¡A menor valor, mejor!"
+            })}
+            className="flex items-center gap-1 w-max hover:text-brand-300 transition-colors"
+          >
             <span>Ligand Efficiency (LE):</span>
             <strong className="text-brand-400 border-b border-dashed border-brand-500/50 pb-0.5">
               {ligandEfficiency.toFixed(3)} kcal/mol/atom
             </strong>
-          </div>
-          
-          {/* Tooltip Hover */}
-          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
-            <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
-              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-400">Ligand Efficiency (Eficiencia del Ligando)</h4>
-              <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
-                <p>
-                  Mide qué tan eficiente es cada átomo de la molécula para generar afinidad por la proteína.
-                </p>
-                <div className="mt-2 rounded bg-surface-900 p-2 text-center font-mono text-[10px] text-brand-300 border border-surface-800">
-                  LE = Afinidad / Número de Átomos Pesados
-                </div>
-                <p className="mt-2 text-[9px] text-surface-500">
-                  Un valor más negativo es mejor. Valores típicos para fármacos orales rondan los -0.3 kcal/mol/átomo.
-                </p>
-              </div>
-            </div>
-            {/* Tooltip Arrow */}
-            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
-          </div>
+          </button>
         </div>
       )}
 
       {lipophilicEfficiency !== null && lipophilicEfficiency !== undefined && (
-        <div className="group relative text-xs text-surface-400">
-          <div className="flex cursor-help items-center gap-1 w-max">
+        <div className="text-xs text-surface-400 mt-2">
+          <button 
+            onClick={() => setSelectedEducationalMetric({
+              title: "Eficiencia Lipofílica (LLE)",
+              icon: "🧼",
+              desc: "Mide la 'calidad' de tu afinidad en relación con cuánta grasa tiene tu molécula. Evita que crees moléculas súper potentes pero que sean solo manchas de grasa que el hígado no puede procesar.",
+              math: "LLE = (-Afinidad / 1.36) - LogP. Valores mayores a 5 indican un candidato clínico fantástico."
+            })}
+            className="flex items-center gap-1 w-max hover:text-emerald-300 transition-colors"
+          >
             <span>Lipophilic Efficiency (LLE):</span>
             <strong className="text-emerald-400 border-b border-dashed border-emerald-500/50 pb-0.5">
               {lipophilicEfficiency.toFixed(3)}
             </strong>
-          </div>
-          
-          {/* Tooltip Hover */}
-          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
-            <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
-              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-emerald-400">Lipophilic Efficiency (LLE)</h4>
-              <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
-                <p>
-                  Mide la "calidad" de la afinidad. Evita que la molécula sea potente solo por ser demasiado grasa.
-                </p>
-                <div className="mt-2 rounded bg-surface-900 p-2 text-center font-mono text-[10px] text-emerald-300 border border-surface-800">
-                  LLE = (-Afinidad / 1.36) - LogP
-                </div>
-                <p className="mt-2 text-[9px] text-surface-500">
-                  Calculado con escala termodinámica (factor de conversión de 1.36 kcal/mol a pKd). Se busca un LLE {">"} 3 o incluso {">"} 5.
-                </p>
-              </div>
-            </div>
-            {/* Tooltip Arrow */}
-            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
-          </div>
+          </button>
         </div>
       )}
 
       {gnnScore !== null && gnnScore !== undefined && (
-        <div className="group relative text-xs text-surface-400">
-          <div className="flex cursor-help items-center gap-1 w-max">
+        <div className="text-xs text-surface-400 mt-2">
+          <button 
+            onClick={() => setSelectedEducationalMetric({
+              title: "Evaluación de Red Neuronal de Grafos (GNN)",
+              icon: "🧠",
+              desc: "MolDesign usa una IA especializada llamada RTMScore (Red Neuronal de Grafos) que funciona como un inspector 3D. Revisa átomo por átomo cómo encaja tu molécula en el receptor y castiga duramente si hay 'choques estéricos' (átomos atravesándose entre sí).",
+              math: "Multiplicador de Calidad: Valores mayores a 20.0 aumentan tu score general. Valores menores lo reducen drásticamente."
+            })}
+            className="flex items-center gap-1 w-max hover:text-purple-300 transition-colors"
+          >
             <span>Inteligencia GNN (Nivel 2):</span>
             <strong className="text-purple-400 border-b border-dashed border-purple-500/50 pb-0.5">
               {gnnScore.toFixed(2)} (x{((() => {
@@ -361,61 +399,33 @@ export function ScoreCard({
                 return 0.7 + (rawFactor * 0.45);
               })()).toFixed(3)})
             </strong>
-          </div>
-          
-          {/* Tooltip Hover */}
-          <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
-            <div className="rounded-lg border border-purple-500/30 bg-surface-950 p-3 shadow-xl">
-              <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-purple-400">Evaluación de Topología 3D GNN</h4>
-              <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
-                <p>
-                  Mapea la pose 3D mediante una Red Neuronal de Grafos (RTMScore) entrenada con millones de pares interatómicos continuos.
-                </p>
-                <div className="mt-2 rounded bg-surface-900 p-2 text-center font-mono text-[10px] text-purple-300 border border-surface-800">
-                  Umbral Neutral: 20.0 | Multiplicador: 0.70x a 1.15x
-                </div>
-                <p className="mt-2 text-[9px] text-surface-500">
-                  Un valor más alto indica una pose libre de clashes estéricos y con alta complementariedad electrostática.
-                </p>
-              </div>
-            </div>
-            {/* Tooltip Arrow */}
-            <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-purple-500/30 bg-surface-950"></div>
-          </div>
+          </button>
         </div>
       )}
       
       {saScore !== null && saScore !== undefined && (
-        <div className="space-y-2">
-          <div className="group relative text-xs text-surface-400">
-            <div className="flex cursor-help items-center gap-1 w-max">
+        <div className="space-y-2 mt-2">
+          <div className="text-xs text-surface-400">
+            <button 
+              onClick={() => setSelectedEducationalMetric({
+                title: "Accesibilidad Sintética (SA Score)",
+                icon: "🧪",
+                desc: "No sirve de nada diseñar el fármaco perfecto en la computadora si los químicos en la vida real no pueden fabricarlo. El SA Score analiza la complejidad de tus anillos, puentes y quiralidad para saber si tu molécula es viable para ser sintetizada en un laboratorio.",
+                math: (
+                  <div className="mt-2 flex justify-between border-t border-surface-800 pt-2 text-xs font-bold w-full">
+                    <span className="text-emerald-400">1.0 = Muy Fácil</span>
+                    <span className="text-yellow-400">4.5+ = Difícil</span>
+                    <span className="text-red-400">6.0+ = Imposible</span>
+                  </div>
+                )
+              })}
+              className="flex items-center gap-1 w-max hover:text-white transition-colors"
+            >
               <span>Accesibilidad Sintética (SA):</span>
               <strong className={`border-b border-dashed pb-0.5 ${saScore > 6.0 ? "text-red-400 border-red-500/50" : saScore > 4.5 ? "text-yellow-400 border-yellow-500/50" : "text-emerald-400 border-emerald-500/50"}`}>
                 {saScore.toFixed(2)} {saScore > 6.0 ? "(Inviable)" : saScore > 4.5 ? "(Difícil)" : "(Fácil)"}
               </strong>
-            </div>
-
-            {/* Tooltip Hover */}
-            <div className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 w-max max-w-xs scale-95 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100">
-              <div className="rounded-lg border border-brand-500/30 bg-surface-950 p-3 shadow-xl">
-                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-wider text-brand-400">Accesibilidad Sintética (SA Score)</h4>
-                <div className="mt-1 space-y-1.5 text-[11px] text-surface-300">
-                  <p>
-                    Estima qué tan difícil será sintetizar esta molécula en un laboratorio real.
-                  </p>
-                  <p className="text-[10px] text-surface-400">
-                    Se basa en la complejidad estructural (anillos, estereocentros) y fragmentos inusuales comparados con catálogos químicos (RDKit).
-                  </p>
-                  <div className="mt-2 flex justify-between border-t border-surface-800 pt-2 text-[9px] font-bold">
-                    <span className="text-emerald-400">1.0 = Muy Fácil</span>
-                    <span className="text-yellow-400">4.5+ = Difícil</span>
-                    <span className="text-red-400">6.0+ = Inviable</span>
-                  </div>
-                </div>
-              </div>
-              {/* Tooltip Arrow */}
-              <div className="absolute left-8 top-full h-2 w-2 -translate-y-1/2 rotate-45 border-b border-r border-brand-500/30 bg-surface-950"></div>
-            </div>
+            </button>
           </div>
           
           {saScore > 6.0 && saReasons && saReasons.length > 0 && (
@@ -516,6 +526,47 @@ export function ScoreCard({
           </div>
         </details>
       </div>
+
+      {/* Modal Métrica Educativa */}
+      {selectedEducationalMetric && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in"
+          onClick={() => setSelectedEducationalMetric(null)}
+        >
+          <div 
+            className="bg-surface-900 border border-indigo-500/50 rounded-2xl p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setSelectedEducationalMetric(null)}
+              className="absolute top-4 right-4 text-surface-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-4 mb-4">
+              {selectedEducationalMetric.icon && <span className="text-3xl">{selectedEducationalMetric.icon}</span>}
+              <h3 className="text-xl font-bold text-white leading-tight">{selectedEducationalMetric.title}</h3>
+            </div>
+            <p className="text-sm text-surface-300 leading-relaxed">
+              {selectedEducationalMetric.desc}
+            </p>
+            {selectedEducationalMetric.math && (
+              <div className="mt-4 bg-surface-950/80 rounded-xl p-3 border border-surface-800 text-xs font-mono text-indigo-300">
+                {selectedEducationalMetric.math}
+              </div>
+            )}
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={() => setSelectedEducationalMetric(null)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }
