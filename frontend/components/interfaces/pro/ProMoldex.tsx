@@ -246,7 +246,7 @@ export default function ProMoldex({
 
         {/* Floating Molecule HUD Card (Bottom) */}
         {selectedMolecule && (
-          <div className="absolute bottom-4 left-4 right-4 md:bottom-6 pointer-events-none z-10">
+          <div className="absolute bottom-12 left-4 right-4 md:bottom-16 pointer-events-none z-10">
             <div className="max-w-2xl mx-auto rounded-2xl border border-white/10 bg-black/70 backdrop-blur-md p-4 flex flex-col md:flex-row justify-between items-center gap-3 shadow-2xl pointer-events-auto">
               <div className="min-w-0 w-full text-center md:text-left">
                 <div className="flex items-center gap-2 justify-center md:justify-start mb-0.5">
