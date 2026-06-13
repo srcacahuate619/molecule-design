@@ -20,77 +20,79 @@ export function Navigation() {
   const { interfaceMode, toggleInterfaceMode } = useInterface();
 
   return (
-    <nav className="sticky top-0 z-[100] border-b border-surface-800 bg-surface-950/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold text-white">
-          <Image src="/logo.png" alt="MolDesign AI Logo" width={32} height={32} className="rounded-lg object-contain" />
-          MolDesign AI
-        </Link>
+    <>
+      <nav className="sticky top-0 z-[100] border-b border-surface-800 bg-surface-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 text-lg font-bold text-white">
+            <Image src="/logo.png" alt="MolDesign AI Logo" width={32} height={32} className="rounded-lg object-contain" />
+            MolDesign AI
+          </Link>
 
-        {/* Mobile Menu Button */}
-        <button 
-          className="md:hidden p-2 text-surface-400 hover:text-white"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          {/* Mobile Menu Button */}
+          <button 
+            className="md:hidden p-2 text-surface-400 hover:text-white"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
 
-        {/* Desktop Nav Links + Switch */}
-        <div className="hidden md:flex items-center gap-6">
-          <div className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-brand-600/20 text-brand-400"
-                      : "text-surface-400 hover:bg-surface-800 hover:text-gray-200"
-                  }`}
+          {/* Desktop Nav Links + Switch */}
+          <div className="hidden md:flex items-center gap-6">
+            <div className="flex items-center gap-1">
+              {NAV_ITEMS.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-brand-600/20 text-brand-400"
+                        : "text-surface-400 hover:bg-surface-800 hover:text-gray-200"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Interface Switch (Gamer vs Pro) */}
+            <div className="flex items-center bg-surface-900/60 border border-surface-800 rounded-full p-0.5 relative cursor-pointer h-7 select-none" onClick={toggleInterfaceMode}>
+              <div className={`absolute top-0.5 bottom-0.5 rounded-full bg-brand-600/80 transition-all duration-300 ease-out ${interfaceMode === 'GAMIFIED' ? 'left-0.5 w-[85px]' : 'left-[88px] w-[65px]'}`} />
+              <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center ${interfaceMode === 'GAMIFIED' ? 'text-white' : 'text-surface-500'}`}>📚 Edu</span>
+              <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center ${interfaceMode === 'PRO' ? 'text-white' : 'text-surface-500'}`}>🔬 Pro</span>
+            </div>
+          </div>
+
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center gap-3">
+            {user ? (
+              <>
+                <span className="text-sm text-surface-400">
+                  {user.username}
+                </span>
+                <button
+                  onClick={logout}
+                  className="rounded-lg border border-surface-700 px-3 py-1.5 text-sm text-surface-400 transition-colors hover:border-red-700 hover:text-red-400"
                 >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Interface Switch (Gamer vs Pro) */}
-          <div className="flex items-center bg-surface-900/60 border border-surface-800 rounded-full p-0.5 relative cursor-pointer h-7 select-none" onClick={toggleInterfaceMode}>
-            <div className={`absolute top-0.5 bottom-0.5 rounded-full bg-brand-600/80 transition-all duration-300 ease-out ${interfaceMode === 'GAMIFIED' ? 'left-0.5 w-[85px]' : 'left-[88px] w-[65px]'}`} />
-            <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center ${interfaceMode === 'GAMIFIED' ? 'text-white' : 'text-surface-500'}`}>📚 Edu</span>
-            <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 z-10 select-none transition-colors leading-none flex items-center justify-center ${interfaceMode === 'PRO' ? 'text-white' : 'text-surface-500'}`}>🔬 Pro</span>
-          </div>
-        </div>
-
-        {/* Desktop Auth */}
-        <div className="hidden md:flex items-center gap-3">
-          {user ? (
-            <>
-              <span className="text-sm text-surface-400">
-                {user.username}
-              </span>
-              <button
-                onClick={logout}
-                className="rounded-lg border border-surface-700 px-3 py-1.5 text-sm text-surface-400 transition-colors hover:border-red-700 hover:text-red-400"
+                  Salir
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
               >
-                Salir
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
-            >
-              Entrar
-            </Link>
-          )}
+                Entrar
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Mobile Menu Modal */}
+      {/* Mobile Menu Modal (Moved OUTSIDE nav to escape backdrop-filter stacking context) */}
       {isOpen && (
         <div className="fixed inset-0 z-[200] md:hidden animate-in fade-in duration-200">
           {/* Backdrop */}
@@ -169,7 +171,7 @@ export function Navigation() {
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 }
 
