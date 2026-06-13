@@ -162,12 +162,18 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
     if (viewer && viewerReady) {
       try {
         const structures = viewer.plugin.managers.structure.hierarchy.current.structures;
-        const candidate = structures.find((s: any) => {
-          const label = s.cell.obj?.label || "";
-          return label.includes("Candidato") || label.includes("Mi Diseño") || label.includes("Ligando");
+        let candidate = structures.find((s: any) => {
+          const label1 = (s.cell?.obj?.label || "").toLowerCase();
+          const label2 = (s.cell?.obj?.data?.label || "").toLowerCase();
+          return label1.includes("candidato") || label1.includes("diseño") || label1.includes("ligando") || label1.includes("sdf") ||
+                 label2.includes("candidato") || label2.includes("diseño") || label2.includes("ligando") || label2.includes("sdf");
         });
 
-        if (candidate && candidate.cell.obj?.data) {
+        if (!candidate && poseData && structures.length > 1) {
+          candidate = structures[structures.length - 1];
+        }
+
+        if (candidate && candidate.cell?.obj?.data) {
           const loci = candidate.cell.obj.data.representativeLoci;
           if (loci) {
             viewer.plugin.managers.camera.focusLoci(loci);
