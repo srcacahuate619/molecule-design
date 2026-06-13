@@ -552,6 +552,7 @@ class Repository:
             .join(TargetORM, MoleculeORM.target_id == TargetORM.id)
             .where(MoleculeORM.user_id == user_id)
             .where(MoleculeORM.status == MoleculeStatus.EVALUATED)
+            .where(MoleculeORM.is_saved == True)
             .options(
                 joinedload(EvaluationResultORM.molecule).joinedload(MoleculeORM.target)
             )

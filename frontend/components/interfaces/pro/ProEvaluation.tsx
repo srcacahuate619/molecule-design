@@ -145,6 +145,7 @@ export default function ProEvaluation({
 
   // --- Peptide docking engine state (Nivel 3) ---
   const [peptideDockingEngine, setPeptideDockingEngine] = useState<"diffpepdock" | "colabfold">("diffpepdock");
+  const [showPeptideModal, setShowPeptideModal] = useState(false);
 
   // --- Peptide detector ---
   const isPeptide = useMemo(() => {
@@ -263,9 +264,8 @@ export default function ProEvaluation({
     }
   };
 
-  // Submit trigger with overrides
-  const handleLaunchEvaluation = async () => {
-    // Collect coordinates override if valid
+  // Execute submission after parameters are collected
+  const executeSubmission = async (engine: "diffpepdock" | "colabfold") => {
     const cx = parseFloat(gridCenterX);
     const cy = parseFloat(gridCenterY);
     const cz = parseFloat(gridCenterZ);
@@ -283,10 +283,18 @@ export default function ProEvaluation({
       sizeOverride = [sx, sy, sz];
     }
 
-    // Collect list of custom hotspots (only active ones)
     const customHotspotsList = Object.keys(selectedHotspots).filter(k => selectedHotspots[k]);
 
-    await handleSubmit(centerOverride, sizeOverride, customHotspotsList, peptideDockingEngine);
+    await handleSubmit(centerOverride, sizeOverride, customHotspotsList, engine);
+  };
+
+  // Submit trigger with overrides
+  const handleLaunchEvaluation = async () => {
+    if (isPeptide) {
+      setShowPeptideModal(true);
+      return;
+    }
+    await executeSubmission(peptideDockingEngine);
   };
 
   // Extract currently active pose file data
@@ -601,13 +609,102 @@ export default function ProEvaluation({
               )}
             </div>
 
-            <TargetSelectorModal 
-              isOpen={isTargetModalOpen}
-              onClose={() => setIsTargetModalOpen(false)}
-              targets={targets}
-              onSelect={(pdbId) => setTarget(pdbId)}
-              selectedTargetId={target}
-            />
+            <TargetSelectorModal
+          isOpen={isTargetModalOpen}
+          onClose={() => setIsTargetModalOpen(false)}
+          targets={targets}
+          selectedTarget={target}
+          onSelectTarget={setTarget}
+        />
+
+      {/* PEPTIDE ENGINE SELECTION MODAL */}
+      {showPeptideModal && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in"
+          onClick={() => setShowPeptideModal(false)}
+        >
+          <div 
+            className="bg-surface-900 border border-brand-500/50 rounded-lg p-8 max-w-2xl w-full shadow-2xl relative animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setShowPeptideModal(false)}
+              className="absolute top-4 right-4 text-surface-400 hover:text-white transition-colors text-xl font-bold"
+            >
+              ✕
+            </button>
+            
+            <div className="font-mono text-[10px] text-brand-500 tracking-widest uppercase border-b border-surface-800 pb-2 mb-6">
+              Intervención del Orquestador // Nivel 3 Detectado
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-2xl font-display font-bold text-white mb-2 uppercase">
+                Ruta Peptídica Activada
+              </h3>
+              <p className="text-sm text-surface-300 font-sans leading-relaxed mb-6">
+                El sistema ha detectado una macromolécula o péptido de gran tamaño (≥60 átomos pesados o múltiples enlaces amida). AutoDock Vina no es adecuado debido a los enormes grados de libertad conformacional. Selecciona el motor profundo para continuar con la simulación:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* DiffPepDock Card */}
+                <button
+                  onClick={() => {
+                    setPeptideDockingEngine("diffpepdock");
+                    setShowPeptideModal(false);
+                    executeSubmission("diffpepdock");
+                  }}
+                  className="flex flex-col text-left p-6 border border-surface-700 bg-surface-950 rounded hover:border-brand-500 hover:bg-surface-800 transition-colors cursor-pointer group"
+                >
+                  <div className="text-xs text-brand-400 font-mono tracking-widest mb-1 group-hover:text-white transition-colors">
+                    INFERENCIA RÁPIDA
+                  </div>
+                  <h4 className="text-lg font-bold text-white mb-3">DiffPepDock</h4>
+                  <p className="text-xs text-surface-400 leading-relaxed mb-4 flex-1">
+                    Modelo generativo basado en difusión. Ideal para iteraciones ágiles y péptidos que no inducen grandes cambios en la proteína receptora.
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] font-mono w-full pt-3 border-t border-surface-800">
+                    <span className="text-emerald-400">COSTO: BAJO</span>
+                    <span className="text-surface-500">TIEMPO: &lt; 60s</span>
+                  </div>
+                </button>
+
+                {/* ColabFold Card */}
+                <button
+                  onClick={() => {
+                    setPeptideDockingEngine("colabfold");
+                    setShowPeptideModal(false);
+                    executeSubmission("colabfold");
+                  }}
+                  className="flex flex-col text-left p-6 border border-surface-700 bg-surface-950 rounded hover:border-brand-500 hover:bg-surface-800 transition-colors cursor-pointer group"
+                >
+                  <div className="text-xs text-brand-400 font-mono tracking-widest mb-1 group-hover:text-white transition-colors">
+                    PLEGADO CO-EVOLUTIVO
+                  </div>
+                  <h4 className="text-lg font-bold text-white mb-3">ColabFold</h4>
+                  <p className="text-xs text-surface-400 leading-relaxed mb-4 flex-1">
+                    Implementación AlphaFold2/MMseqs2. Ejecuta un MSA para predecir la estructura combinada desde cero. Excelente para péptidos con alta flexibilidad acoplada.
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] font-mono w-full pt-3 border-t border-surface-800">
+                    <span className="text-rose-400">COSTO: ALTO</span>
+                    <span className="text-surface-500">TIEMPO: 5-15 min</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-surface-800">
+              <span className="text-[10px] text-surface-500 font-mono">SE RECOMIENDA DIFFPEPDOCK PARA ITERACIONES INICIALES</span>
+              <button 
+                onClick={() => setShowPeptideModal(false)}
+                className="px-6 py-2 border border-surface-700 text-surface-400 hover:text-white hover:bg-surface-800 font-mono text-sm transition-colors rounded"
+              >
+                CANCELAR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
             {activeTargetObj && (
               <div className="rounded-xl bg-black/40 border border-white/5 p-3 text-[10px] space-y-1.5">
@@ -808,73 +905,6 @@ export default function ProEvaluation({
               <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3.5 text-xs text-rose-400 animate-in shake duration-300">
                 <span className="font-bold block uppercase mb-1">Error de Servidor</span>
                 <p className="font-mono text-[10px] leading-relaxed break-words">{error}</p>
-              </div>
-            )}
-
-            {/* Peptide Engine Selector */}
-            {isPeptide && (
-              <div className="rounded-xl border border-indigo-500/10 bg-indigo-950/10 p-4 space-y-3 animate-in fade-in duration-300">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black tracking-widest text-indigo-400 uppercase">
-                    Configuración Peptídica (Nivel 3)
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 leading-normal">
-                  Se ha detectado una macromolécula/péptido. Selecciona el motor de plegado y acoplamiento:
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
-                  <label className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all duration-200 ${
-                    peptideDockingEngine === "diffpepdock"
-                      ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.1)]"
-                      : "bg-black/35 border-white/5 text-slate-500 hover:border-white/10"
-                  }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <input
-                        type="radio"
-                        name="peptideDockingEngine"
-                        value="diffpepdock"
-                        checked={peptideDockingEngine === "diffpepdock"}
-                        onChange={() => setPeptideDockingEngine("diffpepdock")}
-                        className="sr-only"
-                      />
-                      <div className={`h-3.5 w-3.5 rounded-full border flex items-center justify-center ${
-                        peptideDockingEngine === "diffpepdock" ? "border-indigo-500" : "border-slate-600"
-                      }`}>
-                        {peptideDockingEngine === "diffpepdock" && <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />}
-                      </div>
-                      <span className="text-xs font-bold text-white">DiffPepDock</span>
-                    </div>
-                    <span className="text-[9px] leading-tight text-slate-400 font-medium">
-                      (Recomendado) Inferencia rápida por difusión de IA (&lt;60s). Ideal para iteración ágil.
-                    </span>
-                  </label>
-                  
-                  <label className={`flex flex-col p-3 rounded-xl border cursor-pointer transition-all duration-200 ${
-                    peptideDockingEngine === "colabfold"
-                      ? "bg-indigo-500/10 border-indigo-500/50 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.1)]"
-                      : "bg-black/35 border-white/5 text-slate-500 hover:border-white/10"
-                  }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <input
-                        type="radio"
-                        name="peptideDockingEngine"
-                        value="colabfold"
-                        checked={peptideDockingEngine === "colabfold"}
-                        onChange={() => setPeptideDockingEngine("colabfold")}
-                        className="sr-only"
-                      />
-                      <div className={`h-3.5 w-3.5 rounded-full border flex items-center justify-center ${
-                        peptideDockingEngine === "colabfold" ? "border-indigo-500" : "border-slate-600"
-                      }`}>
-                        {peptideDockingEngine === "colabfold" && <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />}
-                      </div>
-                      <span className="text-xs font-bold text-white">ColabFold</span>
-                    </div>
-                    <span className="text-[9px] leading-tight text-slate-400 font-medium">
-                      Plegado completo receptor-péptido por co-evolución (5-15 min). Computacionalmente costoso.
-                    </span>
-                  </label>
-                </div>
               </div>
             )}
 

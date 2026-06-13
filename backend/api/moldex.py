@@ -24,7 +24,7 @@ async def get_moldex(
     repo = Repository(db)
     
     if current_user is None:
-        current_user = await repo.get_or_create_test_user()
+        return {"count": 0, "results": []}
     
     results = await repo.get_moldex_molecules(
         user_id=current_user.id,

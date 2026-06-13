@@ -26,5 +26,13 @@ Se transformó gran parte del texto estático y sobrecargado (especialmente en l
 Se depuró el exceso de brillos, "efectos neón" e iluminaciones excesivas en botones y modales que hacían parecer a la plataforma un videojuego (introducidos en v6.2.1).
 - **¿Por qué?** Para proyectar mayor seriedad, elegancia y un tono verdaderamente científico o académico, adoptando colores más sobrios (índigos profundos, superficies oscuras) y reservando el "glow" exclusivamente para elementos de marca (como el logo principal).
 
+### 4. Integración del Nivel 4 (Metales de Transición)
+Se implementó y aisló de manera robusta el **Nivel 4** del Enrutador Físico Adaptativo:
+- **xTB Service:** Cálculos cuánticos semiempíricos (GFN2-xTB) para asignar cargas atómicas parciales de alta precisión, esenciales en ligandos organometálicos o altamente conjugados que fallan con métodos empíricos (como Gasteiger/MMFF94).
+- **AutoDock 4 (AD4):** Preparación del ligando nativa mediante Meeko (inyectando las cargas xTB) y ejecución con la función de puntuación `--scoring ad4`, especializada en metaloenzimas y coordinación iónica.
+
+### 5. Optimización del Módulo Moldex (Bioteca)
+- **Corrección de Estado Pokedex:** Se corrigió un bug en la capa de datos (`repository.py`) que mostraba todas las evaluaciones completadas en la bioteca independientemente de si el investigador las había guardado explícitamente. Se implementó el filtrado estricto `is_saved == True`, garantizando que la Bioteca actúe como un registro curado y personalizado de los compuestos más prometedores.
+
 ---
-*Con esta actualización v6.5, MolDesign no solo potencia su motor de orquestación (completado en v6.4), sino que lo vuelve accesible y auditable visualmente para toda la comunidad científica e investigativa.*
+*Con esta actualización v6.5, MolDesign no solo potencia su motor de orquestación, sino que lo vuelve accesible y auditable visualmente para toda la comunidad científica e investigativa.*

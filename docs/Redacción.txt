@@ -1,0 +1,64 @@
+﻿Plan Comercial de Licenciamiento
+MolDesign IA:
+Plan UNIFÉ
+___
+Preparado exclusivamente para: Universidad Femenina del Sagrado Corazón (UNIFÉ) Fecha: Junio 2026
+  
+
+Visión Ejecutiva
+MolDesign IA es una plataforma de vanguardia en biotecnología y química computacional (SaaS) orientada al entorno educativo. Nuestro objetivo es dotar a las instituciones académicas líderes con herramientas de nivel industrial, pero diseñadas con una pedagogía intuitiva (Modo Academy). A diferencia del software de investigación tradicional —que requiere costosos laboratorios físicos de computación— MolDesign procesa complejas simulaciones cuánticas y de Inteligencia Artificial directamente en la nube, haciéndolo accesible desde la laptop o dispositivo móvil de cualquier estudiante.
+
+
+
+
+Alineación Académica con UNIFÉ
+Hemos mapeado las capacidades de MolDesign IA para potenciar directamente dos de las facultades estratégicas de UNIFÉ:
+Facultad de Nutrición y Alimentación
+1. Nutrición a Nivel Molecular: 
+Las estudiantes pueden visualizar e interactuar en 3D con estructuras atómicas para comprender cómo los micronutrientes, flavonoides y compuestos dietéticos se acoplan a receptores humanos.
+2. Módulo Metabólico: 
+La plataforma incluye blancos terapéuticos pre-cargados fundamentales para el estudio del metabolismo moderno, tales como el receptor GLP-1 (asociado a digestión y control de peso) y PCSK9 (regulación del colesterol).
+3. Investigación y Tesis: 
+Las alumnas pueden realizar estudios in-silico para sus proyectos de grado con validación de grado científico.
+Facultad de Ingeniería en Sistemas y Gestión de TI
+1. Arquitectura en la Nube: 
+MolDesign sirve como un "Laboratorio Vivo". Las alumnas pueden interactuar con un sistema de producción real que integra microservicios, algoritmos de Machine Learning y bases de datos asíncronas.
+2. Arquitectura en la Nube: 
+Únicos en el mercado educativo, cada simulación genera un reporte PDF con trazabilidad inmutable certificada en la red de Solana. Esto permite a las alumnas estudiar de primera mano la integración práctica de los contratos inteligentes (Smart Contracts) en aplicaciones reales.
+
+
+
+
+
+
+Propuesta de Valor Tecnológica
+Al evaluar la integración de software de simulación molecular, las instituciones suelen enfrentarse a dos extremos ineficientes:
+Software Tradicional (Legacy): 
+Soluciones como Schrödinger, que superan los $15,000 USD anuales y exigen la compra de hardware dedicado (Tarjetas Gráficas) para funcionar. 
+Servidores Públicos Gratuitos: 
+Alternativas abiertas que colapsan cuando un salón de 40 estudiantes intenta realizar una simulación simultáneamente, carecen de interfaces pedagógicas y no poseen Inteligencia Artificial.
+La Solución MolDesign:
+Ofrecemos un modelo de SaaS (Software como Servicio). UNIFÉ no necesita comprar servidores ni instalar programas. Garantizamos instancias privadas en la nube sin filas de espera, con un Mentor IA integrado (MolecularInsight) que explica los resultados químicos a la alumna paso a paso.
+Estructura de Inversión Institucional (Suscripción Anual)
+Ofrecemos dos modelos de licenciamiento B2B (Business-to-Business) diseñados para ajustarse al presupuesto de innovación tecnológica de la universidad:
+Opción A: Licencia Departamental (Programa Piloto)
+Ideal para iniciar la adopción tecnológica en una sola facultad (ej. Nutrición).
+Capacidad: Acceso concurrente para hasta 50 estudiantes/docentes.
+Incluye:
+Acceso completo al Modo Academy y Visores 3D.
+Generación de reportes PDF con trazabilidad Blockchain (Solana Devnet).
+Capacitación técnica virtual (2 horas) para la plantilla docente.
+Inversión Anual: $3,000 USD
+Opción B: Licencia Campus UNIFÉ (Recomendada)
+Transformación digital transversal para toda la comunidad universitaria.
+Capacidad: Acceso ilimitado para toda alumna o profesor que se registre utilizando el dominio institucional @unife.edu.pe.
+Incluye:
+Todos los beneficios del Piloto.
+Soporte técnico prioritario y Acuerdo de Nivel de Servicio (SLA) del 99.9% de uptime.
+Inclusión On-Demand: Si un docente requiere que se ingrese un nuevo receptor proteico específico al sistema para una clase o tesis, nuestro equipo lo procesa e integra en 36 horas.
+Inversión Anual: $8,000 USD
+Implementación Inmediata
+Al ser un sistema basado en la nube, el despliegue para la Universidad toma menos de 24 horas a partir de la firma del convenio. No hay carga operativa para el departamento de TI de UNIFÉ.
+
+
+Quedamos a su entera disposición para coordinar una reunión virtual y realizar una demostración técnica en vivo (Demo) con los directores de las facultades interesadas.
