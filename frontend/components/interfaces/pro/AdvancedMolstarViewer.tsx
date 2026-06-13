@@ -160,6 +160,8 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
     if (viewer && viewerReady) {
       try {
         const structures = viewer.plugin.managers.structure.hierarchy.current.structures;
+        console.log("Molstar structures in hierarchy:", structures);
+        
         let candidate = structures.find((s: any) => {
           const label1 = (s.cell?.obj?.label || "").toLowerCase();
           const label2 = (s.cell?.obj?.data?.label || "").toLowerCase();
@@ -168,20 +170,38 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
         });
 
         if (!candidate && poseData && structures.length > 1) {
+          console.warn("Candidate not found by label. Falling back to the last loaded structure.");
           candidate = structures[structures.length - 1];
         }
 
         if (candidate && candidate.cell?.obj?.data) {
-          const loci = candidate.cell.obj.data.representativeLoci;
-          if (loci) {
-            viewer.plugin.managers.camera.focusLoci(loci);
-            viewer.plugin.managers.structure.focus.addFromLoci(loci);
+          const data = candidate.cell.obj.data;
+          console.log("Candidate structure data for focus:", data);
+          
+          if (data.boundary && data.boundary.sphere) {
+            console.log("Focusing using boundary sphere:", data.boundary.sphere);
+            // Focus on the sphere with a slight zoom out for context
+            viewer.plugin.managers.camera.focusSphere(data.boundary.sphere);
+            
+            // Try to highlight it if possible
+            if (data.representativeLoci) {
+              try {
+                viewer.plugin.managers.interactivity.lociHighlights.highlightOnly({ loci: data.representativeLoci });
+              } catch (e) { /* ignore highlight error */ }
+            }
+          } else if (data.representativeLoci) {
+            console.log("Focusing using representativeLoci");
+            viewer.plugin.managers.camera.focusLoci(data.representativeLoci);
+          } else {
+            console.warn("No boundary or loci found on candidate data.");
+            viewer.plugin.managers.camera.reset();
           }
         } else {
+          console.warn("No candidate data object found.");
           viewer.plugin.managers.camera.reset();
         }
       } catch (e) {
-        console.warn("Error focusing on candidate molecule:", e);
+        console.error("Error focusing on candidate molecule:", e);
       }
     }
   };
