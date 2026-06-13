@@ -132,6 +132,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       // Si el refresh falla, borramos el token muerto del storage
       if (typeof window !== "undefined") {
         localStorage.removeItem("moldesign_auth");
+        window.dispatchEvent(new Event('auth_expired'));
+        
         // Solo redirigir si NO estamos en la página de evaluación (donde permitimos anónimos)
         if (!window.location.pathname.startsWith("/evaluation")) {
           window.location.href = "/login?expired=true";

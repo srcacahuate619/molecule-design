@@ -98,7 +98,7 @@ async def get_current_user_optional(
     if not authorization:
         return None
 
-    try:
-        return await get_current_user(authorization=authorization, db=db)
-    except HTTPException:
-        return None
+    # Si hay token, delegamos a get_current_user. 
+    # Si está expirado o es inválido, dejará pasar el 401 HTTPException
+    # para que el frontend intente el refresh.
+    return await get_current_user(authorization=authorization, db=db)

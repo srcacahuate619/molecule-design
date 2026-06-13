@@ -50,6 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     setIsLoading(false);
+
+    // Escuchar el evento de expiración desde api.ts
+    const handleAuthExpired = () => {
+      setToken(null);
+      setRefreshToken(null);
+      setUser(null);
+      localStorage.removeItem("moldesign_auth");
+    };
+    window.addEventListener('auth_expired', handleAuthExpired);
+    return () => window.removeEventListener('auth_expired', handleAuthExpired);
   }, []);
 
   const _persist = useCallback((tok: string, refTok: string, u: User) => {
