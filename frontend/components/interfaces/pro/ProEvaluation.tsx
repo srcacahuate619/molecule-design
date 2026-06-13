@@ -613,8 +613,8 @@ export default function ProEvaluation({
           isOpen={isTargetModalOpen}
           onClose={() => setIsTargetModalOpen(false)}
           targets={targets}
-          selectedTarget={target}
-          onSelectTarget={setTarget}
+          selectedTargetId={target}
+          onSelect={setTarget}
         />
 
       {/* PEPTIDE ENGINE SELECTION MODAL */}
