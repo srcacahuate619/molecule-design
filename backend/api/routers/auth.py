@@ -84,7 +84,7 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str = Field(..., min_length=1, max_length=128)
 
 
@@ -190,7 +190,7 @@ async def login(
     # Rate limiting: 5 intentos/min por IP
     login_limiter.check(raw_request)
 
-    stmt = select(UserORM).where(UserORM.email == request.email)
+    stmt = select(UserORM).where((UserORM.email == request.email) | (UserORM.username == request.email))
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
