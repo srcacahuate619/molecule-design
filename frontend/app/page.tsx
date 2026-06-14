@@ -332,8 +332,11 @@ function ProHome({ stats, error }: { stats: GlobalStats | null, error: boolean }
             {/* Validation Node */}
             <div className="w-full max-w-sm px-6 py-4 border border-brand-500 bg-brand-500/10 text-brand-400 font-bold text-center rounded mb-4 relative">
               1. Validación Química (RDKit)
-              <div className="absolute top-0 right-[-140px] h-full flex items-center">
-                <span className="text-surface-600 mr-2">→</span>
+              <div className="absolute top-[90%] right-[-100px] flex flex-col items-center">
+                <svg width="24" height="24" className="text-surface-600 mb-1 ml-[-20px]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                   <path d="M4 4 L20 20" />
+                   <path d="M10 20 L20 20 L20 10" />
+                </svg>
                 <div className="px-2 py-1 border border-red-500 text-red-500 text-[9px] rounded">RECHAZO (Falla SA Score / QED)</div>
               </div>
             </div>
