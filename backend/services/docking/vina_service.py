@@ -57,20 +57,19 @@ def _resolve_executable(path_or_name: str) -> str | None:
     if found:
         return found
 
-    scripts_dir = Path(sys.executable).resolve().parent
+    # Fallbacks for Windows Python environments
+    search_dirs = [
+        Path(sys.executable).resolve().parent,
+        Path(sys.executable).resolve().parent / "Scripts",
+        Path(sys.prefix) / "Scripts",
+        Path.home() / "AppData" / "Roaming" / "Python" / "Python314" / "Scripts"
+    ]
     
-    # Try scripts_dir / path_or_name directly (e.g. for files with extensions in the bin/scripts folder)
-    direct_candidate = scripts_dir / path_or_name
-    if direct_candidate.exists():
-        return str(direct_candidate)
-
-    windows_candidate = scripts_dir / f"{path_or_name}.exe"
-    if windows_candidate.exists():
-        return str(windows_candidate)
-
-    py_candidate = scripts_dir / f"{path_or_name}.py"
-    if py_candidate.exists():
-        return str(py_candidate)
+    for sdir in search_dirs:
+        for ext in ["", ".exe", ".py"]:
+            c = sdir / f"{path_or_name}{ext}"
+            if c.exists():
+                return str(c)
 
     return None
 

@@ -40,6 +40,10 @@ El panel de calibración consta de 40 moléculas de BindingDB con actividades co
 | **v6.2** | **Ingestión de 9 Targets Oncológicos y UI interactiva** | **0.512 / 0.485 (Estabilizado)** | 🏆 Producción |
 | **v6.3** | **Integración de GNN RTMScore Nivel 2** | **0.512 / 0.485** / **+0.035** (AKT1 Piloto) | 🟢 Validado (ML) |
 | **v6.4** | **Pipeline Híbrido (GNN Nivel 2 + OpenMM Nivel 3)** | **0.512 / 0.485** / **+0.450** (PIK3CA WT) | 🏆 Certificado (Producción) |
+| **v6.5** | **Capa de Presentación**: Interfaz Dual (Pro/Academy) | **UX/UI** | ✅ Completado |
+| **v6.6** | **Fase 2: Auditoría E2E del Pipeline (18 Receptores)** | **Validación Física / GNN / Dominio ML** | 🟢 Ver [Reporte](AUDITORIA_FASE2_E2E.md) |
+| **v6.7** | **XGBoost Data Augmentation (Extrema Diversidad)** | **Expansión del Dominio de Aplicabilidad** | 📋 Pendiente |
+| **v6.8** | **Fase 3: Benchmark Coeficiente Spearman Global** | **Evaluación Empírica 18 Targets** | 🔬 Próximo Paso |
 
 ## 4. Hito GLP-1R: Validación en el sitio activo (Mayo 2026)
 Tras la auditoría de los modelos GPCR, se realizó una prueba de Spearman blindada contra el receptor GLP-1R (PDB: 6B3J).

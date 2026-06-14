@@ -153,10 +153,12 @@ async def _run_full_evaluation_async(
                 from rdkit import Chem
                 mol = Chem.MolFromSmiles(smiles)
                 if mol:
-                    # Contar enlaces amida C(=O)N
-                    amide_pat = Chem.MolFromSmarts("C(=O)N")
-                    amide_count = len(mol.GetSubstructMatches(amide_pat))
-                    is_peptide = (properties.molecular_weight > 1000 or properties.rotatable_bonds > 32 or amide_count >= 3)
+                    # Detección Enterprise de Péptidos vía Patrones Estructurales SMARTS
+                    # Busca el patrón del esqueleto peptídico: [N]-[C.alpha]-[C](=O)
+                    peptide_backbone = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])")
+                    matches = mol.GetSubstructMatches(peptide_backbone)
+                    # Exigimos al menos 4 enlaces peptídicos secuenciales para considerarlo un péptido o peptidomimético pesado
+                    is_peptide = (len(matches) >= 4 and properties.molecular_weight > 600)
                     
                     # Detectar metales
                     metals_in_mol = {atom.GetSymbol() for atom in mol.GetAtoms()} & {

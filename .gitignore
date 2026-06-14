@@ -72,6 +72,8 @@ get_last_*.py
 insert_target_*.py
 scratch_*.py
 sync_to_remote.py
+auto_sync.py
+cleanup_repo.py
 update_*.py
 audit_hotspots.py
 WHITEPAPER_*.md

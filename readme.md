@@ -80,9 +80,9 @@ Para superar el límite físico de resolución empírica y optimizar el uso de r
 ```
 
 1.  **Nivel 1 (Filtro Rápido - 17s/molécula) — [En Producción]:** AutoDock Vina + Rescoring XGBoost (contactos discretos ProLIF + descriptores electroquímicos globales ECIF-lite). Descarta compuestos inactivos o con propiedades ADME pobres.
-2.  **Nivel 2 (Red Neuronal de Grafos - 8s/molécula) — [En Producción v6.3]:** Inferencia profunda basada en grafos con **RTMScore** (Residue-Atom Graph Transformer Module). Modela al complejo proteína-ligando como un grafo y predice la densidad de probabilidad de las distancias de contacto mediante un Modelo de Mezclas Gaussianas (GMM). Aporta una corrección biofísica continua contra falsos positivos tridimensionales.
-3.  **Nivel 3 (Docking Peptídico y Refinamiento - 1m/molécula) — [En Producción v6.4]:** Docking de péptidos y macromoléculas flexibles mediante redes de difusión generativa (**DiffPepDock** con sesgo del sitio activo) o co-plegado co-evolutivo (**ColabFold**). Aplica una capa final de refinamiento físico en solvente implícito mediante **AMBER14SB/OpenMM** (fijando el esqueleto de la proteína) con caída controlada a **RDKit UFF** para aliviar choques estéricos.
-4.  **Nivel 4 (Detección de Metales de Transición) — [En Producción v6.5]:** El sistema intercepta compuestos organometálicos (que Vina no puede modelar correctamente). Aplica cálculos cuánticos semiempíricos ultrarrápidos (**GFN2-xTB**) para obtener cargas parciales de alta precisión e inyectarlas en un motor de docking clásico compatible con organometálicos (**AutoDock 4 con Scoring AD4**).
+2.  **Nivel 2 (Red Neuronal de Grafos - 8s/molécula) — [En Producción v6.3]:** Inferencia profunda basada en grafos con **RTMScore**. Aporta una corrección biofísica continua contra falsos positivos tridimensionales. Utiliza normalización **GNN-LE (Eficiencia de Ligando GNN)**, haciendo que la sigmoide de puntuación sea agnóstica a la escala del receptor, un estándar Enterprise para Consensus Scoring.
+3.  **Nivel 3 (Docking Peptídico y Refinamiento - 1m/molécula) — [En Producción v6.4]:** Docking de péptidos detectados automáticamente mediante reconocimiento de patrones subestructurales (**RDKit SMARTS** para esqueletos de $\alpha$-aminoácidos). Utiliza redes de difusión generativa (**DiffPepDock**) o co-plegado (**ColabFold**). Aplica una capa final de refinamiento físico en solvente implícito mediante **AMBER14SB/OpenMM** con caída controlada a **RDKit UFF** para aliviar choques estéricos.
+4.  **Nivel 4 (Detección de Metales de Transición) — [En Producción v6.5]:** El sistema intercepta compuestos organometálicos. Aplica cálculos cuánticos semiempíricos ultrarrápidos (**GFN2-xTB**) para obtener cargas parciales e inyectarlas en **AutoDock 4**.
 
 ### Auto-Recalibración Dinámica
 Para evitar el "Scoring Bias" intrínseco de cada receptor, MolDesign cuenta con un sistema de **Auto-Recalibración Dinámica de la Especificidad**. El sistema ingiere rutinariamente ligandos endógenos de control validado in vitro, evalúa la precisión (vía Benchmark de Spearman), y auto-ajusta el *specificity_floor* y los multiplicadores de la plataforma para asegurar consistencia predictiva sin intervención humana.
@@ -440,9 +440,12 @@ NEXT_PUBLIC_API_URL=http://localhost:8010
 | v6.2.1 | **Modificación del Frontend**: Implementación dual de **Modo Gamer** y **Modo Pro** | ✅ |
 | v6.3 | **Integración de Nivel 2 GNN**: Rescoring de grafos RTMScore (Graph Transformer + GMM) | ✅ |
 | v6.4 | **Nivel 3**: Motores Peptídicos (DiffPepDock/ColabFold + OpenMM) y Detección de Metales. *Validado con Benchmark Robusto PIK3CA WT (N=95, ρ=+0.450)* | ✅ |
-| v6.5 (actual) | **Capa de Presentación**: Interfaz Dual (Pro/Academy), Modales Interactivos en Cascada, depuración estética de la UX/UI | ✅ |
-| v6.6 | 3D-RISM desolvatación (AmberTools) | 📋 |
-| v6.7 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
+| v6.5 | **Capa de Presentación**: Interfaz Dual (Pro/Academy), Modales Interactivos en Cascada, depuración estética de la UX/UI | ✅ |
+| v6.6 | **Validación Fase 2**: Auditoría E2E del Pipeline (18 Receptores), Fallback Físico y Filtro ML (Dominio de Aplicabilidad) | ✅ |
+| v6.7 | **Reentrenamiento Diverso Extremo**: XGBoost Data Augmentation para expandir el Dominio de Aplicabilidad (moléculas masivas) | 📋 |
+| v6.8 (actual)| **Validación Fase 3**: Benchmark Coeficiente de Spearman (Rho) Global contra set empírico | 🔬 |
+| v6.9 | 3D-RISM desolvatación (AmberTools) | 📋 |
+| v7.0 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
 
 Ver detalles técnicos en [`docs/MVP_ROADMAP.md`](docs/MVP_ROADMAP.md) — Sección 16 (Fase 6.0).
 

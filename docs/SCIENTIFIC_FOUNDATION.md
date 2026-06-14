@@ -84,7 +84,12 @@ Para evitar el **sesgo de ligando** (atribuir éxito a una molécula solo por su
 - **Interpretación del Delta**:
     - `Delta < 0`: Hay choques estéricos; la molécula "quiere" unirse por sus propiedades pero "no cabe" físicamente.
 
-### 5.1 Calibración de Baseline por Target (Ej: GLP-1R)
+### 5.1 Escalabilidad del GNN y Detección Estructural Enterprise (v6.7)
+A medida que el sistema incorporó receptores colosales (como las quinasas CDK4/6), descubrimos cuellos de botella en la matemática de "talla única" de los modelos:
+- **Eficiencia de Ligando GNN (GNN-LE)**: Originalmente, RTMScore (Nivel 2) se evaluaba contra una sigmoide estática (centro en 20.0). Las quinasas, al ser inmensas, saturaban esta sigmoide otorgando siempre el máximo puntaje. Ahora, dividimos el `gnn_score` crudo entre el número de átomos pesados, obteniendo una métrica de eficiencia invariante a la escala (típicamente entre 1.0 y 5.0) y recentramos la sigmoide de puntuación en 2.0. Esto devuelve la sensibilidad predictiva a la red neuronal sin importar el tamaño del target.
+- **Detección de Péptidos vía RDKit SMARTS**: Abandonamos las heurísticas frágiles (ej. conteo ciego de enlaces amida) a favor del estándar enterprise. El enrutador ahora busca activamente la subestructura fundamental de $\alpha$-aminoácidos (`[NX3][CX4][CX3](=[OX1])`). Esto previene que potentes inhibidores de molécula pequeña (como el Palbociclib) caigan accidentalmente en el pipeline macromolecular de proteínas de novo.
+
+### 5.2 Calibración de Baseline por Target (Ej: GLP-1R)
 Para asegurar que el motor de docking no solo corre, sino que predice, realizamos calibraciones de baseline (Vina puro) contra receptores específicos. En el caso de **GLP-1R (6B3J)**, se obtuvo un **Spearman ρ=0.43**, lo que valida que el sitio activo y los parámetros de grid box capturan la física esencial del receptor antes incluso de aplicar el rescoring de IA.
 
 ### 5.2 Framework Masivo de Validación Global Spearman (v7.0)

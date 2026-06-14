@@ -149,16 +149,17 @@ def calculate_score_breakdown(
         base_score = (affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
         base_score_with_specificity = base_score * specificity_multiplier
 
-        # --- [NUEVO] Factor GNN (RTMScore Nivel 2) ---
-        # El GNN devuelve la suma de probabilidades GMM: un valor alto = buena
-        # geometría de pose, bajo = clash estérico. Lo normalizamos a un factor
-        # multiplicador en [0.7, 1.15] para no distorsionar el rango 0-100.
-        # - Si gnn_score es None (GNN no disponible), factor = 1.0 (sin efecto)
-        # - Si gnn_score > ~50, ampliación leve (geometría excelente)
-        # - Si gnn_score < ~5, penalización moderada (poses con clashes)
-        if gnn_score is not None:
-            # Sigmoide centrada en 20.0 (valor típico de una pose correcta)
-            raw_factor = 1.0 / (1.0 + math.exp(-0.05 * (gnn_score - 20.0)))
+        # --- [NUEVO] Factor GNN (RTMScore Nivel 2) Normalizado por Tamaño ---
+        # En lugar de un umbral estático de 20.0, normalizamos el GNN Score por 
+        # el número de átomos pesados para obtener una "Eficiencia de Ligando GNN" (GNN-LE).
+        # Esto hace que la sigmoide sea independiente del tamaño del bolsillo (Escalabilidad Enterprise).
+        if gnn_score is not None and properties.heavy_atom_count > 0:
+            gnn_le = gnn_score / properties.heavy_atom_count
+            
+            # El GNN-LE típico para un buen binder suele estar entre 1.0 y 5.0.
+            # Centramos la sigmoide en un GNN-LE de 2.0.
+            raw_factor = 1.0 / (1.0 + math.exp(-1.5 * (gnn_le - 2.0)))
+            
             # Mapear [0, 1] → [0.7, 1.15]
             gnn_factor = 0.7 + (raw_factor * 0.45)
         else:
