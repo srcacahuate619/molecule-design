@@ -423,18 +423,6 @@ async def run_vina_docking(
                 # Fallback: if still no poses, try parsing PDBQT for affinity only
                 if not poses:
                     pdbqt_content = output_pdbqt.read_text(encoding="utf-8", errors="replace")
-                    # --- Debug: guardar PDBQT crudo en /tmp (nunca bloquea el pipeline) ---
-                    try:
-                        import datetime
-                        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                        artifact_dir = Path(settings.vina_temp_dir) / "pdbqt_debug"
-                        artifact_dir.mkdir(parents=True, exist_ok=True)
-                        artifact_path = artifact_dir / f"{smiles_hash}_{target_pdb_id}_{timestamp}.pdbqt"
-                        artifact_path.write_text(pdbqt_content, encoding="utf-8")
-                        log.warning("[DEBUG] PDBQT crudo guardado", path=str(artifact_path), warnings=scientific_warnings)
-                    except Exception as _debug_exc:
-                        log.warning("[DEBUG] No se pudo guardar PDBQT de debug", error=str(_debug_exc))
-                    # --- Fin debug ---
                     pdbqt_pose_blocks = extract_pdbqt_poses(pdbqt_content)
                     parsed_poses_pdbqt = parse_vina_output_pdbqt(pdbqt_content)
                     poses = []

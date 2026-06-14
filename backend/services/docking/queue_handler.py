@@ -9,6 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from celery.result import AsyncResult
+from celery.exceptions import SoftTimeLimitExceeded
 
 from api.celery_app import celery_app
 from chem.conformer import generate_conformer
@@ -435,7 +436,7 @@ async def _run_full_evaluation_async(
                 "evaluation_result_id": str(result.id) if result else None,
             }
 
-        except Exception as exc:
+        except (Exception, SoftTimeLimitExceeded) as exc:
             # ── Error recovery: garantiza que la molécula no quede en
             # estado intermedio (VALIDATED/DOCKING) sin explicación. ──────
             detail = getattr(exc, 'detail', None)
@@ -521,7 +522,12 @@ def celery_ping() -> dict[str, str]:
     return {"status": "ok", "service": "celery"}
 
 
-@celery_app.task(name="moldesign.run_full_evaluation", bind=True)
+@celery_app.task(
+    name="moldesign.run_full_evaluation", 
+    bind=True,
+    time_limit=300,        # Hard kill at 5 minutes
+    soft_time_limit=270    # Raise SoftTimeLimitExceeded at 4.5 mins to fail gracefully
+)
 def run_full_evaluation(
     self,
     smiles: str,
