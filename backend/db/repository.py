@@ -411,7 +411,7 @@ class Repository:
         return target_6x1a or target_6b3j or target_7e2y
 
     async def get_or_create_test_user(self) -> UserORM:
-        stmt = select(UserORM).where(UserORM.email == "demo@moldesign.local")
+        stmt = select(UserORM).where(UserORM.username == "demo")
         result = await self.db.execute(stmt)
         existing = result.scalar_one_or_none()
         if existing is not None:
@@ -660,6 +660,10 @@ class Repository:
                 result.shap_values = scores["shap_values"]
             if "gnn_attention" in scores:
                 result.gnn_attention = scores["gnn_attention"]
+            if "gnn_attention_svg" in scores:
+                result.gnn_attention_svg = scores["gnn_attention_svg"]
+            if "gnn_pharmacophores" in scores:
+                result.gnn_pharmacophores = scores["gnn_pharmacophores"]
 
         if ai_report is not None:
             result.ai_report = ai_report

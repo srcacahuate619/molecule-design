@@ -72,6 +72,8 @@ export type EvaluationResult = {
   // XAI
   shap_values: Record<string, number> | null;
   gnn_attention: number[] | null;
+  gnn_attention_svg: string | null;
+  gnn_pharmacophores: Record<string, number> | null;
 
   // Files
   poses_file_path: string | null;

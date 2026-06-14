@@ -2,7 +2,7 @@
 
 **Plataforma de Descubrimiento Farmacológico In Silico — Docking Físico · ML Rescoring · Certificación Blockchain**
 
-[![Versión](https://img.shields.io/badge/Versión-v6.5-blue.svg)]()
+[![Versión](https://img.shields.io/badge/Versión-v6.6-blue.svg)]()
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Python: 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)]()
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
@@ -13,9 +13,9 @@
 
 > *"Democratizando el diseño de fármacos mediante rigor científico, transparencia total y registro inmutable de autoría."*
 
-**MolDesign AI (v6.5)** es una plataforma *Open Science* para el cribado virtual de moléculas contra blancos biológicos de relevancia terapéutica. Combina un pipeline de **docking físico real** (AutoDock Vina), **rescoring por Machine Learning** (XGBoost, 176 features 3D), **auditoría científica profunda** (LE, LLE, Hotspot Analysis) y **certificación inmutable de autoría** en la blockchain de Solana. Los resultados completos se exportan como **Reporte Científico PDF** generado automáticamente.
+**MolDesign AI (v6.6)** es una plataforma *Open Science* para el cribado virtual de moléculas contra blancos biológicos de relevancia terapéutica. Combina un pipeline de **docking físico real** (AutoDock Vina), **rescoring por Machine Learning** (XGBoost, 176 features 3D), **auditoría científica profunda** (LE, LLE, Hotspot Analysis) y **certificación inmutable de autoría** en la blockchain de Solana. Los resultados completos se exportan como **Reporte Científico PDF** generado automáticamente.
 
-El módulo **Moldex** sirve como la interfaz principal de evaluación y registro histórico de moléculas. *(Nota v6.5: Interfaz Dual interactiva "Pro" y "Academy", detalles en [CHANGELOG_v6.5.md](docs/CHANGELOG_v6.5.md)).*
+El módulo **Moldex** sirve como la interfaz principal de evaluación y registro histórico de moléculas. *(Nota v6.6: Migración completa a arquitectura de microservicios con FastAPI y Cola de tareas Celery/Redis, detalles en [CHANGELOG_v6.6.md](docs/CHANGELOG_v6.6.md)).*
 
 ---
 

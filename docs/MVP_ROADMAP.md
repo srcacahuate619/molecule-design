@@ -949,3 +949,23 @@ Esta fase es de **investigación a largo plazo**. Se documenta para alineación 
 - [ ] **6.1** — DimeNet++ Rescoring 3D *(próxima prioridad técnica)*
 - [ ] **6.2** — 3D-RISM Desolvatación *(requiere 6.1 completada)*
 - [ ] **6.3** — Flexibilidad Proteica *(investigación, requiere GPU dedicada)*
+
+---
+
+## 16. Fase 7.0: Explicabilidad Científica (XAI) e Infraestructura Escalable (Junio 2026) 🔮
+
+En esta fase se logró destruir por completo la percepción de "Caja Negra" del modelo XGBoost y RTMScore, abriendo la puerta a la confianza científica de alto nivel.
+
+### Hitos Alcanzados (v7.0)
+- [x] **Integración SHAP (XGBoost):** El `model_manager.py` ahora genera matrices de impacto exacto para cada descriptor físico-químico calculado por RDKit.
+- [x] **Extracción de Atención Espacial (GNN):** El microservicio `gnn_service.py` logra capturar los pesos del tensor tridimensional y transformarlos probabilísticamente para su representación cristalográfica.
+- [x] **Visualización Termográfica 3D (Frontend Pro):** Se programó `AdvancedMolstarViewer.tsx` para interpretar las atenciones de la GNN utilizando PDBs inyectados con Oxígeno/Cloro/Magnesio, obligando a Molstar a renderizar la colorimetría exacta dictaminada para el Modo Gamer (Magenta, Verde Bandera, Verde Limón).
+- [x] **Despliegue Multi-Contenedor (Docker Compose):** Refactorización del entorno en Ubuntu Server (`192.168.1.64`) para orquestar Next.js, FastAPI, Celery Workers y Redis de manera robusta.
+
+### Próximos Desafíos Inmediatos (Pre-Spearman)
+- [ ] **Data Augmentation Extremo para XGBoost:** Reentrenamiento radical del modelo de afinidad (XGBoost) inyectando bases de datos de ligandos masivos (Massive Molecules) con alta varianza rotacional, para prevenir el "overfitting" a ligandos canónicos pequeños. *(Apunto de comenzar)*.
+- [ ] **Spearman Benchmark Fase 3 (Panel de 18 Targets):** Evaluación del performance algorítmico contra receptores biológicos heterogéneos, midiendo correlación paramétrica final de todo el sistema.
+
+### Estado Global Actual
+- El sistema cuenta con trazabilidad total `(AI = Árbitro)`. Los investigadores pueden ver y descargar (PDF/Blockchain) los fundamentos atómicos y físicos de por qué su molécula triunfó o fracasó en la simulación.
+- **Estamos listos para someter la arquitectura a las pruebas Spearman definitivas tan pronto como el modelo XGBoost reciba su "entrenamiento diverso extremo" para moléculas masivas.**

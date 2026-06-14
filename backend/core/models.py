@@ -272,6 +272,8 @@ class EvaluationResultORM(Base):
     # ── Explainable AI (XAI) ──────────────────────────────────────────────────
     shap_values      = Column(JSONB, nullable=True)  # { "LogP": -0.2, "MW": +0.5 }
     gnn_attention    = Column(JSONB, nullable=True)  # [0.1, 0.8, 0.2, ...] pesos atómicos
+    gnn_attention_svg= Column(Text, nullable=True)   # Mapa 2D de RDKit en formato SVG
+    gnn_pharmacophores = Column(JSONB, nullable=True) # {"Aromáticos": 45.0, ...}
 
     # ── Reporte IA ───────────────────────────────────────────────────────────
     ai_report        = Column(Text, nullable=True)   # reporte narrativo de Claude
@@ -453,6 +455,8 @@ class EvaluationResultRead(BaseModel):
     # XAI
     shap_values:        dict[str, float] | None = None
     gnn_attention:      list[float] | None = None
+    gnn_attention_svg:  str | None = None
+    gnn_pharmacophores: dict[str, float] | None = None
 
     @computed_field
     @property

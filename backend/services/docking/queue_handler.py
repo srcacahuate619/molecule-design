@@ -326,6 +326,10 @@ async def _run_full_evaluation_async(
             # Paso 1: XGBoost rescoring corrige la afinidad de Vina.
             # Paso 2: RTMScore GNN evalúa la geometría continua de la pose.
             gnn_score_value: float | None = None
+            shap_values_dict: dict | None = None
+            gnn_attention_list: list | None = None
+            gnn_attention_svg_data: str | None = None
+            gnn_pharmacophores_dict: dict | None = None
             try:
                 ml_result = await get_ml_rescore(
                     smiles=smiles,
@@ -358,6 +362,12 @@ async def _run_full_evaluation_async(
                             "event": "gnn_score_captured",
                             "gnn_score": gnn_score_value,
                         })
+
+                    # --- XAI: capturar explicabilidad ---
+                    shap_values_dict = ml_result.get("shap_values")
+                    gnn_attention_list = ml_result.get("gnn_attention")
+                    gnn_attention_svg_data = ml_result.get("gnn_attention_svg")
+                    gnn_pharmacophores_dict = ml_result.get("gnn_pharmacophores")
 
                     # Warnings científicos del microservicio
                     if ml_result.get("warnings"):
@@ -402,6 +412,10 @@ async def _run_full_evaluation_async(
                 scores={
                     **breakdown.model_dump(),
                     "gnn_score": gnn_score_value,  # persistir en DB
+                    "shap_values": shap_values_dict,
+                    "gnn_attention": gnn_attention_list,
+                    "gnn_attention_svg": gnn_attention_svg_data,
+                    "gnn_pharmacophores": gnn_pharmacophores_dict,
                 },
                 is_control=is_control,
                 celery_task_id=task_id,

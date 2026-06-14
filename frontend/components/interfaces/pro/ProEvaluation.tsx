@@ -19,6 +19,7 @@ import {
   Maximize2,
   Search
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { KetcherEditor } from "../../KetcherEditor";
 import { ScoreCard } from "../../ScoreCard";
 import AdvancedMolstarViewer from "./AdvancedMolstarViewer";
@@ -26,6 +27,52 @@ import TargetSelectorModal from "./TargetSelectorModal";
 import type { Target } from "../../../lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../../lib/types";
 import { useAuth } from "../../../lib/auth";
+
+const SHAP_EXPLANATIONS: Record<string, { label: string, desc: string }> = {
+  // ECIF Features
+  "ecif_N_don_C": { label: "Puentes H (N-donador → C)", desc: "Interacciones entre átomos de Nitrógeno donadores en el ligando y Carbonos en el bolsillo." },
+  "ecif_N_don_N": { label: "Puentes H (N-donador → N)", desc: "Interacciones entre Nitrógenos donadores en el ligando y Nitrógenos en el bolsillo." },
+  "ecif_N_don_O": { label: "Puentes H (N-donador → O)", desc: "Interacciones entre Nitrógenos donadores en el ligando y Oxígenos en el bolsillo." },
+  "ecif_O_don_C": { label: "Puentes H (O-donador → C)", desc: "Interacciones entre Oxígenos donadores en el ligando y Carbonos en el bolsillo." },
+  "ecif_O_don_O": { label: "Puentes H (O-donador → O)", desc: "Interacciones entre Oxígenos donadores en el ligando y Oxígenos en el bolsillo." },
+  "ecif_O_don_N": { label: "Puentes H (O-donador → N)", desc: "Interacciones entre Oxígenos donadores en el ligando y Nitrógenos en el bolsillo." },
+  "ecif_C_C": { label: "Contactos C-C (Van der Waals)", desc: "Contactos hidrofóbicos entre átomos de Carbono del ligando y de la proteína." },
+  "ecif_C_N": { label: "Contactos C-N", desc: "Contactos atómicos entre Carbonos y Nitrógenos." },
+  "ecif_C_O": { label: "Contactos C-O", desc: "Contactos atómicos entre Carbonos y Oxígenos." },
+  "ecif_P_don_O": { label: "Interacción Fósforo-Oxígeno", desc: "Contactos atómicos con grupos fosfato." },
+  "ecif_S_don_O": { label: "Interacción Azufre-Oxígeno", desc: "Contactos atómicos involucrando tioles o grupos azufrados." },
+  
+  // Shell Features
+  "shell_C_C_4_8": { label: "Empaquetamiento (4-8 Å)", desc: "Densidad de Carbonos alrededor del ligando en la franja de distancia media de 4 a 8 Ångströms." },
+  "shell_C_O_4_8": { label: "Entorno C-O (4-8 Å)", desc: "Contactos de medio alcance entre Carbonos y Oxígenos." },
+  "shell_N_N_0_4": { label: "Contactos N-N (< 4 Å)", desc: "Densidad de Nitrógenos interactuando fuertemente a menos de 4 Ångströms." },
+  "shell_O_C_4_8": { label: "Entorno O-C (4-8 Å)", desc: "Densidad de Oxígenos en un rango intermedio alrededor del ligando." },
+  "shell_C_C_8_12": { label: "Influencia Lejana (8-12 Å)", desc: "Efectos conformacionales y estéricos de largo alcance ejercidos por los Carbonos del bolsillo." },
+  "shell_N_C_8_12": { label: "Entorno N-C (8-12 Å)", desc: "Contactos de largo alcance en el borde del solvente o la superficie proteica exterior." },
+  
+  // Contact Features
+  "close_contacts_4A": { label: "Contactos Directos (< 4 Å)", desc: "Número total de colisiones e interacciones atómicas íntimas. Fuerte indicador de encaje espacial." },
+  "close_contacts_6A": { label: "Contactos Cercanos (< 6 Å)", desc: "Número total de contactos en la primera y segunda esfera de solvatación del bolsillo." },
+  "close_contacts_8A": { label: "Contactos Extendidos (< 8 Å)", desc: "Densidad atómica en la cavidad de unión extendida." },
+};
+
+function getFeatureExplanation(feature: string) {
+  if (SHAP_EXPLANATIONS[feature]) return SHAP_EXPLANATIONS[feature];
+  
+  // Fallbacks
+  if (feature.startsWith("ecif_")) {
+    const pair = feature.replace("ecif_", "").replace(/_/g, "-");
+    return { label: `Interacción ${pair}`, desc: "Interacción específica de pares atómicos (ECIF)." };
+  }
+  if (feature.startsWith("shell_")) {
+    const parts = feature.split("_");
+    const dist = parts.slice(parts.length-2).join("-");
+    const atoms = parts.slice(1, parts.length-2).join("-");
+    return { label: `Capa Distancia ${atoms} (${dist} Å)`, desc: "Densidad atómica en un anillo tridimensional específico." };
+  }
+  
+  return { label: feature.replace(/_/g, " "), desc: "Propiedad físico-química extraída del complejo molecular." };
+}
 
 interface ProEvaluationProps {
   smiles: string;
@@ -142,6 +189,7 @@ export default function ProEvaluation({
 
   // --- Active results tab ---
   const [activeTab, setActiveTab] = useState<"visualizer" | "parameters" | "warnings" | "xai">("visualizer");
+  const [expandedGNN, setExpandedGNN] = useState<'2d' | '1d' | null>(null);
 
   // --- Peptide docking engine state (Nivel 3) ---
   const [peptideDockingEngine, setPeptideDockingEngine] = useState<"diffpepdock" | "colabfold">("diffpepdock");
@@ -1138,40 +1186,223 @@ export default function ProEvaluation({
             {activeTab === "xai" && (
               <div className="space-y-3 animate-in fade-in duration-200 overflow-y-auto pr-1 max-h-[360px]">
                 {status?.result?.shap_values && Object.keys(status.result.shap_values).length > 0 ? (
-                  <div className="space-y-3">
-                    <div className="text-[11px] text-slate-400 mb-2 font-mono bg-black/30 p-3 rounded-xl border border-white/5">
-                      <span className="text-indigo-400 font-bold block mb-1">SHAP FEATURE IMPORTANCE</span>
-                      Identifica el impacto preciso de cada propiedad molecular en el score de afinidad final.
+                  <div className="space-y-4">
+                    <div className="text-[11px] text-slate-300 mb-2 font-mono bg-gradient-to-r from-indigo-500/10 to-transparent p-3.5 rounded-xl border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.05)]">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+                        <span className="text-indigo-300 font-bold tracking-wider">XGBOOST NATIVE SHAP EXPLAINER</span>
+                      </div>
+                      <p className="opacity-90 leading-relaxed">
+                        Diagrama de abejas direccional. Las características hacia la <span className="text-emerald-400 font-bold">derecha (verdes)</span> aumentan la afinidad, hacia la <span className="text-rose-400 font-bold">izquierda (rojas)</span> la penalizan.
+                      </p>
                     </div>
-                    <div className="space-y-2.5">
-                      {Object.entries(status.result.shap_values).map(([feature, val]) => (
-                        <div key={feature} className="flex flex-col gap-1">
-                          <div className="flex justify-between text-[10px] uppercase font-mono font-bold">
-                            <span className="text-slate-300">{feature}</span>
-                            <span className={val > 0 ? "text-emerald-400" : "text-rose-400"}>
-                              {val > 0 ? "+" : ""}{val.toFixed(3)}
-                            </span>
-                          </div>
-                          <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden flex">
-                            <div 
-                              className={`h-full rounded-full ${val > 0 ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"}`}
-                              style={{ width: `${Math.min(Math.abs(val) * 100, 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                    
+                    <div className="relative py-2 mt-2">
+                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/10 z-0"></div>
+                      
+                      <div className="space-y-3.5 relative z-10">
+                        {(() => {
+                          const entries = Object.entries(status.result.shap_values as Record<string, number>);
+                          const maxAbs = Math.max(...entries.map(([_, v]) => Math.abs(v)), 0.001);
+                          
+                          return entries.map(([feature, val], idx) => {
+                            const isPositive = val > 0;
+                            const widthPercent = (Math.abs(val) / maxAbs) * 100;
+                            
+                            return (
+                              <motion.div 
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                                key={feature} 
+                                className="group relative flex items-center w-full"
+                              >
+                                {/* Lado Izquierdo (Negativos) */}
+                                <div className="w-1/2 flex justify-end items-center pr-1.5 h-3">
+                                  {!isPositive && (
+                                    <>
+                                      <span className="text-[9px] font-mono text-rose-300/80 mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {val.toFixed(3)}
+                                      </span>
+                                      <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${widthPercent}%` }}
+                                        transition={{ type: "spring", stiffness: 60, damping: 12, delay: idx * 0.05 }}
+                                        className="h-full rounded-l-md bg-gradient-to-l from-rose-500/80 to-rose-400 border-y border-l border-rose-400/50 shadow-[0_0_10px_rgba(244,63,94,0.3)] relative"
+                                      />
+                                    </>
+                                  )}
+                                  {isPositive && (
+                                    <div className="group/tooltip relative flex items-center justify-end w-full pl-2 cursor-help">
+                                      <span className="text-[10px] uppercase font-mono font-medium text-slate-400 truncate pr-1 text-right">
+                                        {getFeatureExplanation(feature).label}
+                                      </span>
+                                      <Info size={11} className="text-slate-500/70 flex-shrink-0" />
+                                      <div className="absolute right-0 top-full mt-1.5 w-48 bg-slate-800 text-slate-300 text-[9.5px] leading-relaxed p-2.5 rounded-lg border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)] opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[60] pointer-events-none text-left">
+                                        <div className="font-bold text-white mb-0.5 border-b border-white/10 pb-0.5">{feature}</div>
+                                        {getFeatureExplanation(feature).desc}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Lado Derecho (Positivos) */}
+                                <div className="w-1/2 flex justify-start items-center pl-1.5 h-3">
+                                  {isPositive && (
+                                    <>
+                                      <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${widthPercent}%` }}
+                                        transition={{ type: "spring", stiffness: 60, damping: 12, delay: idx * 0.05 }}
+                                        className="h-full rounded-r-md bg-gradient-to-r from-emerald-500/80 to-emerald-400 border-y border-r border-emerald-400/50 shadow-[0_0_10px_rgba(16,185,129,0.3)] relative"
+                                      />
+                                      <span className="text-[9px] font-mono text-emerald-300/80 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        +{val.toFixed(3)}
+                                      </span>
+                                    </>
+                                  )}
+                                  {!isPositive && (
+                                    <div className="group/tooltip relative flex items-center justify-start w-full pr-2 cursor-help">
+                                      <Info size={11} className="text-slate-500/70 flex-shrink-0 mr-1" />
+                                      <span className="text-[10px] uppercase font-mono font-medium text-slate-400 truncate text-left">
+                                        {getFeatureExplanation(feature).label}
+                                      </span>
+                                      <div className="absolute left-0 top-full mt-1.5 w-48 bg-slate-800 text-slate-300 text-[9.5px] leading-relaxed p-2.5 rounded-lg border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)] opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-[60] pointer-events-none text-left">
+                                        <div className="font-bold text-white mb-0.5 border-b border-white/10 pb-0.5">{feature}</div>
+                                        {getFeatureExplanation(feature).desc}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            );
+                          });
+                        })()}
+                      </div>
                     </div>
                     
                     {status?.result?.gnn_attention && (
-                      <div className="mt-4 pt-4 border-t border-white/10 text-[10px] text-slate-400 font-mono">
-                        <span className="text-emerald-400 font-bold block mb-1">ATENCIÓN GNN 3D (RTMScore)</span>
-                        Los pesos atómicos del modelo gráfico se han extraído exitosamente. Vuelve a la pestaña <b>Estructura 3D</b> para inspeccionar visualmente qué partes del ligando fueron determinantes.
+                      <div className="mt-5 p-4 bg-black/40 rounded-xl border border-emerald-500/20 relative overflow-hidden">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                            <Activity size={14} /> Atención GNN (RTMScore)
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">MAPA DE HOTSPOTS</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 items-stretch">
+                          {/* Opción 1: RDKit SVG */}
+                          <div 
+                            onClick={() => { if(status?.result?.gnn_attention_svg) setExpandedGNN('2d') }}
+                            className={`flex flex-col items-center justify-center p-3 bg-slate-900/60 rounded-xl border border-white/5 shadow-inner transition-colors duration-200 ${status?.result?.gnn_attention_svg ? 'cursor-pointer hover:bg-slate-800/80' : ''}`}
+                          >
+                            <span className="text-[9px] text-slate-500 uppercase font-mono mb-2 tracking-widest">Topología 2D</span>
+                            {status?.result?.gnn_attention_svg ? (
+                              <div 
+                                className="w-full flex justify-center items-center [&>svg]:w-full [&>svg]:max-w-[160px] [&>svg]:h-auto filter drop-shadow-[0_0_8px_rgba(16,185,129,0.2)]"
+                                dangerouslySetInnerHTML={{ __html: status.result.gnn_attention_svg }}
+                              />
+                            ) : (
+                              <div className="w-full aspect-square max-h-[160px] flex items-center justify-center text-[10px] text-slate-500 italic">
+                                Generando proyección...
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Opción 2: Radar Farmacóforos */}
+                          <div 
+                            onClick={() => { if(status?.result?.gnn_pharmacophores) setExpandedGNN('1d') }}
+                            className={`flex flex-col items-center justify-start p-3 bg-slate-900/60 rounded-xl border border-white/5 shadow-inner relative overflow-hidden group transition-colors duration-200 ${status?.result?.gnn_pharmacophores ? 'cursor-pointer hover:bg-slate-800/80' : ''}`}
+                          >
+                            <span className="text-[9px] text-slate-500 uppercase font-mono mb-2 tracking-widest z-10">Desglose Farmacóforos</span>
+                            <div className="w-full flex-grow relative min-h-[120px] z-10 flex items-center justify-center">
+                              {(() => {
+                                const pharm = status?.result?.gnn_pharmacophores;
+                                if (!pharm) return <div className="text-[10px] text-slate-500 italic mt-8">No disponible</div>;
+                                
+                                const categories = ["Aromáticos", "Donadores de H", "Aceptores de H", "Alifáticos", "Halógenos"];
+                                const cx = 100;
+                                const cy = 60;
+                                const rMax = 45;
+                                const angles = [-90, -18, 54, 126, 198];
+                                
+                                const points = categories.map((cat, i) => {
+                                  const val = (pharm[cat] || 0) / 100;
+                                  const rad = (angles[i] * Math.PI) / 180;
+                                  return `${cx + rMax * val * Math.cos(rad)},${cy + rMax * val * Math.sin(rad)}`;
+                                }).join(' ');
+
+                                const bgPentagons = [1, 0.75, 0.5, 0.25].map(scale => 
+                                  angles.map(ang => {
+                                    const rad = (ang * Math.PI) / 180;
+                                    return `${cx + rMax * scale * Math.cos(rad)},${cy + rMax * scale * Math.sin(rad)}`;
+                                  }).join(' ')
+                                );
+
+                                return (
+                                  <svg viewBox="0 0 200 120" className="w-full h-full overflow-visible">
+                                    <defs>
+                                      <filter id="glow-radar">
+                                        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                        <feMerge>
+                                          <feMergeNode in="coloredBlur"/>
+                                          <feMergeNode in="SourceGraphic"/>
+                                        </feMerge>
+                                      </filter>
+                                    </defs>
+                                    {/* Web Lines */}
+                                    {angles.map((ang, i) => {
+                                      const rad = (ang * Math.PI) / 180;
+                                      return (
+                                        <line key={i} x1={cx} y1={cy} x2={cx + rMax * Math.cos(rad)} y2={cy + rMax * Math.sin(rad)} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                                      )
+                                    })}
+                                    {/* Concentric Pentagons */}
+                                    {bgPentagons.map((pts, i) => (
+                                      <polygon key={i} points={pts} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                                    ))}
+                                    
+                                    {/* Data Polygon */}
+                                    <motion.polygon 
+                                      initial={{ opacity: 0, scale: 0 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      transition={{ duration: 1, type: "spring" }}
+                                      style={{ transformOrigin: `${cx}px ${cy}px` }}
+                                      points={points} 
+                                      fill="rgba(16,185,129,0.3)" 
+                                      stroke="#34d399" 
+                                      strokeWidth="2" 
+                                      filter="url(#glow-radar)"
+                                    />
+                                    
+                                    {/* Labels */}
+                                    {categories.map((cat, i) => {
+                                      const rad = (angles[i] * Math.PI) / 180;
+                                      const x = cx + (rMax + 15) * Math.cos(rad);
+                                      const y = cy + (rMax + 12) * Math.sin(rad);
+                                      return (
+                                        <text key={cat} x={x} y={y} textAnchor="middle" alignmentBaseline="middle" fill="#94a3b8" fontSize="7" className="font-mono">
+                                          {cat.substring(0,4)}
+                                        </text>
+                                      )
+                                    })}
+                                  </svg>
+                                );
+                              })()}
+                            </div>
+                            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-emerald-900/20 to-transparent pointer-events-none" />
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="text-center text-slate-500 text-xs py-8">
-                    Sin datos de explicabilidad. Los pesos SHAP estarán disponibles tras completar el rescoring.
+                  <div className="flex flex-col items-center justify-center text-center text-slate-500 py-12 px-4 border border-white/5 bg-black/20 rounded-2xl">
+                    <div className="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center mb-3">
+                      <Activity size={18} className="text-slate-500" />
+                    </div>
+                    <span className="text-xs font-medium">Sin datos de explicabilidad.</span>
+                    <span className="text-[10px] mt-1 opacity-70">El motor SHAP nativo poblará esta área al completar una evaluación de ligando exitosa.</span>
                   </div>
                 )}
               </div>
@@ -1269,6 +1500,132 @@ export default function ProEvaluation({
         </div>
         
       </div>
+      
+      {/* GNN Expanded View Modal */}
+      {expandedGNN && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setExpandedGNN(null)}
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl w-full max-w-4xl p-6 relative overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setExpandedGNN(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 bg-slate-800 hover:bg-slate-700 rounded-full transition-colors z-20"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4 mb-6">
+              <Activity className="text-emerald-500" size={24} />
+              <h2 className="text-xl font-bold text-white tracking-wide">
+                Atención GNN <span className="text-emerald-400 font-mono text-base">(RTMScore Hotspots)</span>
+              </h2>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center w-full bg-black/50 rounded-xl p-8 min-h-[400px]">
+              {expandedGNN === '2d' && status?.result?.gnn_attention_svg && (
+                <div 
+                  className="w-full flex justify-center items-center [&>svg]:w-full [&>svg]:max-w-[500px] [&>svg]:h-auto filter drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                  dangerouslySetInnerHTML={{ __html: status.result.gnn_attention_svg }}
+                />
+              )}
+              {expandedGNN === '1d' && status?.result?.gnn_pharmacophores && (
+                <div className="w-full h-[400px] relative flex items-center justify-center">
+                  {(() => {
+                    const pharm = status.result.gnn_pharmacophores;
+                    if (!pharm) return null;
+                    
+                    const categories = ["Aromáticos", "Donadores de H", "Aceptores de H", "Alifáticos", "Halógenos"];
+                    const cx = 400;
+                    const cy = 200;
+                    const rMax = 150;
+                    const angles = [-90, -18, 54, 126, 198];
+                    
+                    const points = categories.map((cat, i) => {
+                      const val = (pharm[cat] || 0) / 100;
+                      const rad = (angles[i] * Math.PI) / 180;
+                      return `${cx + rMax * val * Math.cos(rad)},${cy + rMax * val * Math.sin(rad)}`;
+                    }).join(' ');
+
+                    const bgPentagons = [1, 0.75, 0.5, 0.25].map(scale => 
+                      angles.map(ang => {
+                        const rad = (ang * Math.PI) / 180;
+                        return `${cx + rMax * scale * Math.cos(rad)},${cy + rMax * scale * Math.sin(rad)}`;
+                      }).join(' ')
+                    );
+
+                    return (
+                      <svg viewBox="0 0 800 400" className="w-full h-full overflow-visible">
+                        <defs>
+                          <filter id="glow-radar-lg">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                            <feMerge>
+                              <feMergeNode in="coloredBlur"/>
+                              <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                          </filter>
+                        </defs>
+                        {/* Web Lines */}
+                        {angles.map((ang, i) => {
+                          const rad = (ang * Math.PI) / 180;
+                          return (
+                            <line key={i} x1={cx} y1={cy} x2={cx + rMax * Math.cos(rad)} y2={cy + rMax * Math.sin(rad)} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                          )
+                        })}
+                        {/* Concentric Pentagons */}
+                        {bgPentagons.map((pts, i) => (
+                          <polygon key={i} points={pts} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                        ))}
+                        
+                        {/* Data Polygon */}
+                        <motion.polygon 
+                          initial={{ opacity: 0, scale: 0 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 1, type: "spring" }}
+                          style={{ transformOrigin: `${cx}px ${cy}px` }}
+                          points={points} 
+                          fill="rgba(16,185,129,0.3)" 
+                          stroke="#34d399" 
+                          strokeWidth="3" 
+                          filter="url(#glow-radar-lg)"
+                        />
+                        
+                        {/* Labels and values */}
+                        {categories.map((cat, i) => {
+                          const rad = (angles[i] * Math.PI) / 180;
+                          const val = (pharm[cat] || 0);
+                          const x = cx + (rMax + 30) * Math.cos(rad);
+                          const y = cy + (rMax + 30) * Math.sin(rad);
+                          return (
+                            <g key={cat} transform={`translate(${x},${y})`}>
+                              <text textAnchor="middle" fill="#f8fafc" fontSize="14" fontWeight="bold" className="font-mono">
+                                {cat}
+                              </text>
+                              <text y="20" textAnchor="middle" fill="#34d399" fontSize="16" fontWeight="bold" className="font-mono drop-shadow-md">
+                                {val}%
+                              </text>
+                            </g>
+                          )
+                        })}
+                      </svg>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+            <div className="mt-6 text-slate-400 text-sm italic text-center">
+              {expandedGNN === '2d' 
+                ? "Las regiones verdes indican las subestructuras moleculares que la GNN considera más cruciales para la afinidad de unión."
+                : "Este gráfico de radar muestra qué porcentaje de la atención total de la GNN se destina a cada tipo de farmacóforo químico en el ligando."}
+            </div>
+          </motion.div>
+        </div>
+      )}
       
     </div>
   );
