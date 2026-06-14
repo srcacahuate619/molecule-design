@@ -149,19 +149,19 @@ def calculate_score_breakdown(
         base_score = (affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
         base_score_with_specificity = base_score * specificity_multiplier
 
-        # --- [NUEVO] Factor GNN (RTMScore Nivel 2) Normalizado por Tamaño ---
-        # En lugar de un umbral estático de 20.0, normalizamos el GNN Score por 
-        # el número de átomos pesados para obtener una "Eficiencia de Ligando GNN" (GNN-LE).
-        # Esto hace que la sigmoide sea independiente del tamaño del bolsillo (Escalabilidad Enterprise).
-        if gnn_score is not None and properties.heavy_atom_count > 0:
-            gnn_le = gnn_score / properties.heavy_atom_count
+        # --- [NUEVO] Factor GNN (RTMScore Nivel 2) Directo ---
+        # El score crudo de RTMScore está típicamente en [30, 70], donde >45 es prometedor
+        # y <40 es muy probablemente un señuelo (decoy).
+        # Centramos la sigmoide en 45.0. Si el score es 45, el factor es 1.0 (neutro).
+        if gnn_score is not None:
+            # Rango sigmoide crudo [0, 1]
+            raw_factor = 1.0 / (1.0 + math.exp(-0.2 * (gnn_score - 45.0)))
             
-            # El GNN-LE típico para un buen binder suele estar entre 1.0 y 5.0.
-            # Centramos la sigmoide en un GNN-LE de 2.0.
-            raw_factor = 1.0 / (1.0 + math.exp(-1.5 * (gnn_le - 2.0)))
-            
-            # Mapear [0, 1] → [0.7, 1.15]
-            gnn_factor = 0.7 + (raw_factor * 0.45)
+            # Mapear [0, 1] → [0.70, 1.30]
+            # Si gnn_score = 45 -> raw = 0.5 -> gnn_factor = 0.70 + 0.30 = 1.00
+            # Si gnn_score = 35 -> raw ≈ 0.12 -> gnn_factor ≈ 0.77 (Penaliza 23%)
+            # Si gnn_score = 55 -> raw ≈ 0.88 -> gnn_factor ≈ 1.23 (Beneficia 23%)
+            gnn_factor = 0.70 + (raw_factor * 0.60)
         else:
             gnn_factor = 1.0
 
