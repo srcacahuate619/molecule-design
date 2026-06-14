@@ -654,6 +654,12 @@ class Repository:
             result.affinity_threshold = safe_float(scores.get("affinity_threshold"))
             result.affinity_multiplier = safe_float(scores.get("affinity_multiplier"))
             result.specificity_multiplier = safe_float(scores.get("specificity_multiplier"))
+            
+            # XAI
+            if "shap_values" in scores:
+                result.shap_values = scores["shap_values"]
+            if "gnn_attention" in scores:
+                result.gnn_attention = scores["gnn_attention"]
 
         if ai_report is not None:
             result.ai_report = ai_report

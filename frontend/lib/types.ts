@@ -69,6 +69,10 @@ export type EvaluationResult = {
   ligand_efficiency: number | null;
   ligand_lipophilicity_efficiency: number | null;
 
+  // XAI
+  shap_values: Record<string, number> | null;
+  gnn_attention: number[] | null;
+
   // Files
   poses_file_path: string | null;
   is_control: boolean;

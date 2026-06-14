@@ -141,7 +141,7 @@ export default function ProEvaluation({
   const [selectedPoseIndex, setSelectedPoseIndex] = useState<number>(0);
 
   // --- Active results tab ---
-  const [activeTab, setActiveTab] = useState<"visualizer" | "parameters" | "warnings">("visualizer");
+  const [activeTab, setActiveTab] = useState<"visualizer" | "parameters" | "warnings" | "xai">("visualizer");
 
   // --- Peptide docking engine state (Nivel 3) ---
   const [peptideDockingEngine, setPeptideDockingEngine] = useState<"diffpepdock" | "colabfold">("diffpepdock");
@@ -969,7 +969,7 @@ export default function ProEvaluation({
               </h3>
 
             {/* Tabbed view selector */}
-            <div className="grid grid-cols-3 border-b border-white/5 pb-1 gap-1">
+            <div className="grid grid-cols-4 border-b border-white/5 pb-1 gap-1">
               <button
                 onClick={() => setActiveTab("visualizer")}
                 className={`pb-2 text-[10px] font-black uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${
@@ -1000,6 +1000,16 @@ export default function ProEvaluation({
               >
                 Alertas ({status?.result?.scientific_warnings?.length || 0})
               </button>
+              <button
+                onClick={() => setActiveTab("xai")}
+                className={`pb-2 text-[10px] font-black uppercase tracking-wider text-center border-b-2 transition-all duration-200 ${
+                  activeTab === "xai"
+                    ? "border-indigo-500 text-indigo-400"
+                    : "border-transparent text-slate-500 hover:text-slate-400"
+                }`}
+              >
+                Explicabilidad
+              </button>
             </div>
 
             {/* Tab Content: Visualizer */}
@@ -1013,6 +1023,7 @@ export default function ProEvaluation({
                     hotspots={status?.result?.target_hotspots?.map(h => h.name) || []}
                     hotspotsHit={status?.result?.hotspots_hit || []}
                     onOpenTargetSelector={() => setIsTargetModalOpen(true)}
+                    gnnAttention={status?.result?.gnn_attention || undefined}
                   />
                 </div>
 
@@ -1118,6 +1129,49 @@ export default function ProEvaluation({
                 ) : (
                   <div className="text-center text-slate-500 text-xs py-8">
                     No se han registrado advertencias ni fallos de selectividad para esta simulación.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab Content: XAI Explicabilidad */}
+            {activeTab === "xai" && (
+              <div className="space-y-3 animate-in fade-in duration-200 overflow-y-auto pr-1 max-h-[360px]">
+                {status?.result?.shap_values && Object.keys(status.result.shap_values).length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="text-[11px] text-slate-400 mb-2 font-mono bg-black/30 p-3 rounded-xl border border-white/5">
+                      <span className="text-indigo-400 font-bold block mb-1">SHAP FEATURE IMPORTANCE</span>
+                      Identifica el impacto preciso de cada propiedad molecular en el score de afinidad final.
+                    </div>
+                    <div className="space-y-2.5">
+                      {Object.entries(status.result.shap_values).map(([feature, val]) => (
+                        <div key={feature} className="flex flex-col gap-1">
+                          <div className="flex justify-between text-[10px] uppercase font-mono font-bold">
+                            <span className="text-slate-300">{feature}</span>
+                            <span className={val > 0 ? "text-emerald-400" : "text-rose-400"}>
+                              {val > 0 ? "+" : ""}{val.toFixed(3)}
+                            </span>
+                          </div>
+                          <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden flex">
+                            <div 
+                              className={`h-full rounded-full ${val > 0 ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"}`}
+                              style={{ width: `${Math.min(Math.abs(val) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {status?.result?.gnn_attention && (
+                      <div className="mt-4 pt-4 border-t border-white/10 text-[10px] text-slate-400 font-mono">
+                        <span className="text-emerald-400 font-bold block mb-1">ATENCIÓN GNN 3D (RTMScore)</span>
+                        Los pesos atómicos del modelo gráfico se han extraído exitosamente. Vuelve a la pestaña <b>Estructura 3D</b> para inspeccionar visualmente qué partes del ligando fueron determinantes.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-slate-500 text-xs py-8">
+                    Sin datos de explicabilidad. Los pesos SHAP estarán disponibles tras completar el rescoring.
                   </div>
                 )}
               </div>

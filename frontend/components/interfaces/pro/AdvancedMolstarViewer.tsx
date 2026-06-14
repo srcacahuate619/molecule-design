@@ -9,6 +9,7 @@ type Props = {
   height?: number;
   hotspots?: string[];
   hotspotsHit?: string[];
+  gnnAttention?: number[];
   onOpenTargetSelector?: () => void;
 };
 
@@ -147,7 +148,49 @@ const createHotspotsPdb = (pdbStr: string, hotspots: string[], hotspotsHit: stri
   return pdbContent + "END\n";
 };
 
-export default function AdvancedMolstarViewer({ poseData, proteinData, height = 500, hotspots = [], hotspotsHit = [], onOpenTargetSelector }: Props) {
+const createGnnAttentionPdb = (sdfStr: string, attention: number[]) => {
+  const lines = sdfStr.split("\n");
+  let pdbContent = "";
+  let atomIndex = 1;
+  let inAtoms = false;
+  
+  for (const line of lines) {
+    if (line.includes("V2000") || line.includes("V3000")) {
+       inAtoms = true;
+       continue;
+    }
+    if (inAtoms && line.includes("M  END")) break;
+    
+    if (inAtoms && line.length >= 30) {
+       const match = line.match(/^\s*([+-]?\d+\.\d+)\s+([+-]?\d+\.\d+)\s+([+-]?\d+\.\d+)\s+([A-Za-z]+)/);
+       if (match) {
+         const x = parseFloat(match[1]).toFixed(3).padStart(8);
+         const y = parseFloat(match[2]).toFixed(3).padStart(8);
+         const z = parseFloat(match[3]).toFixed(3).padStart(8);
+         
+         const att = attention[atomIndex - 1] || 0.0;
+         
+         // Mapeo de color: O (Rojo/Magenta) para < 0.3, CL (Verde oscuro) para 0.3-0.7, MG (Verde claro/limón) para > 0.7
+         let element = "O";
+         let atomName = "O  ";
+         if (att >= 0.7) {
+           element = "MG";
+           atomName = "MG ";
+         } else if (att >= 0.3) {
+           element = "CL";
+           atomName = "CL ";
+         }
+         
+         pdbContent += `HETATM${atomIndex.toString().padStart(5)}  ${atomName} XAI A   1    ${x}${y}${z}  1.00 20.00          ${element.padStart(2)}\n`;
+         atomIndex++;
+       }
+    }
+  }
+  if (pdbContent === "") return null;
+  return pdbContent + "END\n";
+};
+
+export default function AdvancedMolstarViewer({ poseData, proteinData, height = 500, hotspots = [], hotspotsHit = [], gnnAttention, onOpenTargetSelector }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
   const [loading, setLoading] = useState(false);
@@ -345,6 +388,16 @@ export default function AdvancedMolstarViewer({ poseData, proteinData, height = 
           const singlePoseData = poseData!.split("$$$$")[0] + "\n$$$$\n";
           const patchedSdf = patchSdfTitle(singlePoseData);
           await viewer.loadStructureFromData(patchedSdf, "sdf", { dataLabel: "Mi Diseño MolDesign (Candidato)" });
+
+          if (cancelled) return;
+
+          // Load GNN Attention overlay if available
+          if (gnnAttention && gnnAttention.length > 0) {
+            const attPdb = createGnnAttentionPdb(singlePoseData, gnnAttention);
+            if (attPdb) {
+              await viewer.loadStructureFromData(attPdb, "pdb", { dataLabel: "Atención GNN 3D (RTMScore)" });
+            }
+          }
         }
       } catch (err) {
         if (!cancelled) {

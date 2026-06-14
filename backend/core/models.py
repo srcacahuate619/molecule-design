@@ -269,6 +269,10 @@ class EvaluationResultORM(Base):
     gnn_score        = Column(Float, nullable=True)              # score GNN RTMScore (Nivel 2)
     is_control       = Column(Boolean, default=False)           # si es True, se ignoran penalizaciones ADME
 
+    # ── Explainable AI (XAI) ──────────────────────────────────────────────────
+    shap_values      = Column(JSONB, nullable=True)  # { "LogP": -0.2, "MW": +0.5 }
+    gnn_attention    = Column(JSONB, nullable=True)  # [0.1, 0.8, 0.2, ...] pesos atómicos
+
     # ── Reporte IA ───────────────────────────────────────────────────────────
     ai_report        = Column(Text, nullable=True)   # reporte narrativo de Claude
 
@@ -445,6 +449,10 @@ class EvaluationResultRead(BaseModel):
     specificity_multiplier: float | None = None
     target_name:        str | None = None
     target_spearman_rho: float | None = None
+
+    # XAI
+    shap_values:        dict[str, float] | None = None
+    gnn_attention:      list[float] | None = None
 
     @computed_field
     @property
