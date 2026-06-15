@@ -121,6 +121,7 @@ class TargetORM(Base):
     prepared_file_path = Column(String(500), nullable=True)
     is_prepared        = Column(Boolean, default=False, nullable=False)
     created_at         = Column(DateTime(timezone=True), server_default=func.now())
+    cofactors_whitelist = Column(JSONB, nullable=True, default=[])
 
     molecules = relationship("MoleculeORM", back_populates="target")
 
@@ -145,7 +146,9 @@ class UserORM(Base):
     id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email        = Column(String(320), unique=True, nullable=False, index=True)
     username     = Column(String(50), unique=True, nullable=False)
-    hashed_password = Column(String(200), nullable=False)
+    hashed_password = Column(String(200), nullable=True) # Nullable for OAuth
+    auth_provider = Column(String(50), default="local") # e.g. "supabase", "local"
+    subscription_tier = Column(String(50), default="free") # "free" or "premium"
     is_active    = Column(Boolean, default=True, nullable=False)
     created_at   = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -546,6 +549,7 @@ class Target(BaseModel):
     grid_size_x: float | None = None
     grid_size_y: float | None = None
     grid_size_z: float | None = None
+    cofactors_whitelist: list[str] | None = []
 
     model_config = {"from_attributes": True}
 

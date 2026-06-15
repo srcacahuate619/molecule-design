@@ -92,10 +92,7 @@ async def _run_full_evaluation_async(
             user_id=UUID(user_id) if user_id else None,
         )
 
-        # [CACHE FIX] Invalidar cache previo para forzar recalculo con nueva logica v4
-        from utils.cache import CacheKey
-        await cache.delete(CacheKey.properties(molecule.smiles_hash))
-        await cache.delete(CacheKey.docking(molecule.smiles_hash, target.pdb_id))
+
 
         try:
             properties = calculate_properties(smiles)
@@ -525,8 +522,8 @@ def celery_ping() -> dict[str, str]:
 @celery_app.task(
     name="moldesign.run_full_evaluation", 
     bind=True,
-    time_limit=300,        # Hard kill at 5 minutes
-    soft_time_limit=270    # Raise SoftTimeLimitExceeded at 4.5 mins to fail gracefully
+    time_limit=600,        # Hard kill at 10 minutes
+    soft_time_limit=570    # Raise SoftTimeLimitExceeded at 9.5 mins to fail gracefully
 )
 def run_full_evaluation(
     self,

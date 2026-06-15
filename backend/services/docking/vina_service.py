@@ -274,10 +274,11 @@ async def run_vina_docking(
     hotspots: list[dict] | None = None,
 ) -> DockingResult:
     """Ejecuta docking real o devuelve cache si ya existe un cálculo idéntico."""
-    # DEBUG: Bypass cache completely for all jobs (force recompute every time)
-    cached = None
-    # if cached is not None:
-    #     return DockingResult(**cached)
+    if not force_redock:
+        cached = await cache.get_docking_result(smiles_hash, target_pdb_id)
+        if cached is not None:
+            log.info({"event": "vina_cache_hit", "smiles_hash": smiles_hash, "target_pdb_id": target_pdb_id})
+            return DockingResult(**cached)
 
     # Use a unique subdirectory for each job to avoid race conditions in parallel runs
     job_temp_dir = Path(tempfile.mkdtemp(prefix=f"vina-{smiles_hash[:8]}-{target_pdb_id}-", dir=settings.vina_temp_dir))

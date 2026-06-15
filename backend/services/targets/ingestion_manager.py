@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import TargetORM
 from db.repository import Repository
 from services.docking.preparer import prepare_target
-from utils.file_handlers import download_pdb_from_rcsb, upload_text, StoragePath, object_exists
+from utils.file_handlers import download_pdb_from_rcsb, upload_text, StoragePath, object_exists, fetch_target_cofactors_from_rcsb
 from utils.structural import discover_pocket_from_pdb
 from utils.logger import get_logger
 
@@ -24,6 +24,7 @@ async def ingest_new_target(
     ligand_chain: str | None = None,
     is_hot: bool = False,
     structural_family: str | None = None,
+    cofactors_whitelist: list[str] | None = None,
     force_reingest: bool = False
 ) -> dict:
     """
@@ -63,6 +64,25 @@ async def ingest_new_target(
     size = (25.0, 25.0, 25.0) # Tamaño estándar sugerido
     hotspots = pocket_info["suggested_hotspots"]
 
+    # Extraer el nombre de 3 letras del ligando de referencia (ej: "A:HEM123" -> "HEM")
+    ligand_id = pocket_info.get("ligand_id", "")
+    main_ligand_name = ""
+    if ":" in ligand_id:
+        res_part = ligand_id.split(":")[1]
+        # Filtrar números para quedarse solo con letras ("HEM123" -> "HEM")
+        main_ligand_name = "".join([c for c in res_part if c.isalpha()])
+
+    # 3.5 Cofactors Whitelist (Automatizado si no se provee)
+    if cofactors_whitelist is None:
+        cofactors_whitelist = await fetch_target_cofactors_from_rcsb(pdb_id)
+        
+    # Asegurarnos de no conservar el ligando principal contra el que vamos a hacer docking
+    if main_ligand_name and main_ligand_name in cofactors_whitelist:
+        cofactors_whitelist.remove(main_ligand_name)
+        log.info("ligando principal removido de la lista blanca", pdb_id=pdb_id, removed=main_ligand_name)
+
+    log.info("cofactores a conservar", pdb_id=pdb_id, whitelist=cofactors_whitelist)
+
     # 4. Preparar Estructuralmente (PDBQT)
     try:
         prepared_file_path = await prepare_target(
@@ -70,7 +90,8 @@ async def ingest_new_target(
             chain_id=chain_id,
             center=center,
             size=size,
-            force_reprepare=True
+            force_reprepare=True,
+            cofactors_whitelist=cofactors_whitelist
         )
     except Exception as e:
         log.error("preparacion_fallida", pdb_id=pdb_id, error=str(e))
@@ -93,7 +114,8 @@ async def ingest_new_target(
             prepared_file_path=prepared_file_path,
             is_hot=is_hot,
             structural_family=structural_family,
-            hotspots=hotspots
+            hotspots=hotspots,
+            cofactors_whitelist=cofactors_whitelist
         )
         db.add(target)
     else:
@@ -103,6 +125,7 @@ async def ingest_new_target(
         existing.grid_center_y = center[1]
         existing.grid_center_z = center[2]
         existing.hotspots = hotspots
+        existing.cofactors_whitelist = cofactors_whitelist
         if structural_family:
             existing.structural_family = structural_family
         existing.is_hot = is_hot

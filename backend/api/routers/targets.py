@@ -28,6 +28,7 @@ class TargetIngestRequest(BaseModel):
     chain_id: str = Field(default="A", description="Cadena de interés")
     is_hot: bool = Field(default=False)
     structural_family: str | None = None
+    cofactors_whitelist: list[str] | None = Field(default=None, description="Cofactores manuales a conservar (ej: ['HEM', 'ZN']). Si se omite, se intentará detectar automáticamente desde RCSB.")
 
 @router.post(
     "/ingest",
@@ -54,7 +55,8 @@ async def ingest_target(
             db=db,
             chain_id=request.chain_id,
             is_hot=request.is_hot,
-            structural_family=request.structural_family
+            structural_family=request.structural_family,
+            cofactors_whitelist=request.cofactors_whitelist
         )
         return result
     except Exception as e:

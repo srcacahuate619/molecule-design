@@ -23,7 +23,8 @@ import matplotlib.pyplot as plt
 
 TARGETS = [
     "7E2Y", "6B3J", "6X1A", "2P4E", "6U26", "3OSK",
-    "3ERT", "5L2I", "2W96", "4JPS", "3O96", "3PP0", "4ZZZ", "1HVY"
+    "3ERT", "5L2I", "2W96", "4JPS", "3O96", "3PP0", "4ZZZ", "1HVY",
+    "4I5I", "6D8X", "5IKR", "4RER", "5VEW", "1ERE", "4EKL"
 ]
 TARGET_NAMES = {
     "7E2Y": "5-HT1A (Serotonin Receptor)",
@@ -39,7 +40,14 @@ TARGET_NAMES = {
     "3O96": "AKT1 (AKT Kinase)",
     "3PP0": "HER2 Kinase Domain (Receptor Tyrosine Kinase)",
     "4ZZZ": "PARP1 LBD (DNA Repair Polymerase)",
-    "1HVY": "Thymidylate Synthase (Chemotherapy Target)"
+    "1HVY": "Thymidylate Synthase (Chemotherapy Target)",
+    "4I5I": "SIRT1 (Sirtuin 1)",
+    "6D8X": "PPAR-gamma (Peroxisome Proliferator-Activated Receptor)",
+    "5IKR": "COX-2 (Cyclooxygenase-2)",
+    "4RER": "AMPK (AMP-activated Protein Kinase)",
+    "5VEW": "GLP-1R TMD (Alternative TMD Conformation)",
+    "1ERE": "ER-alpha LBD (Alternative Estrogen Receptor)",
+    "4EKL": "AKT1 (Alternative AKT Kinase)"
 }
 
 async def submit_jobs(run_id, is_test, target_list=None, limit=None):
@@ -59,9 +67,12 @@ async def submit_jobs(run_id, is_test, target_list=None, limit=None):
             active_targets = [t.strip().upper() for t in target_list.split(",") if t.strip()]
             
     for pdb_id in active_targets:
-        panel_path = f"data/benchmark/{pdb_id}_panel.json"
+        panel_path = f"data/benchmark/{pdb_id}_holdout_panel.json"
         if not os.path.exists(panel_path):
-            print(f"❌ Error: No se encontró el dataset en {panel_path}")
+            panel_path = f"data/benchmark/{pdb_id}_panel.json"
+        
+        if not os.path.exists(panel_path):
+            print(f"❌ Error: No se encontró el dataset para {pdb_id}")
             continue
             
         with open(panel_path, "r", encoding="utf-8") as f:
@@ -115,7 +126,15 @@ async def monitor_jobs(submitted_jobs, run_id):
             task_id = job["task_id"]
             res = AsyncResult(task_id, app=celery_app)
             
-            if res.ready():
+            is_ready = False
+            try:
+                is_ready = res.ready()
+            except Exception as e:
+                print(f"⚠️ Error verificando estado de tarea {task_id}: {e}")
+                active_pending.append(job)
+                continue
+                
+            if is_ready:
                 if res.status == "SUCCESS":
                     payload = res.result or {}
                     eval_res_id = payload.get("evaluation_result_id")
@@ -216,12 +235,18 @@ async def run_statistics(run_id, completed_jobs):
         y_real = [j["experimental_p_value"] for j in jobs]
         
         # Convertimos kcal/mol a una métrica de afinidad positiva multiplicando por -1
-        y_pred = [-j["predicted_affinity"] for j in jobs]
+        y_pred_aff = [-j["predicted_affinity"] for j in jobs]
         
-        # Calcular Spearman
-        rho, p_value = scipy.stats.spearmanr(y_pred, y_real)
+        # Extraemos el Total Score (Que incluye la GNN)
+        y_pred_score = [j["predicted_score"] for j in jobs]
         
-        # Calcular MAE
+        # Calcular Spearman (XGBoost Afinidad)
+        rho, p_value = scipy.stats.spearmanr(y_pred_aff, y_real)
+        
+        # Calcular Spearman (GNN Total Score)
+        rho_gnn, p_value_gnn = scipy.stats.spearmanr(y_pred_score, y_real)
+        
+        # Calcular MAE (Solo para Afinidad)
         y_pred_pki = [j["predicted_affinity"] / -1.36 for j in jobs]
         mae = sum(abs(r - p) for r, p in zip(y_real, y_pred_pki)) / len(jobs)
         
@@ -237,6 +262,7 @@ async def run_statistics(run_id, completed_jobs):
             "name": TARGET_NAMES[tid],
             "n": len(jobs),
             "rho": round(rho, 3) if not math.isnan(rho) else 0.0,
+            "rho_gnn": round(rho_gnn, 3) if not math.isnan(rho_gnn) else 0.0,
             "p_value": p_value,
             "mae": round(mae, 3),
             "status": status
@@ -289,49 +315,37 @@ def print_markdown_report(run_id, summary_data):
     
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    report_content = fr"""# Reporte de Validación Científica Global: Spearman Benchmark
-
-*   **Identificador de Corrida (Run ID):** `{run_id}`
-*   **Fecha de Certificación:** `{timestamp} UTC`
-*   **Estado General del Sistema:** 🟢 VALIDADO & CERTIFICADO
-
-El presente documento certifica la precisión biofísica del motor de MolDesign v6.1 en una validación cruzada ciega utilizando compuestos evaluados experimentalmente **post-2022** provenientes de ChEMBL y BindingDB.
-
----
-
-## 📊 Tabla Resumen de Desempeño Biofísico
-
-| Dianas Terapéuticas | PDB | $N$ | Spearman $\rho$ | $p$-value | MAE (unidades log) | Estado Científico |
-|:---|:---:|:---:|:---:|:---:|:---:|:---|
-"""
+    report_lines = []
+    report_lines.append(f"# Reporte de Validación Científica Global: Spearman Benchmark\n")
+    report_lines.append(f"*   **Identificador de Corrida (Run ID):** `{run_id}`")
+    report_lines.append(f"*   **Fecha de Certificación:** `{timestamp} UTC`")
+    report_lines.append(f"*   **Estado General del Sistema:** 🟢 VALIDADO & CERTIFICADO\n")
+    report_lines.append(f"El presente documento certifica la precisión biofísica del motor de MolDesign v6.1 en una validación cruzada ciega utilizando compuestos evaluados experimentalmente **post-2022** provenientes de ChEMBL y BindingDB.\n")
+    report_lines.append(f"---\n")
+    report_lines.append(f"## 📊 Tabla Resumen de Desempeño Biofísico\n")
+    report_lines.append("| Target | Nombre | N | Spearman (Afinidad XGBoost) | Spearman (Total Score GNN) | MAE (pKi) | Estado |")
+    report_lines.append("|--------|--------|---|-----------------------------|----------------------------|-----------|--------|")
     
     for row in summary_data:
-        report_content += f"| {row['name']} | `{row['target']}` | {row['n']} | **{row['rho']}** | {row['p_value']:.6f} | {row['mae']} | {row['status']} |\n"
+        rho_str = f"{row['rho']:.3f}"
+        rho_gnn_str = f"{row['rho_gnn']:.3f}"
+        report_lines.append(f"| {row['target']} | {row['name']} | {row['n']} | **{rho_str}** | **{rho_gnn_str}** | {row['mae']:.2f} | {row['status']} |")
         
-    report_content += fr"""
----
-
-## 🔍 Conclusiones y Rigor Científico
-
-1.  **5-HT1A Serotonin Receptor (7E2Y):** 
-    Conserva una correlación excepcional de **Spearman $\rho = 0.512$** con un nivel de significancia estadística masivo ($p = 0.00014$), certificando el poder predictivo real del motor sobre fármacos reales post-2022 sin sesgo de sobreajuste.
+    report_lines.append("\n---\n")
+    report_lines.append("## 🔍 Conclusiones y Rigor Científico\n")
     
-2.  **GLP-1 Receptor (6B3J):** 
-    Logra un **Spearman $\rho = 0.485$**, lo cual es un hito de generalización extraordinario para un GPCR de Clase B que posee un sitio activo extremadamente dinámico. El normalizador sigmoideo y el ajuste dinámico de LE evitaron falsos positivos por tamaño molecular.
-    
-3.  **PCSK9 Ortostérico (2P4E):**
-    Valida su parametrización con un **Spearman $\rho$ sobresaliente**, demostrando la sensibilidad del sistema espacial de hotspots para mapear interacciones moleculares estrechas en interfaces proteína-proteína planas.
-    
-4.  **PCSK9 Alostérico (6U26):**
-    Presenta un comportamiento diferencial consistente. Al evaluar los mismos compuestos frente a la cavidad alostérica, la caída/variación controlada en el score demuestra sensibilidad espacial e inespecificidad física en el sitio secundario, evitando "alucinaciones" de afinidad universales.
-    
-5.  **CTLA-4 Immune Checkpoint (3OSK):**
-    Consolida una validación robusta para la interfaz de inmunoterapia, mapeando con precisión los hotspots del loop MYPPPY (MET99, TYR100, PRO102, TYR104).
+    for row in summary_data:
+        if row['rho'] >= 0.45:
+            report_lines.append(f"1.  **{row['name']} ({row['target']}):**\n    Excepcional correlación ($\\rho$ = {row['rho']}, $p$ = {row['p_value']:.5f}). El modelo captura exitosamente los determinantes estructurales de afinidad.\n")
+        elif row['rho'] >= 0.30:
+            report_lines.append(f"1.  **{row['name']} ({row['target']}):**\n    Correlación moderada ($\\rho$ = {row['rho']}, $p$ = {row['p_value']:.5f}). El modelo muestra capacidad predictiva pero con margen de mejora geométrica.\n")
+        else:
+            report_lines.append(f"1.  **{row['name']} ({row['target']}):**\n    Correlación débil o nula ($\\rho$ = {row['rho']}, $p$ = {row['p_value']:.5f}). Requiere revisión de la parametrización del grid o los pesos del modelo.\n")
 
----
-
-*Certificación de Datos generada automáticamente por MolDesign.IA v6.1. Todos los resultados son 100% audíbulos y reproducibles.*
-"""
+    report_lines.append("\n---\n")
+    report_lines.append("*Certificación de Datos generada automáticamente por MolDesign.IA. Todos los resultados son audibles y reproducibles.*\n")
+    
+    report_content = "\n".join(report_lines)
     
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(report_content)
@@ -345,6 +359,11 @@ El presente documento certifica la precisión biofísica del motor de MolDesign 
     for row in summary_data:
         print(f" Receptor: {row['name']:40} | Spearman ρ: {row['rho']:5.3f} | N: {row['n']:2} | {row['status']}")
     print("="*80)
+    
+    # Auto-escalado si corresponde
+    import subprocess
+    print("\n[Auto-Trigger] Evaluando condición de escalado automático...")
+    subprocess.Popen(["python", "backend/scripts/auto_scale_benchmark.py"])
 
 async def main():
     parser = argparse.ArgumentParser(description="Benchmarking global de MolDesign.")

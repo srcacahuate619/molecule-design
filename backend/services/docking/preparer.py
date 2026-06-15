@@ -85,6 +85,7 @@ def _filter_pdb_content(
     pdb_content: str,
     chain_id: str,
     keep_hetatm: bool = False,
+    cofactors_whitelist: list[str] | None = None,
 ) -> str:
     """
     Filtra la cadena de interés para preparación del receptor.
@@ -139,13 +140,16 @@ def _filter_pdb_content(
         if residue_seq <= 0:
             continue
 
-        # --- Filtro de HETATM: eliminar ligandos, cofactores, lípidos ---
+        # --- Filtro de HETATM: eliminar ligandos, lípidos, retener cofactores ---
         if record == "HETATM":
             if keep_hetatm and residue_name in _STANDARD_RESIDUES:
                 # Residuo modificado reconocible (MSE, SEP, etc.) → conservar
                 filtered_lines.append(line)
+            elif cofactors_whitelist and residue_name in cofactors_whitelist:
+                # Cofactor orgánico o metal específico del receptor → conservar
+                filtered_lines.append(line)
             else:
-                # Ligando, colesterol, ion, detergente, etc. → excluir
+                # Ligando, colesterol, solvente genérico, etc. → excluir
                 excluded_hetatm[residue_name] = excluded_hetatm.get(residue_name, 0) + 1
             continue
 
@@ -189,6 +193,7 @@ async def prepare_target(
     center: tuple[float, float, float],
     size: tuple[float, float, float],
     force_reprepare: bool = False,
+    cofactors_whitelist: list[str] | None = None,
 ) -> str:
     """
     Prepara un receptor para Vina y lo guarda en MinIO.
@@ -208,8 +213,13 @@ async def prepare_target(
             await upload_text(pdb_content, raw_path)
         
         # Descargar y filtrar para el volumen compartido
-        raw_content = await download_text(raw_path)
-        filtered_content = _filter_pdb_content(raw_content, chain_id, keep_hetatm=False)
+        pdb_content = await download_text(raw_path)
+        filtered_content = _filter_pdb_content(
+            pdb_content, 
+            chain_id=chain_id, 
+            keep_hetatm=True,
+            cofactors_whitelist=cofactors_whitelist
+        )
         
         # Guardar en volumen compartido
         shared_pdb_path.parent.mkdir(parents=True, exist_ok=True)
@@ -238,7 +248,8 @@ async def prepare_target(
         filtered_content = _filter_pdb_content(
             raw_content,
             chain_id,
-            keep_hetatm=False,  # Ortodoxo: solo proteína para docking
+            keep_hetatm=False,  # Ortodoxo: solo proteína para docking, excepto cofactores
+            cofactors_whitelist=cofactors_whitelist,
         )
     except ProteinPreparationError as e:
         e.pdb_id = pdb_id

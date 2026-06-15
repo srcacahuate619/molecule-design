@@ -76,7 +76,7 @@ async def get_ml_rescore(
     )
     
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:  # timeout aumentado por GNN
+        async with httpx.AsyncClient(timeout=300.0) as client:  # timeout aumentado por GNN en CPU
             response = await client.post(
                 url, 
                 json=request_data.model_dump(),

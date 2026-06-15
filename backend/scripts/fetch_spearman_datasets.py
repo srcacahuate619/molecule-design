@@ -81,6 +81,16 @@ TARGET_MAP = {
         "name": "Thymidylate_Synthase",
         "chembl_id": "CHEMBL3898",
         "conformation": "inactive"
+    },
+    "4RER": {
+        "name": "AMPK (Active)",
+        "chembl_id": "CHEMBL2096907",
+        "conformation": "active"
+    },
+    "5VEW": {
+        "name": "GLP-1R_TMD (Inactive)",
+        "chembl_id": "CHEMBL1784",
+        "conformation": "inactive"
     }
 }
 
@@ -269,6 +279,8 @@ def main():
     os.makedirs("data/benchmark", exist_ok=True)
     
     for pdb_id, info in TARGET_MAP.items():
+        if pdb_id not in ["4RER", "5VEW"]:
+            continue
         compounds = fetch_data_for_target(pdb_id, info)
         
         # Necesitamos al menos 25 compuestos reales para no abusar de fallbacks, pero si queremos 100 moleculas estrictas

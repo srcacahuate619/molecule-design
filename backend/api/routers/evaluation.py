@@ -80,9 +80,7 @@ async def get_limit_status(
     }
 
 
-from slowapi import Limiter
-
-limiter = Limiter(key_func=get_remote_address)
+from api.dynamic_limiter import get_dynamic_limit, limiter
 
 @router.post(
     "/submit",
@@ -90,7 +88,7 @@ limiter = Limiter(key_func=get_remote_address)
     status_code=status.HTTP_202_ACCEPTED,
     summary="Enviar evaluación molecular asíncrona",
 )
-# @limiter.limit("5/hour")
+@limiter.limit(get_dynamic_limit)
 async def submit_evaluation(
     data: EvaluationSubmitRequest,
     request: Request,
@@ -342,8 +340,10 @@ async def generate_ai_report_stream_endpoint(
     response_model=AIReportResponse,
     summary="Generar reporte IA bajo demanda para una molécula evaluada",
 )
+@limiter.limit(get_dynamic_limit)
 async def generate_ai_report_endpoint(
     molecule_id: uuid.UUID,
+    request: Request,
     current_user: UserORM | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ) -> AIReportResponse:

@@ -37,6 +37,10 @@ class Settings(BaseSettings):
         min_length=32,
         description="Clave para firmar JWT. Genera con: openssl rand -hex 32",
     )
+    supabase_jwt_secret: str | None = Field(
+        default=None,
+        description="Secret key de Supabase para validar los tokens JWT entrantes. Obligatorio si se usa Supabase Auth.",
+    )
 
     # ── Base de datos ────────────────────────────────────────────────────────
 
@@ -95,7 +99,7 @@ class Settings(BaseSettings):
     meeko_prepare_ligand_path: str = "mk_prepare_ligand"
     meeko_export_path: str = "mk_export"
     meeko_default_altloc: str = "A"
-    vina_exhaustiveness: int = Field(default=8, ge=1, le=64)
+    vina_exhaustiveness: int = Field(default=32, ge=1, le=128)
     # Exhaustiveness controla la profundidad de búsqueda conformacional.
     # 8 = balance razonable velocidad/calidad para uso interactivo del MVP.
     # Para calibración y benchmarking, usar vina_calibration_exhaustiveness.

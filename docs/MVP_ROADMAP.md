@@ -969,3 +969,26 @@ En esta fase se logró destruir por completo la percepción de "Caja Negra" del 
 ### Estado Global Actual
 - El sistema cuenta con trazabilidad total `(AI = Árbitro)`. Los investigadores pueden ver y descargar (PDF/Blockchain) los fundamentos atómicos y físicos de por qué su molécula triunfó o fracasó en la simulación.
 - **Estamos listos para someter la arquitectura a las pruebas Spearman definitivas tan pronto como el modelo XGBoost reciba su "entrenamiento diverso extremo" para moléculas masivas.**
+
+---
+
+## 17. Fase 8.0: Integración de IA Premium (Hoja de Ruta Futura) 🤖
+
+Este apartado traza la estrategia de expansión tecnológica de MolDesign hacia el nivel "Premium" / "Enterprise", estructurada por su exigencia computacional.
+
+### Nivel 1: Integración Inmediata (Bajo Cómputo / Hardware Actual)
+*Viables para integrarse hoy en la arquitectura actual sin asfixiar la RAM o CPU.*
+
+- **ADMET-AI (Perfil Farmacocinético):** Predicción ultrarrápida de Toxicidad, Absorción y Distribución basada en el SMILES. Aporta valor crítico al usuario alertando de hepatotoxicidad o fallos en la barrera hematoencefálica antes de continuar con la simulación.
+- **DeepPurpose (Validación DTI Heurística):** Predicción de afinidad (DTI) puramente secuencial (1D). Útil como un "Plan B" ultrarrápido si AutoDock Vina falla físicamente por topologías estéricas imposibles.
+
+### Nivel 2: Optimización Acelerada (Requiere GPU Dedicada)
+*Viables si el servidor cuenta con GPUs NVIDIA con soporte CUDA (ej. RTX 3060/4090).*
+
+- **GNINA (Smina + CNN Scoring):** Integra soporte nativo para **Flexibilidad de Cadenas Laterales** y reemplaza la anticuada función de puntuación de Vina por Redes Neuronales Convolucionales (CNN) 3D, reduciendo drásticamente los choques estéricos espurios.
+- **Uni-Dock (Fuerza Bruta):** El mismo motor físico de Vina, pero reescrito para inferencia masiva en Tarjetas Gráficas. Acelera el proceso de 100x a 1000x, erradicando los timeouts de Celery.
+
+### Nivel 3: "Magia" de Aprendizaje Profundo (Requiere Infraestructura Cloud)
+*Requieren servidores Enterprise o Clusters GPU (A100/H100) dedicados.*
+
+- **NeuralPLexer (Simulación de Encaje Inducido):** El modelo "State of the Art" que **deforma tridimensionalmente** el bolsillo de la proteína en función del fármaco aproximándose (Induced Fit), sin los brutales tiempos de la Dinámica Molecular clásica (GROMACS). Ideal para una eventual subscripción "Premium".

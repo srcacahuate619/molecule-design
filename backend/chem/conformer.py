@@ -167,10 +167,44 @@ async def generate_conformer(smiles: str) -> dict:
         hash_prefix=smiles_hash[:8],
     )
 
-    # Paso 2: construir mol con hidrógenos explícitos
+    # Paso 2: Tautomería canónica y protonación fisiológica
+    try:
+        from rdkit.Chem.MolStandardize import rdMolStandardize
+        te = rdMolStandardize.TautomerEnumerator()
+        mol_tmp = Chem.MolFromSmiles(canonical)
+        if mol_tmp:
+            canonical_tautomer = te.Canonicalize(mol_tmp)
+            canonical = Chem.MolToSmiles(canonical_tautomer)
+            log.debug("Tautómero canónico generado", smiles=canonical)
+    except Exception as e:
+        log.warning("Error enumerando tautómeros, usando SMILES original", error=str(e))
+
+    try:
+        import dimorphite_dl
+        # dimorphite_dl devuelve una lista de SMILES protonados
+        protonated_list = dimorphite_dl.protonate_smiles(
+            canonical, 
+            ph_min=7.4, 
+            ph_max=7.4, 
+            precision=1.0
+        )
+        if protonated_list:
+            canonical = protonated_list[0]
+            log.info("SMILES protonado a pH 7.4 con dimorphite-dl", protonated_smiles=canonical)
+    except ImportError:
+        log.warning("dimorphite_dl no instalado. Usando SMILES neutro (sin corrección de pH).")
+    except Exception as e:
+        log.warning("Error en dimorphite_dl, usando neutro", error=str(e))
+
     # Los H explícitos son necesarios para que ETKDG coloque
     # correctamente los átomos de hidrógeno en 3D
     mol = Chem.MolFromSmiles(canonical)
+    if mol is None:
+        raise ConformerGenerationError(
+            smiles=smiles,
+            attempts=1,
+            detail="Fallo al construir RDKit Mol tras protonación."
+        )
     mol = Chem.AddHs(mol)
 
     # Detectar macrociclos para ajustar número de intentos

@@ -505,6 +505,42 @@ async def download_pdb_from_rcsb(pdb_id: str) -> str:
     return content
 
 
+async def fetch_target_cofactors_from_rcsb(pdb_id: str) -> list[str]:
+    """
+    Descarga la metadata oficial de RCSB PDB para descubrir cofactores orgánicos y metales
+    esenciales de una proteína. Devuelve una lista de los IDs (3 letras) de todos los 
+    HETATMs que deben preservarse en el pocket (e.g. ['HEM', 'NAD', 'ZN', 'MG']).
+    """
+    url = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id.upper()}"
+    log.info("buscando cofactores en RCSB PDB", pdb_id=pdb_id, url=url)
+    
+    cofactors = set()
+    
+    # Excluir explícitamente cristalográficos, azúcares y solventes comunes
+    skip_res = {"HOH", "WAT", "DOD", "SO4", "PO4", "PEG", "EDO", "ACT", "GOL", "DMS", "CL", "BR", "IOD"}
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            response = await client.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                nonpolymers = data.get("nonpolymer_entities", [])
+                for entity in nonpolymers:
+                    comp = entity.get("nonpolymer_comp", {})
+                    comp_id = comp.get("chem_comp_id", "").upper()
+                    
+                    if not comp_id or comp_id in skip_res:
+                        continue
+                        
+                    # Añadir a la lista de cofactores permitidos
+                    cofactors.add(comp_id)
+                    
+            return list(cofactors)
+        except Exception as e:
+            log.warning("error buscando cofactores en rcsb", pdb_id=pdb_id, error=str(e))
+            return []
+
+
 # ── Parsers de formato molecular ──────────────────────────────────────────────
 
 def parse_vina_output_sdf(sdf_content: str) -> list[dict]:

@@ -119,50 +119,36 @@ def create_refresh_token(
     return f"{encoded_header}.{encoded_payload}.{signature}"
 
 
+import jwt
+
 def decode_token(token: str) -> dict[str, Any]:
     """
-    Valida firma y expiración del token.
-
-    Lanza:
-        InvalidCredentials si el token es inválido
-        TokenExpired si expiró
+    Valida firma y expiración del token usando PyJWT.
     """
     try:
-        encoded_header, encoded_payload, provided_signature = token.split(".", 2)
-    except ValueError as exc:
+        # Si supabase_jwt_secret está configurado, valida contra Supabase
+        if hasattr(settings, "supabase_jwt_secret") and settings.supabase_jwt_secret:
+            return jwt.decode(
+                token, 
+                settings.supabase_jwt_secret, 
+                algorithms=["HS256"],
+                options={"verify_aud": False} # Supabase a veces requiere audience='authenticated'
+            )
+        
+        # Fallback local
+        return jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError as exc:
+        raise TokenExpired() from exc
+    except jwt.InvalidTokenError as exc:
         raise InvalidCredentials() from exc
-
-    signing_input = f"{encoded_header}.{encoded_payload}".encode("utf-8")
-    expected_signature = _sign(signing_input)
-
-    if not hmac.compare_digest(provided_signature, expected_signature):
-        raise InvalidCredentials()
-
-    try:
-        payload = json.loads(_b64url_decode(encoded_payload).decode("utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError, ValueError) as exc:
-        raise InvalidCredentials() from exc
-
-    exp = payload.get("exp")
-    if not isinstance(exp, int):
-        raise InvalidCredentials()
-
-    now_ts = int(datetime.now(UTC).timestamp())
-    if exp < now_ts:
-        raise TokenExpired()
-
-    return payload
 
 
 def get_subject_from_token(token: str) -> str:
     payload = decode_token(token)
-    # Para endpoints generales, solo permitimos tokens de tipo 'access'
-    if payload.get("type") != "access":
-        raise AuthError(
-            message="Token de acceso requerido",
-            detail="Se proporcionó un token de un tipo diferente",
-        )
+    
+    # En Supabase Auth y tokens locales, el ID de usuario viene en el claim 'sub'
     subject = payload.get("sub")
     if not isinstance(subject, str) or not subject:
         raise InvalidCredentials()
+    
     return subject

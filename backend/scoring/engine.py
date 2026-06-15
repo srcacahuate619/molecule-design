@@ -150,17 +150,16 @@ def calculate_score_breakdown(
         base_score_with_specificity = base_score * specificity_multiplier
 
         # --- [NUEVO] Factor GNN (RTMScore Nivel 2) Directo ---
-        # El score crudo de RTMScore está típicamente en [30, 70], donde >45 es prometedor
-        # y <40 es muy probablemente un señuelo (decoy).
-        # Centramos la sigmoide en 45.0. Si el score es 45, el factor es 1.0 (neutro).
+        # RTMScore predice pKd/pKi (típicamente entre 4.0 y 10.0).
+        # Centramos la sigmoide en 6.0 (afinidad micromolar). Si el score es 6.0, el factor es 1.0 (neutro).
         if gnn_score is not None:
             # Rango sigmoide crudo [0, 1]
-            raw_factor = 1.0 / (1.0 + math.exp(-0.2 * (gnn_score - 45.0)))
+            raw_factor = 1.0 / (1.0 + math.exp(-1.0 * (gnn_score - 6.0)))
             
             # Mapear [0, 1] → [0.70, 1.30]
-            # Si gnn_score = 45 -> raw = 0.5 -> gnn_factor = 0.70 + 0.30 = 1.00
-            # Si gnn_score = 35 -> raw ≈ 0.12 -> gnn_factor ≈ 0.77 (Penaliza 23%)
-            # Si gnn_score = 55 -> raw ≈ 0.88 -> gnn_factor ≈ 1.23 (Beneficia 23%)
+            # Si gnn_score = 6.0 -> raw = 0.5 -> gnn_factor = 0.70 + 0.30 = 1.00
+            # Si gnn_score = 4.0 -> raw ≈ 0.12 -> gnn_factor ≈ 0.77 (Penaliza 23%)
+            # Si gnn_score = 8.0 -> raw ≈ 0.88 -> gnn_factor ≈ 1.23 (Beneficia 23%)
             gnn_factor = 0.70 + (raw_factor * 0.60)
         else:
             gnn_factor = 1.0

@@ -162,7 +162,8 @@ SMILES / Editor Molecular 2D (Ketcher)
              │
              ▼
 ┌─────────────────────────────────┐
-│  Generación Conformero 3D       │  ← ETKDG v3 (geometría bioactiva de baja energía)
+│  Generación Conformero 3D       │  ← Protonación a pH 7.4 fisiológico en sangre
+│                                 │  ← ETKDG v3 (geometría bioactiva de baja energía)
 └────────────┬────────────────────┘
              │
              ▼
@@ -443,7 +444,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8010
 | v6.5 | **Capa de Presentación**: Interfaz Dual (Pro/Academy), Modales Interactivos en Cascada, depuración estética de la UX/UI | ✅ |
 | v6.6 | **Validación Fase 2**: Auditoría E2E del Pipeline (18 Receptores), Fallback Físico y Filtro ML (Dominio de Aplicabilidad) | ✅ |
 | v6.7 | **Reentrenamiento Diverso Extremo**: XGBoost Data Augmentation para expandir el Dominio de Aplicabilidad (moléculas masivas) | 📋 |
-| v6.8 (actual)| **Validación Fase 3**: Benchmark Coeficiente de Spearman (Rho) Global contra set empírico | 🔬 |
+| v6.8 (actual)| **Física Fisiológica y Validación Fase 3**: Integración de `dimorphite-dl` para protonación estricta a pH 7.4 (mitigando repulsión electrostática espuria). Benchmark Spearman Global en progreso. | 🔬 |
 | v6.9 | 3D-RISM desolvatación (AmberTools) | 📋 |
 | v7.0 | Flexibilidad proteica (ensemble docking, requiere GPU) | 🔬 |
 

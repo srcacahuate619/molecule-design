@@ -219,3 +219,20 @@ Cuando se detecta un metal en el ligando o en el bolsillo del receptor:
 ### 10.2 Docking en AutoDock 4 (AD4)
 - El receptor y el ligando parametrizados con las cargas cuánticas de `xtb` se enrutan automáticamente a **AutoDock 4** en lugar de Vina.
 - AD4 cuenta con soporte explícito y calibración para geometrías de coordinación de metales de transición, garantizando precisión biofísica en metaloproteínas.
+
+---
+
+## 11. Preservación Biológica y Lista Blanca Dinámica de Cofactores [v7.1]
+
+El motor de docking y el pipeline de evaluación física asumen que la estructura cristalográfica (PDB) del receptor refleja con precisión el entorno termodinámico *in vivo*.
+
+### 11.1 El Problema Histórico de la Purga Rígida
+En las versiones anteriores a v7.0, el módulo de preparación (`preparer.py`) implementaba un filtro heurístico muy conservador que eliminaba absolutamente cualquier molécula que no formara parte del esqueleto de la proteína (aminoácidos) salvo una pequeña lista estática de iones metálicos (como Zn, Mg o Fe).
+Esto causaba problemas con metaloenzimas y proteínas que dependen fuertemente de cofactores orgánicos inmensos (como el grupo Hemo en COX-2). La purga de estos cofactores dejaba un "cráter" espacial enorme y muy polar en el sitio activo, induciendo falsos positivos masivos porque Vina insertaba al ligando en lugares que, en la vida real biológica, están bloqueados por el cofactor original.
+
+### 11.2 Ingesta Inteligente basada en la API de RCSB
+En MolDesign v7.1 implementamos la **Lista Blanca Dinámica**:
+- **Extracción al vuelo**: Durante el proceso de ingesta, el backend intercepta el identificador PDB y consulta la API GraphQL del banco de datos de proteínas (RCSB PDB).
+- **Extracción de Entidades No Poliméricas**: De forma automática, el sistema extrae cada compuesto biológicamente funcional registrado por los cristalógrafos, ignorando únicamente los artefactos cristalográficos listados genéricamente (solventes, sulfatos, azúcares estructurales).
+- **Inyección y Persistencia**: Esta lista (`cofactors_whitelist`) se inyecta directamente a la base de datos de targets, permitiendo personalizar caso a caso las entidades que el módulo de docking deberá ignorar o mantener durante la conversión con `mk_prepare_receptor.py` (Meeko).
+- **Impacto Biológico Realista**: Este enfoque eleva radicalmente la exactitud de la correlación Spearman al prohibir dockings físicamente irreales, asegurando que el ligando interactúe física y termodinámicamente *junto* al cofactor en su posición biológica correcta.
