@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import uuid
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
