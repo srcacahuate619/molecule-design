@@ -253,6 +253,20 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = Field(default=60, ge=5)
     jwt_refresh_token_expire_days: int = Field(default=7, ge=1)
     
+    # OAuth Credentials
+    google_client_id: str | None = Field(
+        default=None,
+        description="Client ID de Google OAuth. Requerido para Iniciar Sesión con Google."
+    )
+    microsoft_client_id: str | None = Field(
+        default=None,
+        description="Client ID de Microsoft Entra ID. Requerido para Iniciar Sesión con Microsoft."
+    )
+    microsoft_tenant_id: str | None = Field(
+        default="common",
+        description="Tenant ID de Microsoft (ej. 'common', 'organizations' o un UUID)."
+    )
+    
     # ── Rate Limiting ────────────────────────────────────────────────────────
     anonymous_rate_limit: int = Field(
         default=2, 

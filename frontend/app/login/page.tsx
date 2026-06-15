@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
 import { useAuth } from "../../lib/auth";
+import { SessionProvider, signIn, signOut, useSession } from "next-auth/react";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
-  const { user, login, register, isLoading } = useAuth();
+  const { user, login, register, loginWithOAuth, isLoading } = useAuth();
+  const { data: session, status } = useSession();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -17,7 +18,22 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect if already logged in
+  useEffect(() => {
+    if (session?.user && (session as any).id_token && (session as any).provider) {
+      setBusy(true);
+      loginWithOAuth((session as any).provider, (session as any).id_token)
+        .then(() => {
+          signOut({ redirect: false });
+          router.push("/evaluation");
+        })
+        .catch((err) => {
+          signOut({ redirect: false });
+          setError(err.message);
+          setBusy(false);
+        });
+    }
+  }, [session, loginWithOAuth, router]);
+
   if (!isLoading && user) {
     router.replace("/evaluation");
     return null;
@@ -71,125 +87,109 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex items-center justify-center py-12">
-      <div className="w-full max-w-md space-y-6">
-        {/* ── Header ── */}
-        <div className="text-center">
-          <div className="mb-3 text-4xl">🧬</div>
-          <h1 className="text-2xl font-bold text-white">
-            {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+    <main className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-surface-700 bg-surface-900/50 p-8 shadow-2xl backdrop-blur-md">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            {mode === "login" ? "Bienvenido a MolDesign" : "Crear cuenta MolDesign"}
           </h1>
-          <p className="mt-1 text-sm text-surface-400">
+          <p className="text-sm text-surface-400">
             {mode === "login"
-              ? "Accede a tus moléculas guardadas."
-              : "Registra una cuenta para guardar tus evaluaciones."}
+              ? "Ingresa tus credenciales para continuar"
+              : "Regístrate para acceder al pipeline científico"}
           </p>
         </div>
 
-        {/* ── Mode Toggle ── */}
-        <div className="flex rounded-xl border border-surface-800 bg-surface-900 p-1">
+        {error && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        <div className="flex rounded-xl bg-surface-800 p-1">
           <button
-            onClick={() => { setMode("login"); setError(null); }}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
+            onClick={() => {
+              setMode("login");
+              setError(null);
+            }}
+            className={`w-1/2 rounded-lg py-2 text-sm font-medium transition-all ${
               mode === "login"
-                ? "bg-brand-600 text-white"
-                : "text-surface-400 hover:text-surface-300"
+                ? "bg-surface-700 text-white shadow"
+                : "text-surface-400 hover:text-white"
             }`}
           >
-            Iniciar sesión
+            Iniciar Sesión
           </button>
           <button
-            onClick={() => { setMode("register"); setError(null); }}
-            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-colors ${
+            onClick={() => {
+              setMode("register");
+              setError(null);
+            }}
+            className={`w-1/2 rounded-lg py-2 text-sm font-medium transition-all ${
               mode === "register"
-                ? "bg-brand-600 text-white"
-                : "text-surface-400 hover:text-surface-300"
+                ? "bg-brand-600 text-white shadow"
+                : "text-surface-400 hover:text-white"
             }`}
           >
             Registrarse
           </button>
         </div>
 
-        {/* ── Form ── */}
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-surface-800 bg-surface-900 p-6">
-          {/* Email o Username */}
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-surface-400">
-              Email o Usuario
-            </label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-surface-300">Email</label>
             <input
-              type="text"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com o usuario"
-              autoComplete="email"
-              className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 text-sm text-gray-200 placeholder-surface-500 transition-colors focus:border-brand-500 focus:outline-none"
+              className="w-full rounded-xl border border-surface-700 bg-surface-800 px-4 py-3 text-sm text-white placeholder-surface-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              placeholder="tu@email.com"
             />
           </div>
 
-          {/* Username (register only) */}
           {mode === "register" && (
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-surface-400">
-                Nombre de usuario
-              </label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-surface-300">Username</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                className="w-full rounded-xl border border-surface-700 bg-surface-800 px-4 py-3 text-sm text-white placeholder-surface-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 placeholder="usuario123"
-                autoComplete="username"
-                className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 text-sm text-gray-200 placeholder-surface-500 transition-colors focus:border-brand-500 focus:outline-none"
               />
             </div>
           )}
 
-          {/* Password */}
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-surface-400">
-              Contraseña
-            </label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-surface-300">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-surface-700 bg-surface-800 px-4 py-3 text-sm text-white placeholder-surface-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               placeholder="••••••••"
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 text-sm text-gray-200 placeholder-surface-500 transition-colors focus:border-brand-500 focus:outline-none"
             />
           </div>
 
-          {/* Confirm Password (register only) */}
           {mode === "register" && (
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-surface-400">
-                Confirmar contraseña
-              </label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-surface-300">Confirmar Contraseña</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-xl border border-surface-700 bg-surface-800 px-4 py-3 text-sm text-white placeholder-surface-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 placeholder="••••••••"
-                autoComplete="new-password"
-                className="w-full rounded-xl border border-surface-700 bg-surface-950 px-4 py-3 text-sm text-gray-200 placeholder-surface-500 transition-colors focus:border-brand-500 focus:outline-none"
               />
             </div>
           )}
 
-          {/* Error */}
-          {error && (
-            <div className="rounded-xl border border-red-900/50 bg-red-950/30 p-3 text-xs text-red-400">
-              {error}
-            </div>
-          )}
-
-          {/* Submit */}
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || status === "loading"}
             className="w-full rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {busy ? (
+            {busy || status === "loading" ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 {mode === "login" ? "Iniciando sesión..." : "Creando cuenta..."}
@@ -202,33 +202,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* ── Divisor ── */}
         <div className="relative flex items-center py-2">
           <div className="flex-grow border-t border-surface-700"></div>
           <span className="mx-4 flex-shrink-0 text-xs text-surface-500 uppercase tracking-widest">O continúa con</span>
           <div className="flex-grow border-t border-surface-700"></div>
         </div>
 
-        {/* ── OAuth Buttons ── */}
         <div className="flex flex-col gap-3">
           <button
             type="button"
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-surface-700 bg-surface-800 py-3 text-sm font-medium text-white transition-all hover:bg-surface-700 hover:border-surface-600"
-            onClick={() => alert("Simulando redirección a Microsoft Azure AD...")}
-          >
-            <svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 0H0V10H10V0Z" fill="#F25022"/>
-              <path d="M21 0H11V10H21V0Z" fill="#7FBA00"/>
-              <path d="M10 11H0V21H10V11Z" fill="#00A4EF"/>
-              <path d="M21 11H11V21H21V11Z" fill="#FFB900"/>
-            </svg>
-            Microsoft (Institucional)
-          </button>
-          
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-surface-700 bg-surface-800 py-3 text-sm font-medium text-white transition-all hover:bg-surface-700 hover:border-surface-600"
-            onClick={() => alert("Simulando redirección a Google Workspace...")}
+            disabled={busy || status === "loading"}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-surface-700 bg-surface-800 py-3 text-sm font-medium text-white transition-all hover:bg-surface-700 hover:border-surface-600 disabled:opacity-50"
+            onClick={() => signIn("google")}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25C22.56 11.47 22.49 10.72 22.36 10H12V14.26H17.92C17.66 15.63 16.88 16.8 15.71 17.58V20.34H19.28C21.36 18.42 22.56 15.6 22.56 12.25Z" fill="#4285F4"/>
@@ -240,7 +225,6 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* ── Footer ── */}
         <p className="text-center text-xs text-surface-500">
           MolDesign es una herramienta de investigación computacional.
           <br />
@@ -248,5 +232,13 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <SessionProvider>
+      <LoginContent />
+    </SessionProvider>
   );
 }

@@ -23,6 +23,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
+  loginWithOAuth: (provider: string, id_token: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -114,6 +115,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [_persist]
   );
 
+  const loginWithOAuth = useCallback(
+    async (provider: string, id_token: string) => {
+      const res = await fetch(`${API_URL}/auth/oauth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, id_token }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 403) {
+            throw new Error("Debe registrarse primero para usar esta cuenta.");
+        }
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      _persist(data.access_token, data.refresh_token, {
+        user_id: data.user_id,
+        username: data.username,
+        email: data.email,
+      });
+    },
+    [_persist]
+  );
+
   const logout = useCallback(() => {
     setToken(null);
     setRefreshToken(null);
@@ -122,8 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, token, refreshToken, isLoading, login, register, logout }),
-    [user, token, refreshToken, isLoading, login, register, logout]
+    () => ({ user, token, refreshToken, isLoading, login, register, loginWithOAuth, logout }),
+    [user, token, refreshToken, isLoading, login, register, loginWithOAuth, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

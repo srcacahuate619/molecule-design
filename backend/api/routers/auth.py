@@ -26,6 +26,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
+import jwt
+import requests
+from typing import Literal
 
 from api.auth import create_access_token, create_refresh_token, decode_token
 from api.dependencies import get_current_user
@@ -305,4 +310,125 @@ async def get_me(
         email=current_user.email,
         is_active=current_user.is_active,
         created_at=current_user.created_at.isoformat() if current_user.created_at else "",
+    )
+
+
+# ── OAuth ─────────────────────────────────────────────────────────────────────
+
+class OAuthLoginRequest(BaseModel):
+    provider: Literal["google", "azure-ad"]
+    id_token: str
+
+def _get_msal_public_keys(tenant_id: str):
+    url = f"https://login.microsoftonline.com/{tenant_id}/discovery/v2.0/keys"
+    resp = requests.get(url)
+    resp.raise_for_status()
+    return resp.json()
+
+@router.post(
+    "/oauth",
+    response_model=AuthResponse,
+    summary="Iniciar sesión con OAuth (Google / Microsoft)",
+)
+async def oauth_login(
+    request: OAuthLoginRequest,
+    raw_request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> AuthResponse:
+    """Verifica un id_token de OAuth y devuelve tokens de acceso locales."""
+    login_limiter.check(raw_request)
+    settings = get_settings()
+
+    email = None
+
+    try:
+        if request.provider == "google":
+            if not settings.google_client_id:
+                raise ValueError("Google Client ID no está configurado en el servidor")
+            idinfo = google_id_token.verify_oauth2_token(
+                request.id_token, 
+                google_requests.Request(), 
+                settings.google_client_id
+            )
+            if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
+                raise ValueError("Issuer inválido")
+            email = idinfo.get("email")
+
+        elif request.provider == "azure-ad":
+            if not settings.microsoft_client_id:
+                raise ValueError("Microsoft Client ID no está configurado en el servidor")
+            
+            unverified_header = jwt.get_unverified_header(request.id_token)
+            jwks = _get_msal_public_keys(settings.microsoft_tenant_id or "common")
+            rsa_key = {}
+            for key in jwks["keys"]:
+                if key["kid"] == unverified_header["kid"]:
+                    rsa_key = {
+                        "kty": key["kty"],
+                        "kid": key["kid"],
+                        "use": key["use"],
+                        "n": key["n"],
+                        "e": key["e"]
+                    }
+                    break
+            if not rsa_key:
+                raise ValueError("No se encontró la clave pública de Microsoft")
+            
+            algorithm = jwt.algorithms.RSAAlgorithm.from_jwk(rsa_key)
+            payload = jwt.decode(
+                request.id_token,
+                key=algorithm,
+                algorithms=["RS256"],
+                audience=settings.microsoft_client_id,
+                options={"verify_iss": False}
+            )
+            email = payload.get("email") or payload.get("preferred_username")
+
+    except Exception as e:
+        log.error("oauth_verification_failed", provider=request.provider, error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token de {request.provider} inválido o expirado"
+        )
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El token no contiene un correo electrónico"
+        )
+
+    # Verificar existencia en BD
+    stmt = select(UserORM).where(UserORM.email == email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        # REGISTRO ESTRICTO: No creamos la cuenta automáticamente
+        log.warning("oauth_login_denied_unregistered", email=email, provider=request.provider)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cuenta no registrada. Debes registrarte primero antes de iniciar sesión con OAuth."
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cuenta desactivada",
+        )
+
+    # Generar nuestros propios tokens
+    access_token = create_access_token(
+        subject=str(user.id),
+        expires_delta=timedelta(minutes=settings.jwt_access_token_expire_minutes),
+    )
+    refresh_token = create_refresh_token(subject=str(user.id))
+
+    log.info("usuario autenticado por oauth", user_id=str(user.id), provider=request.provider)
+
+    return AuthResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_id=str(user.id),
+        username=user.username,
+        email=user.email,
     )
