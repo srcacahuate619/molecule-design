@@ -378,14 +378,14 @@ export default function ProEvaluation({
     const getConsoleLogs = (prog: number) => {
       if (!status) {
         return [
-          "[sys] Clúster de cálculo asíncrono MolDesign v7.1 listo.",
+          "[sys] Clúster de cálculo asíncrono MolDesign v6.9 listo.",
           "[sys] Dispositivos de telemetría e inferencia GNN online.",
           "[sys] Esperando coordenadas estructurales y orden de ejecución..."
         ];
       }
 
       const logs: string[] = [
-        "[sys] Inicializando clúster de cálculo asíncrono MolDesign v7.1...",
+        "[sys] Inicializando clúster de cálculo asíncrono MolDesign v6.9...",
         `[sys] Conectando con base de datos PostgreSQL y cargando receptor ${target}...`
       ];
 
