@@ -18,7 +18,7 @@ export function ReproducibilityInfo({ result }: Props) {
       <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
         <span className="text-surface-400">ML Rescore</span>
         <span className="text-brand-400 font-semibold">
-          v6.1{" "}
+          v7.1{" "}
           {result.target_spearman_rho != null && result.target_spearman_rho !== 0
             ? `(Spearman ρ = ${result.target_spearman_rho.toFixed(3)})`
             : <span className="text-yellow-500/80 text-xs font-normal">(Spearman: Pendiente de recálculo)</span>

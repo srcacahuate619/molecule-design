@@ -25,7 +25,7 @@ export function MethodDisclaimer() {
         <details className="group cursor-pointer">
           <summary className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-blue-400 transition-colors hover:text-blue-300">
             <span className="text-[8px] transition-transform group-open:rotate-90">▶</span>
-            🔬 Rigor Biofísico: Auditoría de Ecuaciones y Calibración (v6.1)
+            🔬 Rigor Biofísico: Auditoría de Ecuaciones y Calibración (v7.1)
           </summary>
           <div className="mt-3 space-y-4 rounded-lg bg-surface-950/60 p-4 font-mono text-[11px] leading-relaxed text-surface-400 border border-blue-950/40">
             

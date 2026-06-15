@@ -438,7 +438,7 @@ function ProHome({ stats, error }: { stats: GlobalStats | null, error: boolean }
       {/* FOOTER */}
       <footer className="p-8 md:p-12 border-t border-surface-800 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="font-display font-bold text-white uppercase tracking-wider text-sm">
-          MolDesign AI <span className="text-surface-600 font-mono text-[10px] ml-2">v6.5</span>
+          MolDesign AI <span className="text-surface-600 font-mono text-[10px] ml-2">v7.1</span>
         </div>
         <div className="font-mono text-[10px] text-surface-500 text-center md:text-right leading-relaxed">
           <span className="block text-white mb-1">Johan Amezcua</span>
@@ -683,7 +683,7 @@ function AcademyHome({ stats, error }: { stats: GlobalStats | null, error: boole
             </div>
             <div className="mt-6 border-t border-surface-700 pt-4 flex justify-between items-center text-indigo-400">
               <span className="font-bold">STATUS: ACTIVO</span>
-              <span className="text-sm">V6.5 Edu</span>
+              <span className="text-sm">V7.1 Edu</span>
             </div>
           </div>
         </section>
