@@ -312,123 +312,291 @@ function ProHome({ stats, error }: { stats: GlobalStats | null, error: boolean }
         </div>
       </section>
 
-      {/* ORCHESTRATOR FLOWCHART */}
-      <section className="p-8 md:p-12 border-b border-surface-800 bg-surface-950">
-        <div className="max-w-6xl mx-auto">
+      {/* PIPELINE DIAGRAM — based on README + ARCHITECTURE_OVERVIEW */}
+      <section className="px-6 py-12 md:px-12 md:py-16 border-b border-surface-800 bg-surface-950">
+        <div className="max-w-3xl mx-auto">
+
           <div className="font-mono text-[10px] text-brand-500 mb-10 tracking-widest uppercase text-center">
-            [ Decision Engine // Orchestrator Flow ]
+            [ Pipeline Científico // Motor de Evaluación E2E ]
           </div>
-          
-          <div className="flex flex-col items-center font-mono text-xs max-w-4xl mx-auto">
-            
-            {/* Input Node */}
-            <div className="w-full max-w-sm px-6 py-4 border border-surface-600 bg-surface-900 text-white text-center rounded mb-4">
-              <div className="font-bold text-sm mb-1">INPUT</div>
-              <div className="text-surface-400 text-[10px]">Estructura Molecular (SMILES/SDF)</div>
+
+          {/* Each step: node + optional rejection branch + arrow */}
+          <div className="flex flex-col items-center font-mono text-[11px] gap-0">
+
+            {/* ── STEP 0: INPUT ── */}
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-md px-5 py-3 border border-surface-600 bg-surface-900 text-white text-center rounded">
+                <div className="font-bold text-xs mb-0.5">INPUT</div>
+                <div className="text-surface-400 text-[10px]">Estructura Molecular (SMILES / Editor Ketcher 2D)</div>
+              </div>
             </div>
-            
-            <div className="text-surface-600 mb-4">↓</div>
-            
-            {/* Validation Node */}
-            <div className="w-full max-w-sm px-6 py-4 border border-brand-500 bg-brand-500/10 text-brand-400 font-bold text-center rounded mb-4 relative">
-              1. Validación Química (RDKit)
-              <div className="absolute top-[90%] right-[-100px] flex flex-col items-center">
-                <svg width="24" height="24" className="text-surface-600 mb-1 ml-[-20px]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                   <path d="M4 4 L20 20" />
-                   <path d="M10 20 L20 20 L20 10" />
-                </svg>
-                <div className="px-2 py-1 border border-red-500 text-red-500 text-[9px] rounded">RECHAZO (Falla SA Score / QED)</div>
+            <div className="text-surface-600 text-base py-1">↓</div>
+
+            {/* ── STEP 1: Validación + rechazo SMILES ── */}
+            <div className="w-full flex flex-col sm:flex-row sm:items-stretch gap-0 max-w-2xl">
+              <div className="flex-1 px-5 py-3 border border-brand-500 bg-brand-500/10 text-brand-400 text-center rounded sm:rounded-r-none">
+                <div className="font-bold">1. Validación Química · RDKit</div>
+                <div className="text-[9px] text-brand-300/70 mt-0.5">Valencias · SMILES canónico · quiralidad · SA Score · tensión de anillo</div>
+              </div>
+              <div className="hidden sm:flex items-center px-2 text-red-500/50 font-bold">→</div>
+              <div className="sm:w-40 px-3 py-2 border border-red-500/50 bg-red-950/20 text-red-400 rounded sm:rounded-l-none flex flex-col justify-center text-center gap-0.5">
+                <div className="text-[9px] font-bold text-red-400">✗ Rechazo</div>
+                <div className="text-[9px] text-red-400/70">SMILES inválido</div>
+                <div className="text-[9px] text-red-400/70">SA Score &gt; 6.0</div>
+              </div>
+            </div>
+            <div className="text-surface-600 text-base py-1">↓ válido</div>
+
+            {/* ── STEP 2: ADME ── */}
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-md px-5 py-3 border border-surface-700 bg-surface-900 text-surface-300 text-center rounded">
+                <div className="font-bold">2. Propiedades ADME · RDKit</div>
+                <div className="text-[9px] text-surface-500 mt-0.5">MW · LogP · TPSA · QED · HBD/HBA · RotBonds · RingCount</div>
+              </div>
+            </div>
+            <div className="text-surface-600 text-base py-1">↓</div>
+
+            {/* ── STEP 3: Conformero 3D ── */}
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-md px-5 py-3 border border-surface-700 bg-surface-900 text-surface-300 text-center rounded">
+                <div className="font-bold">3. Generación Conformero 3D</div>
+                <div className="text-[9px] text-surface-500 mt-0.5">Protonación pH 7.4 · ETKDG v3 (geometría bioactiva de baja energía)</div>
+              </div>
+            </div>
+            <div className="text-surface-600 text-base py-1">↓</div>
+
+            {/* ── STEP 4: Docking + rechazo score bajo ── */}
+            <div className="w-full flex flex-col sm:flex-row sm:items-stretch gap-0 max-w-2xl">
+              <div className="flex-1 px-5 py-3 border border-brand-500 bg-brand-500/10 text-brand-400 text-center rounded sm:rounded-r-none">
+                <div className="font-bold">4. Docking · AutoDock Vina 1.2.5</div>
+                <div className="text-[9px] text-brand-300/70 mt-0.5">Celery Worker asíncrono · seed=42 · grid box por receptor · ~15-20s</div>
+              </div>
+              <div className="hidden sm:flex items-center px-2 text-red-500/50 font-bold">→</div>
+              <div className="sm:w-40 px-3 py-2 border border-red-500/50 bg-red-950/20 text-red-400 rounded sm:rounded-l-none flex flex-col justify-center text-center gap-0.5">
+                <div className="text-[9px] font-bold text-red-400">✗ Rechazo</div>
+                <div className="text-[9px] text-red-400/70">Pose fuera del grid</div>
+                <div className="text-[9px] text-red-400/70">Sin contacto &lt; 4Å</div>
+              </div>
+            </div>
+            <div className="text-surface-600 text-base py-1">↓</div>
+
+            {/* ── STEP 5: ML Rescoring ── */}
+            <div className="w-full flex flex-col sm:flex-row sm:items-stretch gap-0 max-w-2xl">
+              <div className="flex-1 px-5 py-3 border border-purple-500 bg-purple-500/10 text-purple-300 text-center rounded sm:rounded-r-none">
+                <div className="font-bold">5. ML Rescoring · XGBoost v4</div>
+                <div className="text-[9px] text-purple-300/70 mt-0.5">176 features 3D: shell counts + ECIF-lite + ProLIF</div>
+                <div className="text-[9px] text-purple-300/60">Modelo A (3D) vs NULL (1D/2D) · Δ Especificidad · Mahalanobis</div>
+              </div>
+              <div className="hidden sm:flex items-center px-2 text-red-500/50 font-bold">→</div>
+              <div className="sm:w-40 px-3 py-2 border border-red-500/50 bg-red-950/20 text-red-400 rounded sm:rounded-l-none flex flex-col justify-center text-center gap-0.5">
+                <div className="text-[9px] font-bold text-red-400">✗ Descarte</div>
+                <div className="text-[9px] text-red-400/70">Score compuesto</div>
+                <div className="text-[9px] text-red-400/70">&lt; 20 puntos</div>
+              </div>
+            </div>
+            <div className="text-surface-600 text-base py-1">↓</div>
+
+            {/* ── STEP 6: GNN Level 2 (conditional) ── */}
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-md px-5 py-3 border border-purple-400/60 bg-purple-500/5 text-purple-300 text-center rounded">
+                <div className="font-bold">6. GNN Nivel 2 · RTMScore <span className="text-purple-400/60 text-[9px] font-normal ml-1">(condicional)</span></div>
+                <div className="text-[9px] text-purple-300/60 mt-0.5">Graph Transformer residuo-átomo · GMM densidad de distancias en bolsillo</div>
+                <div className="text-[9px] text-purple-300/50">Activo para Drug-Like · Péptidos · Metales cuando Score &gt; 50</div>
+              </div>
+            </div>
+            <div className="text-surface-600 text-base py-1">↓</div>
+
+            {/* ── STEP 7: Scientific Audit ── */}
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-md px-5 py-3 border border-blue-500 bg-blue-500/10 text-blue-300 text-center rounded">
+                <div className="font-bold">7. Auditoría Científica</div>
+                <div className="text-[9px] text-blue-300/70 mt-0.5">LE · LLE · Hotspot Analysis (residuos &lt; 4Å)</div>
+                <div className="text-[9px] text-blue-300/60">Score Compuesto: 45% Afinidad + 30% ADME + 25% Drug-likeness</div>
+              </div>
+            </div>
+            <div className="text-surface-600 text-base py-1">↓</div>
+
+            {/* ── STEP 8: Output triple ── */}
+            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
+              <div className="px-4 py-3 border border-indigo-500/70 bg-indigo-500/10 text-indigo-300 text-center rounded">
+                <div className="text-xs font-bold mb-0.5">🤖 Reporte IA</div>
+                <div className="text-[9px] text-indigo-300/60">Gemini · Solo interpreta números reales</div>
+              </div>
+              <div className="px-4 py-3 border border-emerald-500/70 bg-emerald-500/10 text-emerald-300 text-center rounded">
+                <div className="text-xs font-bold mb-0.5">📄 Reporte PDF</div>
+                <div className="text-[9px] text-emerald-300/60">Métricas completas · ReportLab</div>
+              </div>
+              <div className="px-4 py-3 border border-amber-500/70 bg-amber-500/10 text-amber-300 text-center rounded">
+                <div className="text-xs font-bold mb-0.5">💎 Blockchain</div>
+                <div className="text-[9px] text-amber-300/60">SHA-256 → Solana Devnet</div>
               </div>
             </div>
 
-            <div className="text-surface-600 mb-4">↓</div>
+          </div>
 
-            {/* Orchestrator Node */}
-            <div className="w-full px-8 py-5 border-2 border-purple-500 bg-purple-500/10 text-white font-bold tracking-widest rounded-lg text-center mb-8">
+          {/* Legend */}
+          <div className="mt-10 pt-6 border-t border-surface-800 flex flex-wrap justify-center gap-4 text-[10px] font-mono text-surface-500">
+            <span><span className="text-brand-400">■</span> Validación / Docking</span>
+            <span><span className="text-purple-400">■</span> Machine Learning</span>
+            <span><span className="text-blue-400">■</span> Auditoría científica</span>
+            <span><span className="text-red-400">■</span> Rama de rechazo</span>
+            <span className="text-surface-600">Spearman ρ = 0.33 (validación ciega, 40 mol.)</span>
+          </div>
+
+        </div>
+      </section>
+
+        <div className="max-w-5xl mx-auto">
+          <div className="font-mono text-[10px] text-brand-500 mb-10 tracking-widest uppercase text-center">
+            [ Decision Engine // Orchestrator Flow ]
+          </div>
+
+          <div className="font-mono text-xs">
+
+            {/* ── Row 1: INPUT (centered) ── */}
+            <div className="flex justify-center mb-3">
+              <div className="w-full max-w-xs px-6 py-4 border border-surface-600 bg-surface-900 text-white text-center rounded">
+                <div className="font-bold text-sm mb-1">INPUT</div>
+                <div className="text-surface-400 text-[10px]">Estructura Molecular (SMILES/SDF)</div>
+              </div>
+            </div>
+
+            {/* ── Row 2: Arrow down ── */}
+            <div className="flex justify-center mb-3">
+              <span className="text-surface-600 text-lg">↓</span>
+            </div>
+
+            {/* ── Row 3: Validation + Rejection branch ──
+                Desktop: [Validación] → [✗ RECHAZO]
+                Mobile:  [Validación] stacked, then rejection block below
+            ── */}
+            <div className="flex flex-col sm:flex-row sm:items-stretch gap-0 mb-3 max-w-2xl mx-auto w-full">
+
+              {/* Left: happy-path validation node */}
+              <div className="flex-1 px-6 py-4 border border-brand-500 bg-brand-500/10 text-brand-400 font-bold text-center rounded sm:rounded-r-none">
+                1. Validación Química (RDKit)
+                <div className="text-[10px] font-normal text-brand-300/70 mt-1">SA Score · QED · SMILES validity</div>
+              </div>
+
+              {/* Connector: → on desktop, hidden on mobile (rejection is below) */}
+              <div className="hidden sm:flex items-center px-3 text-red-500/60 text-lg font-bold select-none">
+                →
+              </div>
+
+              {/* Right: rejection dead-end */}
+              <div className="sm:w-44 px-4 py-3 border border-red-500/60 bg-red-950/30 text-red-400 text-center rounded sm:rounded-l-none flex flex-col justify-center gap-1">
+                <div className="text-[9px] font-bold uppercase tracking-widest text-red-500">✗ Rechazo</div>
+                <div className="text-[9px] text-red-400/80 leading-relaxed">Falla SA Score o QED</div>
+                <div className="text-[9px] text-red-400/60">→ Pipeline detenido</div>
+              </div>
+
+            </div>
+
+            {/* ── Row 4: Arrow down (only happy path continues) ── */}
+            <div className="flex justify-center mb-3">
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-surface-500 uppercase tracking-widest mb-1">✓ Molécula válida</span>
+                <span className="text-surface-600 text-lg">↓</span>
+              </div>
+            </div>
+
+            {/* ── Row 5: Orchestrator brain ── */}
+            <div className="w-full px-8 py-5 border-2 border-purple-500 bg-purple-500/10 text-white font-bold tracking-widest rounded-lg text-center mb-3">
               🧠 CEREBRO ORQUESTADOR
               <div className="text-[10px] text-purple-400 mt-2 font-normal uppercase">Enrutamiento según propiedades fisicoquímicas</div>
             </div>
 
-            {/* Branches Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full mb-8">
-              
-              {/* Branch 1 */}
-              <button 
+            {/* ── Row 6: Branch arrows ── */}
+            <div className="flex justify-center mb-3">
+              <span className="text-surface-600 text-lg">↓</span>
+            </div>
+
+            {/* ── Row 7: Branch grid ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-4">
+
+              <button
                 onClick={() => setSelectedOrchestratorNode({
                   title: "Fragmentos",
                   engine: "AutoDock Vina",
                   desc: "Para moléculas muy pequeñas (Peso Molecular < 250), el sistema prioriza AutoDock Vina, permitiendo una búsqueda exhaustiva de alta resolución geométrica. Dado su pequeño tamaño, la simulación física pura es sumamente precisa."
                 })}
-                className="flex flex-col p-5 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
+                className="flex flex-col p-4 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
               >
-                <div className="text-[10px] text-surface-500 mb-3 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Fragmentos</div>
-                <div className="text-white text-xs mb-3 text-center w-full">MW &lt; 250</div>
-                <div className="text-brand-500 font-bold mb-2 text-center w-full">AutoDock Vina</div>
-                <div className="text-[10px] text-surface-400 text-center leading-relaxed w-full line-clamp-2 group-hover:line-clamp-none">Búsqueda exhaustiva de alta resolución geométrica</div>
+                <div className="text-[10px] text-surface-500 mb-2 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Fragmentos</div>
+                <div className="text-white text-xs mb-2 text-center w-full">MW &lt; 250</div>
+                <div className="text-brand-500 font-bold mb-1 text-center w-full text-[11px]">AutoDock Vina</div>
+                <div className="text-[9px] text-surface-400 text-center leading-relaxed w-full">Búsqueda exhaustiva geométrica</div>
               </button>
 
-              {/* Branch 2 */}
-              <button 
+              <button
                 onClick={() => setSelectedOrchestratorNode({
                   title: "Drug-Like",
                   engine: "Vina + XGBoost L1",
                   desc: "Para moléculas medianas tipo fármaco (MW 250 - 800), el sistema acopla termodinámicamente con Vina, pero aplica un modelo estadístico XGBoost L1 para corregir las deficiencias del motor físico utilizando datos del PDBbind."
                 })}
-                className="flex flex-col p-5 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
+                className="flex flex-col p-4 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
               >
-                <div className="text-[10px] text-surface-500 mb-3 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Drug-Like</div>
-                <div className="text-white text-xs mb-3 text-center w-full">MW 250 - 800</div>
-                <div className="text-brand-500 font-bold mb-2 text-center w-full">Vina + XGBoost L1</div>
-                <div className="text-[10px] text-surface-400 text-center leading-relaxed w-full line-clamp-2 group-hover:line-clamp-none">Corrección estadística de funciones de scoring termodinámicas</div>
+                <div className="text-[10px] text-surface-500 mb-2 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Drug-Like</div>
+                <div className="text-white text-xs mb-2 text-center w-full">MW 250–800</div>
+                <div className="text-brand-500 font-bold mb-1 text-center w-full text-[11px]">Vina + XGBoost L1</div>
+                <div className="text-[9px] text-surface-400 text-center leading-relaxed w-full">Corrección estadística ML</div>
               </button>
 
-              {/* Branch 3 */}
-              <button 
+              <button
                 onClick={() => setSelectedOrchestratorNode({
                   title: "Péptidos / Macros",
                   engine: "ColabFold / DiffPep",
                   desc: "Para cadenas de aminoácidos grandes o macromoléculas, los motores de docking tradicionales fallan. El orquestador las desvía hacia modelos híbridos de deep learning estructural para predecir acoplamientos complejos de novo."
                 })}
-                className="flex flex-col p-5 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
+                className="flex flex-col p-4 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
               >
-                <div className="text-[10px] text-surface-500 mb-3 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Péptidos / Macros</div>
-                <div className="text-white text-xs mb-3 text-center w-full">Cadenas AA grandes</div>
-                <div className="text-brand-500 font-bold mb-2 text-center w-full">ColabFold / DiffPep</div>
-                <div className="text-[10px] text-surface-400 text-center leading-relaxed w-full line-clamp-2 group-hover:line-clamp-none">Predicción de estructuras híbridas de novo y acoplamiento</div>
+                <div className="text-[10px] text-surface-500 mb-2 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Péptidos / Macros</div>
+                <div className="text-white text-xs mb-2 text-center w-full">Cadenas AA</div>
+                <div className="text-brand-500 font-bold mb-1 text-center w-full text-[11px]">ColabFold / DiffPep</div>
+                <div className="text-[9px] text-surface-400 text-center leading-relaxed w-full">Deep learning estructural</div>
               </button>
 
-              {/* Branch 4 */}
-              <button 
+              <button
                 onClick={() => setSelectedOrchestratorNode({
                   title: "Metales",
                   engine: "xtb / AutoDock4",
                   desc: "Las metaloproteínas requieren mecánica cuántica. El sistema detecta centros metálicos y parametriza los estados electrónicos usando xTB, resolviendo choques estéricos y geometrías de coordinación que Vina no soporta."
                 })}
-                className="flex flex-col p-5 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
+                className="flex flex-col p-4 border border-surface-700 bg-surface-900 rounded hover:border-brand-500/50 hover:bg-surface-800 transition-all cursor-pointer text-left group"
               >
-                <div className="text-[10px] text-surface-500 mb-3 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Metales</div>
-                <div className="text-white text-xs mb-3 text-center w-full">Centros Metálicos</div>
-                <div className="text-brand-500 font-bold mb-2 text-center w-full">xtb / AutoDock4</div>
-                <div className="text-[10px] text-surface-400 text-center leading-relaxed w-full line-clamp-2 group-hover:line-clamp-none">Parametrización cuántica y alivio estérico localizado</div>
+                <div className="text-[10px] text-surface-500 mb-2 font-bold uppercase tracking-widest border-b border-surface-800 pb-2 text-center w-full group-hover:text-brand-500 transition-colors">Metales</div>
+                <div className="text-white text-xs mb-2 text-center w-full">Centros Metálicos</div>
+                <div className="text-brand-500 font-bold mb-1 text-center w-full text-[11px]">xtb / AutoDock4</div>
+                <div className="text-[9px] text-surface-400 text-center leading-relaxed w-full">Mecánica cuántica + estérica</div>
               </button>
 
             </div>
 
-            <div className="text-surface-600 mb-4 text-center text-[10px] uppercase tracking-widest">↓ Convergencia ↓</div>
+            {/* ── Row 8: Convergence label + arrow ── */}
+            <div className="flex justify-center mb-3">
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-surface-500 uppercase tracking-widest mb-1">↓ Convergencia ↓</span>
+              </div>
+            </div>
 
-            {/* Validation Node */}
-            <div className="w-full px-8 py-4 border border-blue-500 bg-blue-500/10 text-blue-400 font-bold text-center rounded mb-4">
+            {/* ── Row 9: Multidimensional validation ── */}
+            <div className="w-full px-8 py-4 border border-blue-500 bg-blue-500/10 text-blue-400 font-bold text-center rounded mb-3">
               2. Validación Multidimensional L2-L3
               <div className="text-[10px] font-normal text-blue-300/80 mt-2">
                 RTMScore GNN (Topología) + ProLIF (Contactos 3D) + OpenMM
               </div>
             </div>
 
-            <div className="text-surface-600 mb-4">↓</div>
+            {/* ── Row 10: Arrow down ── */}
+            <div className="flex justify-center mb-3">
+              <span className="text-surface-600 text-lg">↓</span>
+            </div>
 
-            {/* Output Node */}
-            <div className="w-full max-w-sm px-6 py-4 border border-emerald-500 bg-emerald-500/10 text-emerald-400 text-center rounded font-bold">
-              💎 Solana Blockchain Certification
+            {/* ── Row 11: Output ── */}
+            <div className="flex justify-center">
+              <div className="w-full max-w-xs px-6 py-4 border border-emerald-500 bg-emerald-500/10 text-emerald-400 text-center rounded font-bold">
+                💎 Solana Blockchain Certification
+              </div>
             </div>
 
           </div>
