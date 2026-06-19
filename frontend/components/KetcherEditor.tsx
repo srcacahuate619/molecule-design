@@ -83,6 +83,11 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
         </button>
         <button
           onClick={() => {
+            // Blur any currently focused element before switching modes
+            // to prevent the virtual keyboard from opening on mobile
+            if (document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur();
+            }
             setKetcherError(null);
             setMode("ketcher");
           }}
@@ -165,7 +170,11 @@ export function KetcherEditor({ onSmilesChange, initialSmiles }: Props) {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onChange={(e) => handleTextChange(e.target.value)}
-              className="flex-1 rounded-lg border border-surface-700 bg-surface-950 px-3 py-1.5 font-mono text-xs text-gray-300 focus:border-brand-500 focus:outline-none"
+              // readOnly on mobile prevents the virtual keyboard from
+              // opening when this field appears alongside the Ketcher canvas.
+              // The user draws on the canvas; this field is read-only feedback.
+              readOnly
+              className="flex-1 cursor-default rounded-lg border border-surface-700 bg-surface-950 px-3 py-1.5 font-mono text-xs text-gray-300 focus:border-brand-500 focus:outline-none select-all"
             />
           </div>
         </div>

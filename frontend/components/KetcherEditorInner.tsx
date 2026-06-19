@@ -57,6 +57,14 @@ export default function KetcherEditorInner({
 
     setReady(true);
 
+    // On mobile, Ketcher internally focuses an input after mounting which
+    // triggers the virtual keyboard. We explicitly blur it away.
+    setTimeout(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    }, 100);
+
     if (initialSmiles) {
       try {
         lastReportedSmiles.current = initialSmiles;
@@ -147,7 +155,7 @@ export default function KetcherEditorInner({
   return (
     <div
       className="ketcher-wrapper rounded-xl border border-surface-700"
-      style={{ height: 550, position: "relative" }}
+      style={{ height: 550, position: "relative", overflow: "hidden", maxWidth: "100%" }}
     >
       <Editor
         staticResourcesUrl=""
