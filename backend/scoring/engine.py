@@ -186,43 +186,46 @@ def calculate_score_breakdown(
     # El score físico es esencialmente el QED ponderado
     physico_score = (adme_score * settings.score_weight_adme) + (druglikeness_score * settings.score_weight_druglikeness)
     
+    # --- [NUEVO] Factor GNN (RTMScore Nivel 2) Directo ---
+    # RTMScore predice pKd/pKi (típicamente entre 4.0 y 10.0).
+    # Centramos la sigmoide en 6.0 (afinidad micromolar). Si el score es 6.0, el factor es 1.0 (neutro).
+    if gnn_score is not None:
+        # Rango sigmoide crudo [0, 1]
+        raw_factor = 1.0 / (1.0 + math.exp(-1.0 * (gnn_score - 6.0)))
+        
+        # Concordance gate: if GNN strongly disagrees with Vina direction, dampen (Bug #5)
+        vina_says_good = affinity_score > 50.0
+        gnn_says_good = gnn_score > 6.0
+        if vina_says_good != gnn_says_good:
+            # Dampen the GNN correction toward neutral [0.85, 1.15]
+            gnn_factor = 0.85 + (raw_factor * 0.30)
+        else:
+            # Full range [0.70, 1.30]
+            gnn_factor = 0.70 + (raw_factor * 0.60)
+    else:
+        gnn_factor = 1.0
+
+    # Ajustamos el affinity_score puramente con el factor GNN
+    adjusted_affinity_score = clamp_score(affinity_score * gnn_factor)
+    
     # Penalizador suavizado: la afinidad aporta su peso, pero también modula la utilidad de las propiedades
     # Si la afinidad es muy baja (no une), las propiedades perfectas no sirven de mucho.
-    # v4: Más estricto. Si affinity_score < 20, el multiplicador cae drásticamente.
-    if affinity_score < 20:
+    # v4: Más estricto. Si adjusted_affinity_score < 20, el multiplicador cae drásticamente.
+    if adjusted_affinity_score < 20:
         # Rango [0.1, 0.5]. Si es 0, las propiedades solo valen un 10%.
-        affinity_multiplier = (affinity_score / 20.0) * 0.4 + 0.1
+        affinity_multiplier = (adjusted_affinity_score / 20.0) * 0.4 + 0.1
     else:
         # Rango [0.5, 1.0].
-        affinity_multiplier = ((affinity_score - 20) / 80.0) * 0.5 + 0.5
+        affinity_multiplier = ((adjusted_affinity_score - 20) / 80.0) * 0.5 + 0.5
     
     if is_control:
         # Si es ligando de control endógeno, ignorar propiedades fisicoquímicas
-        total_score = clamp_score(affinity_score)
+        total_score = clamp_score(adjusted_affinity_score)
         sa_penalty_factor = 1.0
     else:
-        # El score base se multiplica por la especificidad
-        base_score = (affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
+        # El score base se calcula usando el adjusted_affinity_score
+        base_score = (adjusted_affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
         base_score_with_specificity = base_score * specificity_multiplier
-
-        # --- [NUEVO] Factor GNN (RTMScore Nivel 2) Directo ---
-        # RTMScore predice pKd/pKi (típicamente entre 4.0 y 10.0).
-        # Centramos la sigmoide en 6.0 (afinidad micromolar). Si el score es 6.0, el factor es 1.0 (neutro).
-        if gnn_score is not None:
-            # Rango sigmoide crudo [0, 1]
-            raw_factor = 1.0 / (1.0 + math.exp(-1.0 * (gnn_score - 6.0)))
-            
-            # Concordance gate: if GNN strongly disagrees with Vina direction, dampen (Bug #5)
-            vina_says_good = affinity_score > 50.0
-            gnn_says_good = gnn_score > 6.0
-            if vina_says_good != gnn_says_good:
-                # Dampen the GNN correction toward neutral [0.85, 1.15]
-                gnn_factor = 0.85 + (raw_factor * 0.30)
-            else:
-                # Full range [0.70, 1.30]
-                gnn_factor = 0.70 + (raw_factor * 0.60)
-        else:
-            gnn_factor = 1.0
 
         # --- Factor SA (Accesibilidad Sintética) ---
         # Penaliza el total_score si la molécula es difícil/imposible de sintetizar.
@@ -237,7 +240,8 @@ def calculate_score_breakdown(
                 sa_severity=sa_severity,
             )
 
-        total_score = clamp_score(base_score_with_specificity * gnn_factor * sa_factor)
+        # El GNN ya se aplicó a la afinidad, por lo que aquí solo aplicamos SA factor
+        total_score = clamp_score(base_score_with_specificity * sa_factor)
 
     strongest, weakest = _pick_dimensions(
         affinity_score,
