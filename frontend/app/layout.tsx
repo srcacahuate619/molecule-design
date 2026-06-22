@@ -4,6 +4,7 @@ import Script from "next/script";
 import { AuthProvider } from "../lib/auth";
 import { Navigation } from "../components/Navigation";
 import { InterfaceProvider } from "../context/InterfaceContext";
+import { WalletProvider } from "../components/WalletProvider";
 
 export const metadata = {
   title: "MolDesign AI — Diseño Molecular Gamificado y Avanzado",
@@ -26,14 +27,35 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           src="https://3dmol.org/build/3Dmol-min.js"
           strategy="beforeInteractive"
         />
+        {/* GEO Optimization: JSON-LD Schema para buscadores y LLMs */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "MolDesign AI",
+              "applicationCategory": "ScienceApplication",
+              "operatingSystem": "Web",
+              "description": "Plataforma de descubrimiento de fármacos asistida por IA con validación química RDKit, docking AutoDock Vina, rescoring XGBoost y topología GNN RTMScore.",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              }
+            })
+          }}
+        />
       </head>
       <body>
-        <AuthProvider>
-          <InterfaceProvider>
-            <Navigation />
-            <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-          </InterfaceProvider>
-        </AuthProvider>
+        <WalletProvider>
+          <AuthProvider>
+            <InterfaceProvider>
+              <Navigation />
+              <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+            </InterfaceProvider>
+          </AuthProvider>
+        </WalletProvider>
       </body>
     </html>
   );

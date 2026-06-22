@@ -1,7 +1,7 @@
 # MolDesign MVP Roadmap
 
 > Fecha base: 2026-04-04  
-> **Última actualización: 2026-05-13**  
+> **Última actualización: 2026-06-15**  
 > Objetivo: terminar un **MVP científico funcional** sin desviarnos hacia features secundarias.
 
 ---
@@ -992,3 +992,138 @@ Este apartado traza la estrategia de expansión tecnológica de MolDesign hacia 
 *Requieren servidores Enterprise o Clusters GPU (A100/H100) dedicados.*
 
 - **NeuralPLexer (Simulación de Encaje Inducido):** El modelo "State of the Art" que **deforma tridimensionalmente** el bolsillo de la proteína en función del fármaco aproximándose (Induced Fit), sin los brutales tiempos de la Dinámica Molecular clásica (GROMACS). Ideal para una eventual subscripción "Premium".
+
+---
+
+## 18. Fase 9.0: Visor de Reportes en Plataforma (PDFSlick) 📄
+
+**Prioridad: PRÓXIMA A IMPLEMENTAR**  
+**Categoría:** UX Premium / Experiencia de Producto
+
+### Motivación
+
+El flujo actual fuerza al usuario a descargar el certificado PDF al sistema operativo para poder verlo. Esto introduce fricción innecesaria, especialmente en reuniones con clientes o accesos desde tablets. La integración de PDFSlick elimina la descarga obligatoria y añade una sección de historial de reportes completamente integrada en Moldex.
+
+### Hitos de Implementación
+
+**Backend:**
+- [ ] Nuevo endpoint `GET /blockchain/certificate/{molecule_id}/preview` con `Content-Disposition: inline` (el endpoint de descarga existente no se toca)
+- [ ] Soporte de CORS headers en la ruta de preview para requests cross-origin del frontend
+- [ ] *(Opcional v2)* Subida del PDF a MinIO al momento de certificar + campo `certificate_pdf_key` en tabla `molecules`
+
+**Frontend:**
+- [ ] Instalación de `@pdfslick/react` y configuración del PDF.js worker en `public/`
+- [ ] Ajuste de `next.config.js` para alias de canvas (evitar errores SSR)
+- [ ] Componente `PDFReportViewer.tsx` — visor embebido con toolbar premium (zoom, páginas, fullscreen, descarga)
+- [ ] Botón **"👁 Ver Reporte"** en `evaluation/page.tsx` — abre modal inline sin navegar
+- [ ] Nueva vista `REPORTS` en `moldex/page.tsx` (extiende el estado `'LIST' | '3D' | 'INFO'` a `'LIST' | '3D' | 'INFO' | 'REPORTS'`)
+- [ ] Componente `MoldexReportsPanel.tsx` — lista izquierda + visor derecho, layout split-panel
+- [ ] Nueva función `getCertificatePreviewUrl(moleculeId)` en `lib/api.ts`
+
+### Archivos Involucrados
+
+| Archivo | Acción |
+|---|---|
+| `backend/api/routers/blockchain.py` | MODIFY — nuevo endpoint `/preview` |
+| `frontend/next.config.js` | MODIFY — alias canvas |
+| `frontend/components/PDFReportViewer.tsx` | NEW |
+| `frontend/components/MoldexReportsPanel.tsx` | NEW |
+| `frontend/app/moldex/page.tsx` | MODIFY — nueva vista REPORTS |
+| `frontend/app/evaluation/page.tsx` | MODIFY — botón Ver Reporte |
+| `frontend/lib/api.ts` | MODIFY — `getCertificatePreviewUrl()` |
+
+### Criterio de Aceptación
+- El usuario puede ver el certificado PDF completo sin descargarlo
+- La sección Reportes en Moldex muestra todas las moléculas certificadas con visor embebido
+- El botón de descarga original sigue funcionando sin cambios
+
+### Preguntas Abiertas (resolver antes de implementar)
+1. **Autenticación del preview:** ¿Token en query param (rápido) o URLs presignadas de MinIO con TTL 60s (seguro)?
+2. **Sección Reportes:** ¿Mostrar solo moléculas certificadas, o todas con indicador de disponibilidad?
+
+---
+
+## 19. Fase 10.0: Scoring Científico Extendido — Viabilidad Real 🔬
+
+**Prioridad: ROADMAP (después de Fase 9.0)**  
+**Categoría:** Rigor Científico / Realismo de Predicción
+
+### Motivación
+
+El sistema de scoring actual puede inflar el puntaje de moléculas que son físicamente inviables como fármacos. Ejemplo documentado: `CC(Oc1c(C(P)=P)cccc1)=P` (fosfina reactiva, TPSA=9.23 Å²) obtuvo score 70/100 a pesar de ser insintetizable y no poder sobrevivir en sangre. Esta fase añade tres capas de penalización científicamente justificadas.
+
+### Capa 1 — Alertas Estructurales (PAINS)
+
+Detecta grupos funcionales reactivos o pan-assay interference usando `FilterCatalog` de RDKit (catálogos PAINS_A/B/C, BMS, NIH, CHEMBL).
+
+- [ ] Nueva función `_calc_structural_alerts(mol)` en `chem/properties.py`
+- [ ] Campos `structural_alerts: list[str]` y `structural_alert_severity: str` en `PhysicochemicalProperties`
+- [ ] Factor multiplicativo `pains_factor` en `scoring/engine.py` (severe → cap máx 50pts)
+- [ ] Columnas `structural_alerts jsonb`, `structural_alert_severity varchar(20)` en `evaluation_results`
+
+| Severidad | Factor | Cap máximo |
+|---|---|---|
+| none | 1.00 | 100 |
+| warning | 0.85 | 85 |
+| moderate | 0.60 | 65 |
+| severe | 0.35 | 50 |
+
+### Capa 2 — Drug-Space Gate
+
+Verifica que la molécula cae dentro del espacio fisicoquímico de fármacos aprobados. Penaliza TPSA < 10 Å², átomos no estándar (P elemental, metales), y combinaciones de violaciones extremas.
+
+- [ ] Nueva función `_calc_drug_space_profile(mol, properties)` en `chem/properties.py`
+- [ ] Factor `drug_space_factor` en `scoring/engine.py`
+- [ ] Columnas `drug_space_score double precision`, `drug_space_violations jsonb` en `evaluation_results`
+
+### Capa 3 — Perfil de Viabilidad en Sangre (`blood_viability`)
+
+Nueva dimensión compuesta que responde: *"¿Puede esta molécula llegar a su objetivo in vivo?"*
+
+**Sub-dimensiones:**
+- **Solubilidad acuosa** (ESOL, Delaney 2004): LogS estimado
+- **Unión a proteínas plasmáticas (PPB)**: predicción por reglas (logP + ionización + MW)
+- **Reactividad en sangre**: SMARTS para fosfinas libres, acyl halides, Michael acceptors, epóxidos, aldehídos
+- **Estabilidad metabólica**: estimación de sustratos CYP (CYP3A4, 2D6, 2C9) por reglas
+- **Permeabilidad BBB**: modelo BOILED-Egg simplificado (TPSA + logP)
+
+**Score compuesto:**
+```
+blood_viability = solubility×0.25 + ppb×0.20 + blood_stability×0.30 + metabolic×0.15 + bbb×0.10
+```
+
+- [ ] Nuevo módulo `chem/blood_viability.py` con `BloodViabilityProfile` dataclass
+- [ ] Campos `blood_viability_score`, `blood_viability_label`, `blood_viability_detail` en `PhysicochemicalProperties`
+- [ ] Factor `blood_factor` en `scoring/engine.py`
+- [ ] Columnas correspondientes en `evaluation_results`
+
+### Fórmula Final del `total_score` post-Fase 10.0
+
+```
+total_score = clamp(
+    base_score_with_specificity
+    × gnn_factor            ✅ ya existe
+    × sa_factor             ✅ ya implementado (Junio 2026)
+    × pains_factor          🔲 Capa 1
+    × drug_space_factor     🔲 Capa 2
+    × blood_factor          🔲 Capa 3
+)
+```
+
+### Impacto Verificable
+
+| Molécula | Score actual | Score esperado post-Fase 10 |
+|---|---|---|
+| `CC(Oc1c(C(P)=P)cccc1)=P` (fosfina reactiva) | ~70 | **10–20** |
+| Aspirina (control sano) | sin cambio | **sin cambio** ✅ |
+| Ibuprofen (control sano) | sin cambio | **sin cambio** ✅ |
+
+### Preguntas Abiertas (resolver antes de implementar)
+1. ¿BBB adaptativa por target (oncológicos no necesitan cruzar BBB) o uniforme para todos?
+2. ¿PPB > 99% es penalización directa al score o solo advertencia informativa (como warfarina)?
+3. ¿El Blood Viability Profile aparece como tarjeta visual nueva en el resultado de evaluación?
+
+### Criterio de Aceptación
+- Molécula con grupos reactivos conocidos (PAINS severe) nunca supera 50/100
+- Molécula con TPSA < 10 Å² no puede superar 65/100
+- Fármacos aprobados (aspirina, ibuprofeno, paracetamol) no pierden más de 5 puntos vs el score actual

@@ -101,7 +101,7 @@ async def _run_full_evaluation_async(
             # --- [NUEVO] Filtro SA Score (Accesibilidad Sintética) ---
             # Si la molécula es imposible de fabricar, abortamos para evitar
             # falsos positivos científicos.
-            if properties.sa_score > 6.0:
+            if properties.sa_score > 7.0:
                 log.warning({
                     "event": "synthetic_infeasibility_abort",
                     "smiles": smiles,
@@ -110,7 +110,7 @@ async def _run_full_evaluation_async(
                 await repository.upsert_evaluation_result(
                     molecule_id=molecule.id,
                     properties=properties,
-                    error_message=f"Inviabilidad Sintetica: SA Score {properties.sa_score} > 6.0. Esta molecula es probablemente imposible de sintetizar en laboratorio.",
+                    error_message=f"Inviabilidad Sintetica: SA Score {properties.sa_score} > 7.0. Esta molecula es probablemente imposible de sintetizar en laboratorio.",
                     is_control=is_control,
                     celery_task_id=task_id,
                 )

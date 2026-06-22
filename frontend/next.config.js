@@ -42,6 +42,12 @@ const nextConfig = {
       canvas: false,
     };
 
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "pdfjs-dist/build/pdf.worker.mjs": false,
+      "pdfjs-dist/build/pdf.worker.min.mjs": false,
+    };
+
     return config;
   },
 };

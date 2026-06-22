@@ -3,8 +3,10 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AdvancedMolstarViewer from "./AdvancedMolstarViewer";
-import { Search, Database, Box, Info, BarChart3, Binary, ShieldCheck, AlertTriangle, FileDown, Layers, Crosshair, ChevronRight } from "lucide-react";
+import { Search, Database, Box, Info, BarChart3, Binary, ShieldCheck, AlertTriangle, FileDown, Layers, Crosshair, ChevronRight, Eye } from "lucide-react";
 import { API_URL } from "../../../lib/config";
+import dynamic from "next/dynamic";
+const PDFReportViewer = dynamic(() => import("../../PDFReportViewer").then(mod => mod.PDFReportViewer), { ssr: false });
 
 type Props = {
   molecules: any[];
@@ -42,6 +44,7 @@ export default function ProMoldex({
   const [activeView, setActiveView] = useState<"LIST" | "3D" | "INFO">("3D");
   const [activeTab, setActiveTab] = useState<"THERMO" | "GRID" | "ALERTS">("THERMO");
   const [sortMode, setSortMode] = useState<"DATE_DESC" | "SCORE_DESC" | "SCORE_ASC">("DATE_DESC");
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
 
   // Filtrado de moléculas
   const filteredMolecules = useMemo(() => {
@@ -441,13 +444,21 @@ export default function ProMoldex({
                   >
                     <FileDown size={14} /> Descargar Complejo 3D (PDB)
                   </a>
-                  <a
-                    href={`${API_URL}/blockchain/certificate/${selectedMolecule.id}`}
-                    download
-                    className="w-full text-[10px] font-black text-slate-400 hover:text-white bg-[#080d19] border border-white/5 py-3 rounded-xl transition-all uppercase tracking-widest flex items-center justify-center gap-2"
-                  >
-                    <Binary size={14} /> Descargar Certificado Científico (PDF)
-                  </a>
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => setShowPdfViewer(true)}
+                      className="flex-1 text-[10px] font-black text-indigo-300 bg-[#080d19] border border-indigo-500/30 hover:bg-indigo-900/20 py-3 rounded-xl transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                      <Eye size={14} /> Ver Reporte
+                    </button>
+                    <a
+                      href={`${API_URL}/blockchain/certificate/${selectedMolecule.id}`}
+                      download
+                      className="flex-1 text-[10px] font-black text-slate-400 hover:text-white bg-[#080d19] border border-white/5 py-3 rounded-xl transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                      <Binary size={14} /> Descargar PDF
+                    </a>
+                  </div>
                 </div>
               </section>
             </motion.div>
@@ -459,6 +470,41 @@ export default function ProMoldex({
           )}
         </AnimatePresence>
       </aside>
+
+      {/* Modal Visor PDF */}
+      {showPdfViewer && selectedId && (
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+          onClick={() => setShowPdfViewer(false)}
+        >
+          <div 
+            className="bg-[#0f1015] border border-surface-800 rounded-2xl w-full max-w-5xl h-[85vh] shadow-2xl relative animate-in zoom-in-95 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-surface-800 bg-surface-950 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📄</span>
+                <h3 className="text-lg font-bold text-white tracking-wide">Reporte Científico</h3>
+              </div>
+              <button 
+                onClick={() => setShowPdfViewer(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-800 text-surface-400 hover:text-white hover:bg-surface-700 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden p-4">
+              <PDFReportViewer 
+                moleculeId={selectedId} 
+                isCertified={!!selectedMolecule?.blockchain?.tx_signature}
+                onCertify={handleCertify}
+                isCertifying={certifying}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

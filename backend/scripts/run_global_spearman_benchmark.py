@@ -147,19 +147,24 @@ async def monitor_jobs(submitted_jobs, run_id):
                     
                     # Consultar scores adicionales de la DB
                     spec_score = 0.0
+                    gnn_score = 0.0
                     if eval_res_id:
                         try:
                             async for db in get_db():
-                                q = text("SELECT specificity_score FROM evaluation_results WHERE id = :eval_id")
+                                q = text("SELECT specificity_score, gnn_score FROM evaluation_results WHERE id = :eval_id")
                                 row = await db.execute(q, {"eval_id": UUID(eval_res_id)})
                                 result_row = row.first()
-                                if result_row and result_row[0] is not None:
-                                    spec_score = float(result_row[0])
+                                if result_row:
+                                    if result_row[0] is not None:
+                                        spec_score = float(result_row[0])
+                                    if result_row[1] is not None:
+                                        gnn_score = float(result_row[1])
                                 break
                         except Exception as db_err:
                             print(f"⚠️ Error leyendo score de DB: {str(db_err)}")
                             
                     job["specificity_score"] = spec_score
+                    job["gnn_score"] = gnn_score
                     
                     # Persistir en la tabla de benchmarks
                     try:
@@ -224,6 +229,9 @@ async def run_statistics(run_id, completed_jobs):
         by_target[tid].append(job)
         
     for tid in TARGETS:
+        # Exclude APO targets from Spearman validation (Bug #6)
+        if tid in ["2W96", "6B3J"]:
+            continue
         if tid not in by_target:
             continue
         jobs = by_target[tid]
@@ -237,13 +245,13 @@ async def run_statistics(run_id, completed_jobs):
         # Convertimos kcal/mol a una métrica de afinidad positiva multiplicando por -1
         y_pred_aff = [-j["predicted_affinity"] for j in jobs]
         
-        # Extraemos el Total Score (Que incluye la GNN)
-        y_pred_score = [j["predicted_score"] for j in jobs]
+        # Extraemos el GNN Score directamente (Bug #1 & #2)
+        y_pred_score = [j.get("gnn_score", 0.0) for j in jobs]
         
         # Calcular Spearman (XGBoost Afinidad)
         rho, p_value = scipy.stats.spearmanr(y_pred_aff, y_real)
         
-        # Calcular Spearman (GNN Total Score)
+        # Calcular Spearman (GNN Score)
         rho_gnn, p_value_gnn = scipy.stats.spearmanr(y_pred_score, y_real)
         
         # Calcular MAE (Solo para Afinidad)
@@ -323,7 +331,7 @@ def print_markdown_report(run_id, summary_data):
     report_lines.append(f"El presente documento certifica la precisión biofísica del motor de MolDesign v6.1 en una validación cruzada ciega utilizando compuestos evaluados experimentalmente **post-2022** provenientes de ChEMBL y BindingDB.\n")
     report_lines.append(f"---\n")
     report_lines.append(f"## 📊 Tabla Resumen de Desempeño Biofísico\n")
-    report_lines.append("| Target | Nombre | N | Spearman (Afinidad XGBoost) | Spearman (Total Score GNN) | MAE (pKi) | Estado |")
+    report_lines.append("| Target | Nombre | N | Spearman (Afinidad XGBoost) | Spearman (GNN Score) | MAE (pKi) | Estado |")
     report_lines.append("|--------|--------|---|-----------------------------|----------------------------|-----------|--------|")
     
     for row in summary_data:

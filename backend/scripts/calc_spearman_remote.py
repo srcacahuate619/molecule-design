@@ -26,6 +26,9 @@ async def calc_stats():
     
     async for db in get_db():
         for pdb_id, name in TARGETS.items():
+            # Exclude APO targets from Spearman validation (Bug #6)
+            if pdb_id in ["2W96", "6B3J"]:
+                continue
             q = text("""
                 SELECT experimental_value, predicted_affinity, predicted_score
                 FROM benchmark_results 

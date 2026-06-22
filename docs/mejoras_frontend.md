@@ -33,7 +33,14 @@ Se ha verificado la operatividad de `medgemma1.5` en el servidor local (Ryzen 3)
 - **Estado**: Operativo en contenedor `ollama-engine`.
 - **Plan**: Integrar como fallback local para la generación de reportes científicos (Modo Soberano/Offline).
 
+## 6. Generative Engine Optimization (GEO) y Arquitectura SEO-IA 🌐🤖 [IMPLEMENTADO]
+Se adaptó el frontend para responder a las nuevas heurísticas de búsqueda mediante inteligencia artificial (ChatGPT, Perplexity, Claude, Google AI Overviews), asegurando que MolDesign sea citable y descubrible por crawlers de LLMs.
+- **Rastreadores Permitidos (`robots.txt`)**: Se abrió acceso explícito a bots de IA (`GPTBot`, `ClaudeBot`, `PerplexityBot`, `GoogleOther`, `anthropic-ai`).
+- **Contexto LLM (`llms.txt`)**: Se implementó el archivo estándar `/llms.txt` con un resumen técnico y factual de la plataforma y el pipeline de 3 niveles, permitiendo asimilación instantánea del dominio por agentes IA.
+- **Schema Markup Semántico**: Se inyectó JSON-LD (`SoftwareApplication`) en `layout.tsx` para definir estructuradamente a MolDesign como herramienta científica de Drug Discovery.
+- **Bloques de Alta Citabilidad**: Se añadió un párrafo factual continuo en la base de `page.tsx`, diseñado específicamente para ajustarse al intervalo de longitud preferido por LLMs para extracción y citación sin alterar la estética visual de la landing page.
+
 ---
-*Fecha de actualización: 2026-05-13*
-*Versión: v4.0 (Spearman Active)*
+*Fecha de actualización: 2026-06-19*
+*Versión: v6.9 (GEO Enabled)*
 *Estado: Producción / Sincronizado*

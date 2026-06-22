@@ -7,9 +7,12 @@ import { API_URL } from "../../lib/config";
 import { MoleculeViewer3D } from "../../components/MoleculeViewer3D";
 import MoldexCard from "../../components/MoldexCard";
 import MolecularComparison from "../../components/MolecularComparison";
-import { Search, ShieldCheck, Activity, Info, BarChart3, ChevronRight, Binary, Database, Box, FlaskConical, AlertCircle } from "lucide-react";
+
+import { Search, ShieldCheck, Activity, Info, BarChart3, ChevronRight, Binary, Database, Box, FlaskConical, AlertCircle, Eye } from "lucide-react";
 import { useInterface } from "../../context/InterfaceContext";
 import dynamic from "next/dynamic";
+
+const PDFReportViewer = dynamic(() => import("../../components/PDFReportViewer").then(mod => mod.PDFReportViewer), { ssr: false });
 
 const ProMoldex = dynamic(() => import("../../components/interfaces/pro/ProMoldex"), {
   ssr: false,
@@ -48,6 +51,7 @@ export default function MoldexPage() {
   const [activeView, setActiveView] = useState<'LIST' | '3D' | 'INFO'>('LIST');
   const [windowHeight, setWindowHeight] = useState(1000);
   const [certifying, setCertifying] = useState(false);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
 
   const handleCertify = async () => {
     if (!selectedId) return;
@@ -579,13 +583,21 @@ export default function MoldexPage() {
                     </>
                   )}
                   
-                  <a 
-                    href={`${API_URL}/blockchain/certificate/${selectedId}`}
-                    download
-                    className="w-full text-[10px] font-black text-slate-400 bg-slate-800/50 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
-                  >
-                    DESCARGAR REPORTE CIENTÍFICO
-                  </a>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setShowPdfViewer(true)}
+                      className="flex-1 text-[10px] font-black text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 py-3 rounded-2xl hover:bg-indigo-500/30 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                      <Eye size={14} /> VER REPORTE
+                    </button>
+                    <a 
+                      href={`${API_URL}/blockchain/certificate/${selectedId}`}
+                      download
+                      className="flex-1 text-[10px] font-black text-slate-400 bg-slate-800/50 py-3 rounded-2xl hover:bg-slate-800 transition-all uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                      DESCARGAR PDF
+                    </a>
+                  </div>
                   
                   <a 
                     href={`${API_URL}/evaluation/files/complex/${selectedId}`}
@@ -609,6 +621,41 @@ export default function MoldexPage() {
           molB={molecules.find(m => m.id === selectionForCompare[1])}
           onClose={() => { setCompareMode(false); setSelectionForCompare([]); }}
         />
+      )}
+
+      {/* Modal Visor PDF */}
+      {showPdfViewer && selectedId && (
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+          onClick={() => setShowPdfViewer(false)}
+        >
+          <div 
+            className="bg-[#0f1015] border border-surface-800 rounded-2xl w-full max-w-5xl h-[85vh] shadow-2xl relative animate-in zoom-in-95 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-surface-800 bg-surface-950 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📄</span>
+                <h3 className="text-lg font-bold text-white tracking-wide">Reporte Científico</h3>
+              </div>
+              <button 
+                onClick={() => setShowPdfViewer(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-800 text-surface-400 hover:text-white hover:bg-surface-700 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden p-4">
+              <PDFReportViewer 
+                moleculeId={selectedId} 
+                isCertified={!!selectedMolecule?.blockchain?.tx_signature}
+                onCertify={handleCertify}
+                isCertifying={certifying}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

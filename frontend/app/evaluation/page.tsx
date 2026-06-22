@@ -11,6 +11,7 @@ import { ReproducibilityInfo } from "../../components/ReproducibilityInfo";
 import { ScoreCard } from "../../components/ScoreCard";
 import { ScientificWarnings } from "../../components/ScientificWarnings";
 import { MolecularInsight } from "../../components/MolecularInsight";
+
 import { getAiReport, getJobStatus, getPoseFile, getProteinFile, getSuggestions, submitEvaluation, validateSmiles, certifyMolecule, downloadCertificate, saveMolecule, getLimitStatus, getTargets, Target } from "../../lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../lib/types";
 import { useAuth } from "../../lib/auth";
@@ -18,6 +19,8 @@ import { useRouter } from "next/navigation";
 import { API_URL } from "../../lib/config";
 import { useInterface } from "../../context/InterfaceContext";
 import dynamic from "next/dynamic";
+
+const PDFReportViewer = dynamic(() => import("../../components/PDFReportViewer").then(mod => mod.PDFReportViewer), { ssr: false });
 
 const ProEvaluation = dynamic(() => import("../../components/interfaces/pro/ProEvaluation"), {
   ssr: false,
@@ -134,8 +137,6 @@ export default function EvaluationPage() {
   const [error, setError] = useState<string | null>(null);
   const [isControl, setIsControl] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
-  const [showWalletInput, setShowWalletInput] = useState(false);
-  const [customWallet, setCustomWallet] = useState("");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // --- 3D viewer state ---
@@ -152,6 +153,7 @@ export default function EvaluationPage() {
   const [loadingAiReport, setLoadingAiReport] = useState(false);
 
   // --- Derived State ---
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
   const isTerminal = status?.status === "SUCCESS" || status?.status === "FAILURE";
   const canEvaluate = !!validation?.is_valid && target.length >= 4;
 
@@ -209,34 +211,18 @@ export default function EvaluationPage() {
     }
   }, [status]);
 
-  const handleCertify = useCallback(async (walletOverride?: string) => {
+  const handleCertify = useCallback(async () => {
     if (!status?.result?.molecule_id) return;
 
-    if (!showWalletInput) {
-      setShowWalletInput(true);
-      return;
-    }
-
-    const wallet = customWallet.trim().length >= 32 ? customWallet.trim() : undefined;
-
-    try {
-      setBusy(true);
-      const res = await certifyMolecule(status.result.molecule_id, wallet);
-      setStatus((prev) => {
-        if (!prev || !prev.result) return prev;
-        return {
-          ...prev,
-          result: { ...prev.result, blockchain_tx_id: res.signature },
-        };
-      });
-      setIsSaved(true);
-      setShowWalletInput(false);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }, [status, showWalletInput, customWallet]);
+    setStatus((prev) => {
+      if (!prev || !prev.result) return prev;
+      return {
+        ...prev,
+        result: { ...prev.result, blockchain_tx_id: "certified_via_modal" },
+      };
+    });
+    setIsSaved(true);
+  }, [status]);
 
   const handleDownloadCertificate = useCallback(async () => {
     if (!status?.result?.molecule_id) return;
@@ -562,10 +548,6 @@ export default function EvaluationPage() {
         handleUseSuggestion={handleUseSuggestion}
         startPolling={startPolling}
         stopPolling={stopPolling}
-        showWalletInput={showWalletInput}
-        setShowWalletInput={setShowWalletInput}
-        customWallet={customWallet}
-        setCustomWallet={setCustomWallet}
       />
     );
   }
@@ -1147,6 +1129,7 @@ export default function EvaluationPage() {
               isSaved={isSaved}
               solanaSignature={status.result.blockchain_tx_id}
               onDownloadCertificate={handleDownloadCertificate}
+              onViewCertificate={() => setShowPdfViewer(true)}
               onDownloadComplex={handleDownloadComplex}
               isControl={status.result.is_control}
               saScore={status.result.sa_score}
@@ -1308,6 +1291,41 @@ export default function EvaluationPage() {
               >
                 Entendido
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Visor PDF */}
+      {showPdfViewer && status?.result?.molecule_id && (
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+          onClick={() => setShowPdfViewer(false)}
+        >
+          <div 
+            className="bg-[#0f1015] border border-surface-800 rounded-2xl w-full max-w-5xl h-[85vh] shadow-2xl relative animate-in zoom-in-95 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-surface-800 bg-surface-950 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📄</span>
+                <h3 className="text-lg font-bold text-white tracking-wide">Reporte Científico</h3>
+              </div>
+              <button 
+                onClick={() => setShowPdfViewer(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-800 text-surface-400 hover:text-white hover:bg-surface-700 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden p-4">
+              <PDFReportViewer 
+                moleculeId={status.result.molecule_id} 
+                isCertified={!!status.result.blockchain_tx_id}
+                onCertify={user ? handleCertify : undefined}
+                isCertifying={busy}
+              />
             </div>
           </div>
         </div>

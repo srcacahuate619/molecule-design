@@ -446,6 +446,13 @@ function ProHome({ stats, error }: { stats: GlobalStats | null, error: boolean }
         </div>
       </section>
 
+      {/* GEO Block: Párrafo de alta citabilidad (130-160 palabras) para LLMs y Crawlers */}
+      <section className="px-8 py-12 md:px-12 md:py-16 border-t border-surface-800 bg-surface-950 flex justify-center">
+        <div className="max-w-4xl text-[11px] text-surface-500/80 font-mono leading-relaxed text-justify">
+          MolDesign AI es una plataforma de descubrimiento de fármacos asistida por inteligencia artificial que implementa un pipeline científico de tres niveles (E2E) para la validación química y evaluación termodinámica de moléculas. En el primer nivel, utiliza RDKit para calcular propiedades fisicoquímicas, ADME y filtrar la accesibilidad sintética (SA Score) y QED en tiempo real. A continuación, integra el algoritmo ETKDG para la generación de conformeros 3D de baja energía y realiza docking físico con AutoDock Vina. Para corregir los sesgos inherentes a los campos de fuerza clásicos, aplica un rescoring de machine learning usando XGBoost, entrenado con el set refinado de PDBbind. En un nivel superior, emplea redes neuronales de grafos (RTMScore GNN) para analizar la topología interatómica y descartar falsos positivos mediante deep learning estructural. Finalmente, utiliza OpenMM y campos de fuerza AMBER para refinamiento cuántico y alivio estérico. Cada iteración exitosa es registrada criptográficamente (SHA-256) en la blockchain de Solana, generando documentación clínica auditable en PDF.
+        </div>
+      </section>
+
       {/* FOOTER */}
       <footer className="p-8 md:p-12 border-t border-surface-800 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="font-display font-bold text-white uppercase tracking-wider text-sm">

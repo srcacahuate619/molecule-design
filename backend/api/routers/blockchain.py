@@ -134,6 +134,93 @@ async def certify_molecule(
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
+@router.get("/certify/{molecule_id}/prepare")
+async def prepare_certification(
+    molecule_id: uuid.UUID,
+    user_wallet: str,
+    current_user: UserORM = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Prepares the memo string for a client-side Web3 certification.
+    """
+    stmt = select(MoleculeORM).options(selectinload(MoleculeORM.target)).where(MoleculeORM.id == molecule_id)
+    mol = (await db.execute(stmt)).scalar_one_or_none()
+    if not mol:
+        raise HTTPException(status_code=404, detail="Molécula no encontrada")
+    
+    if mol.user_id and mol.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso")
+        
+    evaluation = await db.scalar(select(EvaluationResultORM).where(EvaluationResultORM.molecule_id == molecule_id))
+    if not evaluation:
+        raise HTTPException(status_code=400, detail="Molécula no evaluada")
+        
+    if evaluation.blockchain_tx_id:
+        return {"already_certified": True, "signature": evaluation.blockchain_tx_id}
+
+    timestamp_iso = datetime.utcnow().isoformat()
+    total_score = evaluation.total_score or 0.0
+    target_pdb_id = mol.target.pdb_id if mol.target else "7E2Y"
+    
+    memo = f"MolDesign-CC0|{mol.smiles_hash}|{total_score:.2f}|{target_pdb_id}|{timestamp_iso}|{user_wallet}"
+    
+    return {
+        "already_certified": False,
+        "memo": memo
+    }
+
+class LinkRequest(BaseModel):
+    molecule_id: uuid.UUID
+    signature: str
+
+@router.post("/certify/link")
+async def link_certification(
+    request: LinkRequest,
+    current_user: UserORM = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Verifies a client-signed transaction and links it to the molecule.
+    """
+    from services.blockchain.certifier import certifier
+    
+    stmt = select(MoleculeORM).where(MoleculeORM.id == request.molecule_id)
+    mol = (await db.execute(stmt)).scalar_one_or_none()
+    if not mol:
+        raise HTTPException(status_code=404, detail="Molécula no encontrada")
+
+    # 1. Verify transaction on blockchain
+    record = await certifier.verify_certification(request.signature)
+    if not record:
+        raise HTTPException(status_code=400, detail="Firma inválida o no encontrada en la blockchain")
+        
+    # 2. Ensure the memo matches the molecule's smiles hash
+    if record.smiles_hash != mol.smiles_hash:
+        raise HTTPException(status_code=400, detail="La transacción no corresponde a esta molécula")
+        
+    # 3. Link globally
+    stmt_subquery = (
+        select(MoleculeORM.id)
+        .where(MoleculeORM.smiles_hash == mol.smiles_hash)
+        .where(MoleculeORM.target_id == mol.target_id)
+    )
+    stmt_update = (
+        update(EvaluationResultORM)
+        .where(EvaluationResultORM.molecule_id.in_(stmt_subquery))
+        .values(blockchain_tx_id=request.signature)
+    )
+    await db.execute(stmt_update)
+    
+    mol.is_saved = True
+    if mol.user_id is None:
+        mol.user_id = current_user.id
+        
+    await db.commit()
+    
+    return {"success": True, "signature": request.signature}
+
+
 @router.get("/verify/{signature}")
 async def verify_certification(signature: str):
     """
@@ -188,3 +275,40 @@ async def get_certificate(molecule_id: uuid.UUID, db: AsyncSession = Depends(get
         media_type="application/pdf", 
         headers={"Content-Disposition": f"attachment; filename=MolDesign_Certificate.pdf"}
     )
+
+
+@router.get("/certificate/{molecule_id}/preview")
+async def get_certificate_preview(molecule_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """
+    Generates and returns a PDF certificate inline for the viewer.
+    """
+    stmt = select(MoleculeORM).options(selectinload(MoleculeORM.target)).where(MoleculeORM.id == molecule_id)
+    result = await db.execute(stmt)
+    mol = result.scalar_one_or_none()
+    
+    if not mol:
+        raise HTTPException(status_code=404, detail="Molécula no encontrada")
+        
+    evaluation = await db.scalar(
+        select(EvaluationResultORM).where(EvaluationResultORM.molecule_id == molecule_id)
+    )
+    if not evaluation:
+        raise HTTPException(status_code=400, detail="La molécula no ha sido evaluada")
+        
+    if mol.target and not mol.target.description:
+        description = await fetch_and_translate_target_info(mol.target.pdb_id)
+        mol.target.description = description
+        await db.commit()
+        await db.refresh(mol)
+        
+    target_name = mol.target.name if mol.target else "7E2Y (5-HT1A)"
+    pdf_buf = generate_certificate_pdf(mol, evaluation, target_name)
+    
+    return StreamingResponse(
+        pdf_buf, 
+        media_type="application/pdf", 
+        headers={
+            "Content-Disposition": f"inline; filename=MolDesign_Certificate_{str(molecule_id)[:8]}.pdf",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )

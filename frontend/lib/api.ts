@@ -341,6 +341,28 @@ export async function certifyMolecule(
   });
 }
 
+export async function prepareCertification(
+  moleculeId: string,
+  userWallet: string
+): Promise<{ already_certified: boolean; signature?: string; memo?: string }> {
+  return request<{ already_certified: boolean; signature?: string; memo?: string }>(
+    `/blockchain/certify/${moleculeId}/prepare?user_wallet=${encodeURIComponent(userWallet)}`
+  );
+}
+
+export async function linkCertification(
+  moleculeId: string,
+  signature: string
+): Promise<{ success: boolean; signature: string }> {
+  return request<{ success: boolean; signature: string }>("/blockchain/certify/link", {
+    method: "POST",
+    body: JSON.stringify({
+      molecule_id: moleculeId,
+      signature,
+    }),
+  });
+}
+
 export async function downloadCertificate(moleculeId: string): Promise<void> {
   const headers = await getAuthHeaders();
   const url = `${API_URL}/blockchain/certificate/${moleculeId}`;
@@ -366,6 +388,26 @@ export async function downloadCertificate(moleculeId: string): Promise<void> {
   a.click();
   a.remove();
   window.URL.revokeObjectURL(downloadUrl);
+}
+
+export async function fetchCertificateBlobUrl(moleculeId: string): Promise<string> {
+  const headers = await getAuthHeaders();
+  const url = `${API_URL}/blockchain/certificate/${moleculeId}/preview`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+      ...headers
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo cargar la vista previa del certificado");
+  }
+
+  const blob = await response.blob();
+  return window.URL.createObjectURL(blob);
 }
 
 export async function getGlobalStats(): Promise<GlobalStats> {

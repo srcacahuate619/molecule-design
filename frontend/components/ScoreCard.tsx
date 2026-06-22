@@ -57,6 +57,7 @@ type ScoreCardProps = {
   isSaved?: boolean;
   solanaSignature?: string | null;
   onDownloadCertificate?: () => void;
+  onViewCertificate?: () => void;
   onDownloadComplex?: () => void;
   isControl?: boolean;
   saScore?: number | null;
@@ -82,6 +83,7 @@ export function ScoreCard({
   isSaved = false,
   solanaSignature,
   onDownloadCertificate,
+  onViewCertificate,
   onDownloadComplex,
   isControl = false,
   saScore,
@@ -223,12 +225,23 @@ export function ScoreCard({
             )}
 
             {onDownloadCertificate && (
-              <button
-                onClick={onDownloadCertificate}
-                className="w-full flex items-center justify-center gap-2 rounded-lg border border-brand-500/30 bg-brand-500/10 text-brand-400 py-3 px-4 font-bold text-sm tracking-wide transition-all hover:bg-brand-500/20 active:scale-[0.98]"
-              >
-                📥 {solanaSignature ? "Descargar Certificado PDF (On-Chain)" : "Descargar Reporte Científico (PDF)"}
-              </button>
+              <div className="flex gap-2 w-full mt-2">
+                {onViewCertificate && (
+                  <button
+                    onClick={onViewCertificate}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-brand-500/50 bg-brand-500/20 text-brand-300 py-3 px-4 font-bold text-sm tracking-wide transition-all hover:bg-brand-500/30 active:scale-[0.98]"
+                  >
+                    👁 Ver Reporte
+                  </button>
+                )}
+                <button
+                  onClick={onDownloadCertificate}
+                  className={`${onViewCertificate ? "flex-[0.4]" : "w-full"} flex items-center justify-center gap-2 rounded-lg border border-surface-600 bg-surface-800 text-surface-300 py-3 px-4 font-bold text-sm tracking-wide transition-all hover:bg-surface-700 active:scale-[0.98]`}
+                  title="Descargar PDF"
+                >
+                  📥 {onViewCertificate ? "Descargar" : (solanaSignature ? "Descargar Certificado PDF (On-Chain)" : "Descargar Reporte Científico (PDF)")}
+                </button>
+              </div>
             )}
 
             {onDownloadComplex && (

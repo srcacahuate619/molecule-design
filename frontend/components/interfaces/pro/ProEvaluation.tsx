@@ -22,11 +22,14 @@ import {
 import { motion } from "framer-motion";
 import { KetcherEditor } from "../../KetcherEditor";
 import { ScoreCard } from "../../ScoreCard";
+import dynamic from "next/dynamic";
+const PDFReportViewer = dynamic(() => import("../../PDFReportViewer").then(mod => mod.PDFReportViewer), { ssr: false });
 import AdvancedMolstarViewer from "./AdvancedMolstarViewer";
 import TargetSelectorModal from "./TargetSelectorModal";
 import type { Target } from "../../../lib/api";
 import type { JobStatus, MolecularSuggestion, ValidationResult } from "../../../lib/types";
 import { useAuth } from "../../../lib/auth";
+import { CertificationModal } from "../../CertificationModal";
 
 const SHAP_EXPLANATIONS: Record<string, { label: string, desc: string }> = {
   // ECIF Features
@@ -114,10 +117,6 @@ interface ProEvaluationProps {
   handleUseSuggestion: (sug: MolecularSuggestion) => Promise<void>;
   startPolling: (tid: string) => void;
   stopPolling: () => void;
-  showWalletInput: boolean;
-  setShowWalletInput: (show: boolean) => void;
-  customWallet: string;
-  setCustomWallet: (wallet: string) => void;
 }
 
 export default function ProEvaluation({
@@ -155,13 +154,10 @@ export default function ProEvaluation({
   handleUseSuggestion,
   startPolling,
   stopPolling,
-  showWalletInput,
-  setShowWalletInput,
-  customWallet,
-  setCustomWallet
 }: ProEvaluationProps) {
   const { user } = useAuth();
   const consoleRef = useRef<HTMLDivElement>(null);
+  const [showCertModal, setShowCertModal] = useState(false);
   
   useEffect(() => {
     if (consoleRef.current) {
@@ -171,6 +167,7 @@ export default function ProEvaluation({
 
   // --- Target Selector Modal state ---
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
 
   // --- Grid Box override states ---
   const [gridCenterX, setGridCenterX] = useState<string>("");
@@ -997,6 +994,7 @@ export default function ProEvaluation({
                 isSaved={isSaved}
                 solanaSignature={status.result.blockchain_tx_id}
                 onDownloadCertificate={handleDownloadCertificate}
+                onViewCertificate={() => setShowPdfViewer(true)}
                 onDownloadComplex={handleDownloadComplex}
                 isControl={status.result.is_control}
                 saScore={status.result.sa_score}
@@ -1444,44 +1442,14 @@ export default function ProEvaluation({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {showWalletInput ? (
-                      <div className="rounded-xl bg-black/40 border border-white/5 p-3 space-y-2">
-                        <label className="block text-[8px] font-black uppercase tracking-widest text-slate-500">
-                          DIRECCIÓN WALLET SOLANA (DEJAR VACÍO PARA MOCK)
-                        </label>
-                        <input
-                          type="text"
-                          value={customWallet}
-                          onChange={(e) => setCustomWallet(e.target.value)}
-                          placeholder="Ex: Ht...3m"
-                          className="w-full rounded-lg border border-white/5 bg-[#03060c] text-white px-2 py-1.5 text-xs font-mono outline-none focus:border-indigo-500/40"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleCertify()}
-                            disabled={busy}
-                            className="flex-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider"
-                          >
-                            Firmar
-                          </button>
-                          <button
-                            onClick={() => setShowWalletInput(false)}
-                            className="rounded-lg border border-white/10 text-slate-400 px-3 py-1.5 text-[10px]"
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleCertify()}
-                        disabled={busy}
-                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-indigo-500/20 bg-indigo-600/10 hover:bg-indigo-600/20 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-indigo-400 transition-colors duration-150 disabled:opacity-50"
-                      >
-                        <ShieldCheck size={13} />
-                        Certificar en Blockchain
-                      </button>
-                    )}
+                    <button
+                      onClick={() => setShowCertModal(true)}
+                      disabled={busy}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-indigo-500/20 bg-indigo-600/10 hover:bg-indigo-600/20 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-indigo-400 transition-colors duration-150 disabled:opacity-50"
+                    >
+                      <ShieldCheck size={13} />
+                      Certificar en Blockchain
+                    </button>
                   </div>
                 )}
 
@@ -1626,7 +1594,51 @@ export default function ProEvaluation({
           </motion.div>
         </div>
       )}
+      {/* Modal Visor PDF */}
+      {showPdfViewer && status?.result?.molecule_id && (
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in"
+          onClick={() => setShowPdfViewer(false)}
+        >
+          <div 
+            className="bg-[#0f1015] border border-surface-800 rounded-2xl w-full max-w-5xl h-[85vh] shadow-2xl relative animate-in zoom-in-95 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-surface-800 bg-surface-950 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📄</span>
+                <h3 className="text-lg font-bold text-white tracking-wide">Reporte Científico</h3>
+              </div>
+              <button 
+                onClick={() => setShowPdfViewer(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-800 text-surface-400 hover:text-white hover:bg-surface-700 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-hidden p-4">
+              <PDFReportViewer 
+                moleculeId={status.result.molecule_id} 
+                isCertified={!!status.result.blockchain_tx_id}
+                onCertify={user ? handleCertify : undefined}
+                isCertifying={busy}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       
+      {showCertModal && status?.result?.molecule_id && (
+        <CertificationModal
+          moleculeId={status.result.molecule_id}
+          onClose={() => setShowCertModal(false)}
+          onSuccess={() => {
+            setShowCertModal(false);
+            handleCertify();
+          }}
+        />
+      )}
     </div>
   );
 }

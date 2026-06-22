@@ -80,3 +80,21 @@ WHITEPAPER_*.md
 logomoldesignia*.png
 logosinfondo*.png
 
+# Secretos industriales y pipelines de datos
+backend/scripts/curate_chembl_panels.py
+backend/scripts/fetch_chembl_holdout.py
+backend/scripts/analyze_combinations.py
+backend/scripts/reingest_all_db.py
+backend/scripts/add_column.py
+research_chembl.py
+fetch_pdb_info.py
+
+# Archivos temporales extra
+calc.py
+calc_centroids.py
+schema.py
+alter.sql
+backend/Spearman_Report_Extracted.md
+Spearman_Report_Extracted.md
+%TEMP%/
+remote_docs/
