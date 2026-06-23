@@ -485,6 +485,25 @@ export function ScoreCard({
         </div>
       )}
 
+      {bloodViabilityScore !== null && bloodViabilityScore !== undefined && (
+        <div className="text-xs text-surface-400 mt-2">
+          <button 
+            onClick={() => setSelectedEducationalMetric({
+              title: "Viabilidad Sanguínea (M_v)",
+              icon: "🩸",
+              desc: "Mide la probabilidad de que la molécula sea viable en sangre sin causar toxicidades sistémicas fatales. Un valor de 100% significa sin toxicidad conocida. Valores menores reducen directamente el score final como multiplicador agresivo (M_v = Score / 100).",
+              math: `Multiplicador M_v: ${(bloodViabilityScore / 100).toFixed(3)}`
+            })}
+            className="flex items-center gap-1 w-max hover:text-red-300 transition-colors"
+          >
+            <span>Viabilidad en Sangre:</span>
+            <strong className={`border-b border-dashed pb-0.5 ${bloodViabilityScore < 100 ? "text-red-400 border-red-500/50" : "text-emerald-400 border-emerald-500/50"}`}>
+              {bloodViabilityScore.toFixed(1)}% (x{(bloodViabilityScore / 100).toFixed(3)})
+            </strong>
+          </button>
+        </div>
+      )}
+
       {/* Relleno matemático para auditabilidad [NUEVO] */}
       <div className="mt-6 border-t border-surface-800/50 pt-4">
         <details className="group cursor-pointer">

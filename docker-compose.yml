@@ -143,7 +143,7 @@ services:
     image: node:20-alpine
     container_name: moldesign_frontend
     working_dir: /app
-    command: sh -c "npm install && npm run dev -- -p 3001"
+    command: sh -c "apk add --no-cache python3 make g++ linux-headers eudev-dev && npm install && npm run dev -- -p 3001"
     ports:
       - "3001:3001"
     volumes:
@@ -168,6 +168,34 @@ services:
     depends_on:
       - api
 
+  # ─────────────────────────────────────────────
+  # PROMETHEUS — Servidor de Monitoreo
+  # ─────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: moldesign_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - frontend
+
+  # ─────────────────────────────────────────────
+  # GRAFANA — Visualización de Tableros
+  # ─────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: moldesign_grafana
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 # ─────────────────────────────────────────────
 # VOLÚMENES
 # ─────────────────────────────────────────────
@@ -178,4 +206,7 @@ volumes:
     driver: local
   almacenamiento-minio_minio_data:
     external: true
+  grafana_data:
+    driver: local
+
 

@@ -282,6 +282,8 @@ class EvaluationResultORM(Base):
     druglikeness_score = Column(Float, nullable=True)
     total_score      = Column(Float, nullable=True, index=True)  # score final del juego
     gnn_score        = Column(Float, nullable=True)              # score GNN RTMScore (Nivel 2)
+    affinity_multiplier = Column(Float, nullable=True)
+    specificity_multiplier = Column(Float, nullable=True)
     is_control       = Column(Boolean, default=False)           # si es True, se ignoran penalizaciones ADME
 
     # ── Explainable AI (XAI) ──────────────────────────────────────────────────
