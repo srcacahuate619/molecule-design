@@ -39,8 +39,8 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 import httpx
-from miniopy_async import Minio
-from miniopy_async.error import S3Error
+from minio import Minio
+from minio.error import S3Error
 
 from core.config import get_settings
 from core.exceptions import FileNotFoundInStorage, FileUploadError
@@ -52,49 +52,28 @@ settings = get_settings()
 
 # ── Cliente MinIO ─────────────────────────────────────────────────────────────
 
-_minio_client: Minio | None = None
+_minio_client = None
 
 
-def get_minio_client() -> Minio:
+def get_minio_client():
     """
-    Retorna el cliente MinIO singleton.
-
-    miniopy-async es el cliente async oficial de MinIO para Python.
-    El cliente es thread-safe y puede reutilizarse durante toda la
-    vida del proceso.
+    Retorna el cliente MinIO singleton (sincrónico).
     """
     global _minio_client
     if _minio_client is None:
-        import aiohttp
-        # Crear una sesión con timeouts explícitos para evitar hangs infinitos
-        timeout = aiohttp.ClientTimeout(total=5.0, connect=2.0)
-        session = aiohttp.ClientSession(timeout=timeout)
-        
-        _minio_client = Minio(
+        from minio import Minio as MinioSync
+        _minio_client = MinioSync(
             endpoint=settings.minio_endpoint,
             access_key=settings.minio_access_key,
             secret_key=settings.minio_secret_key,
-            secure=settings.minio_secure,
-            session=session,
-        )
-        log.info(
-            "cliente MinIO inicializado con timeout",
-            endpoint=settings.minio_endpoint,
             secure=settings.minio_secure,
         )
     return _minio_client
 
 
 async def close_minio_client() -> None:
-    """Cierra explícitamente el cliente MinIO para evitar sesiones abiertas."""
+    """Cierra explícitamente el cliente MinIO."""
     global _minio_client
-    if _minio_client is None:
-        return
-
-    close_result = _minio_client.close_session()
-    if hasattr(close_result, "__await__"):
-        await close_result
-
     _minio_client = None
 
 
@@ -195,17 +174,20 @@ async def upload_bytes(
     Lanza FileUploadError si MinIO no está disponible o falla el upload.
     """
     bucket = bucket or settings.minio_bucket_poses
-    client = get_minio_client()
-
-    try:
+    
+    def sync_upload():
+        client = get_minio_client()
         data_stream = io.BytesIO(data)
-        await client.put_object(
+        client.put_object(
             bucket_name=bucket,
             object_name=object_name,
             data=data_stream,
             length=len(data),
             content_type=content_type,
         )
+
+    try:
+        await asyncio.get_event_loop().run_in_executor(None, sync_upload)
         log.debug(
             "archivo subido a MinIO",
             object_name=object_name,
@@ -378,10 +360,13 @@ async def delete_object(
     Útil para limpiar archivos temporales después del docking.
     """
     bucket = bucket or settings.minio_bucket_poses
-    client = get_minio_client()
+    
+    def sync_delete():
+        client = get_minio_client()
+        client.remove_object(bucket_name=bucket, object_name=object_name)
 
     try:
-        await client.remove_object(bucket_name=bucket, object_name=object_name)
+        await asyncio.get_event_loop().run_in_executor(None, sync_delete)
         log.debug("objeto eliminado de MinIO", object_name=object_name)
         return True
     except S3Error as e:
