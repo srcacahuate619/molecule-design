@@ -612,6 +612,14 @@ class Repository:
             result.qed = float(properties.qed)
             result.sa_score = float(properties.sa_score)
             result.sa_reasons = list(properties.sa_reasons)
+            
+            # --- Persistir campos MPO / ADMET ---
+            result.blood_viability_score = float(properties.blood_viability_score) if properties.blood_viability_score is not None else None
+            result.blood_solubility_logs = float(properties.blood_solubility_logs) if properties.blood_solubility_logs is not None else None
+            result.blood_ppb_category = str(properties.blood_ppb_category) if properties.blood_ppb_category is not None else None
+            result.blood_bbb_permeable = bool(properties.blood_bbb_permeable) if properties.blood_bbb_permeable is not None else None
+            result.blood_hia_permeable = bool(properties.blood_hia_permeable) if properties.blood_hia_permeable is not None else None
+            result.blood_systemic_reactivity = list(properties.blood_systemic_reactivity) if properties.blood_systemic_reactivity is not None else []
 
         if docking is not None:
             # Ensure all numerics in DockingResult are native types
@@ -654,6 +662,9 @@ class Repository:
             result.affinity_threshold = safe_float(scores.get("affinity_threshold"))
             result.affinity_multiplier = safe_float(scores.get("affinity_multiplier"))
             result.specificity_multiplier = safe_float(scores.get("specificity_multiplier"))
+            result.gnn_factor = safe_float(scores.get("gnn_factor"))
+            result.sa_factor = safe_float(scores.get("sa_factor"))
+            result.blood_factor = safe_float(scores.get("blood_factor"))
             
             # XAI
             if "shap_values" in scores:

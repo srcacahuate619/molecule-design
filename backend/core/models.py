@@ -480,6 +480,14 @@ class EvaluationResultRead(BaseModel):
     target_name:        str | None = None
     target_spearman_rho: float | None = None
 
+    # MPO / ADMET Predicts
+    blood_viability_score: float | None = None
+    blood_solubility_logs: float | None = None
+    blood_ppb_category:    str | None = None
+    blood_bbb_permeable:   bool | None = None
+    blood_hia_permeable:   bool | None = None
+    blood_systemic_reactivity: list[str] | None = None
+
     # XAI
     shap_values:        dict[str, float] | None = None
     gnn_attention:      list[float] | None = None
