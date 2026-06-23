@@ -25,6 +25,7 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
   
   // Cofactors
   const [cofactors, setCofactors] = useState("");
+  const [isCommunity, setIsCommunity] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +103,7 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
       if (cofactors) {
         formData.append("cofactors_whitelist", cofactors);
       }
+      formData.append("is_community", isCommunity ? "true" : "false");
 
       await uploadCustomTarget(formData);
       onSuccess();
@@ -231,6 +233,24 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
                   <p className="text-xs text-zinc-500 mt-1">Nombres HETATM separados por coma.</p>
                 </div>
               )}
+
+              <div className="flex items-center gap-3 bg-zinc-950/40 p-3 rounded-lg border border-zinc-800/80 mt-2">
+                <input 
+                  type="checkbox" 
+                  id="share_community"
+                  checked={isCommunity}
+                  onChange={e => setIsCommunity(e.target.checked)}
+                  className="w-4 h-4 text-cyan-500 bg-zinc-950 border-zinc-700 rounded focus:ring-cyan-500 cursor-pointer"
+                />
+                <div className="cursor-pointer select-none">
+                  <label htmlFor="share_community" className="block text-xs font-semibold text-zinc-200 cursor-pointer">
+                    Compartir con la comunidad científica
+                  </label>
+                  <p className="text-[10px] text-zinc-500 leading-tight">
+                    Cualquier investigador de MolDesign podrá ver y usar este receptor. Se incluirá mención de tu usuario.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Grid Box Settings */}

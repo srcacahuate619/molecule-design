@@ -151,7 +151,10 @@ async def ingest_custom_target(
     chain_id: str = "A",
     grid_center: tuple[float, float, float] | None = None,
     grid_size: tuple[float, float, float] = (20.0, 20.0, 20.0),
-    cofactors_whitelist: list[str] | None = None
+    cofactors_whitelist: list[str] | None = None,
+    creator_id: uuid.UUID | None = None,
+    creator_username: str | None = None,
+    is_community: bool = False
 ) -> dict:
     """
     Ingesta un target subido manualmente por el usuario.
@@ -187,8 +190,10 @@ async def ingest_custom_target(
             is_prepared=True,
             prepared_file_path=prepared_path,
             is_hot=False,
-            is_private=True,
-            is_community=False,
+            is_private=not is_community,
+            is_community=is_community,
+            creator_id=creator_id,
+            creator_username=creator_username,
             cofactors_whitelist=cofactors_whitelist or []
         )
         db.add(target)
@@ -251,8 +256,10 @@ async def ingest_custom_target(
             is_prepared=True,
             prepared_file_path=prepared_file_path,
             is_hot=False,
-            is_private=True,
-            is_community=False,
+            is_private=not is_community,
+            is_community=is_community,
+            creator_id=creator_id,
+            creator_username=creator_username,
             hotspots=hotspots,
             cofactors_whitelist=cofactors_whitelist or []
         )

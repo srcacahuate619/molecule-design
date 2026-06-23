@@ -126,7 +126,10 @@ class TargetORM(Base):
     # Custom Targets
     is_private         = Column(Boolean, default=False, nullable=False)
     is_community       = Column(Boolean, default=False, nullable=False)
+    creator_id         = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    creator_username   = Column(String(50), nullable=True)
 
+    creator   = relationship("UserORM")
     molecules = relationship("MoleculeORM", back_populates="target")
 
 
@@ -574,6 +577,7 @@ class Target(BaseModel):
     cofactors_whitelist: list[str] | None = []
     is_private: bool = False
     is_community: bool = False
+    creator_username: str | None = None
 
     model_config = {"from_attributes": True}
 

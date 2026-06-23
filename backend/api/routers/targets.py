@@ -84,6 +84,8 @@ async def upload_custom_target(
     grid_size_y: float = Form(20.0),
     grid_size_z: float = Form(20.0),
     cofactors_whitelist: str | None = Form(None, description="Coma-separated list"),
+    is_community: bool = Form(False),
+    current_user: UserORM | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
     from services.targets.ingestion_manager import ingest_custom_target
@@ -100,6 +102,9 @@ async def upload_custom_target(
         
     content = await file.read()
     
+    creator_id = current_user.id if current_user else None
+    creator_username = current_user.username if current_user else None
+    
     try:
         result = await ingest_custom_target(
             file_content=content,
@@ -110,7 +115,10 @@ async def upload_custom_target(
             chain_id=chain_id,
             grid_center=grid_center,
             grid_size=grid_size,
-            cofactors_whitelist=cofactors
+            cofactors_whitelist=cofactors,
+            creator_id=creator_id,
+            creator_username=creator_username,
+            is_community=is_community
         )
         return result
     except ValueError as e:

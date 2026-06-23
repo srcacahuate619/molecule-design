@@ -24,11 +24,23 @@ export default function TargetSelectorModal({
 }: TargetSelectorModalProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"oficiales" | "propios" | "comunidad">("oficiales");
 
-  // Categorize targets by structural_family and filter by search term
+  // Categorize targets by structural_family and filter by search term and tab
   const groupedTargets = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    const filtered = targets.filter(t => 
+    
+    // Filter by active tab
+    let tabTargets = targets;
+    if (activeTab === "oficiales") {
+      tabTargets = targets.filter(t => !t.is_private && !t.is_community);
+    } else if (activeTab === "propios") {
+      tabTargets = targets.filter(t => t.is_private);
+    } else if (activeTab === "comunidad") {
+      tabTargets = targets.filter(t => t.is_community);
+    }
+
+    const filtered = tabTargets.filter(t => 
       (t.name || "").toLowerCase().includes(term) || 
       (t.pdb_id || "").toLowerCase().includes(term) || 
       (t.organism && t.organism.toLowerCase().includes(term))
@@ -42,7 +54,7 @@ export default function TargetSelectorModal({
     });
 
     return groups;
-  }, [targets, searchTerm]);
+  }, [targets, searchTerm, activeTab]);
 
   if (!isOpen) return null;
 
@@ -97,14 +109,48 @@ export default function TargetSelectorModal({
               Subir Receptor
             </button>
           </div>
+
+          {/* Tabs Navigation (LM Studio Style) */}
+          <div className="flex border-b border-white/5 pt-1">
+            <button
+              onClick={() => setActiveTab("oficiales")}
+              className={`pb-3 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all ${
+                activeTab === "oficiales"
+                  ? "border-indigo-500 text-indigo-400"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              🌐 Receptores Oficiales
+            </button>
+            <button
+              onClick={() => setActiveTab("propios")}
+              className={`pb-3 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all ${
+                activeTab === "propios"
+                  ? "border-cyan-500 text-cyan-400"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              💾 Mis Receptores
+            </button>
+            <button
+              onClick={() => setActiveTab("comunidad")}
+              className={`pb-3 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all ${
+                activeTab === "comunidad"
+                  ? "border-purple-500 text-purple-400"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              👥 Comunidad Científica
+            </button>
+          </div>
         </div>
 
         {/* Content (Scrollable list of categories and cards) */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-indigo-500/20 scrollbar-track-transparent">
           {Object.keys(groupedTargets).length === 0 ? (
-            <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 space-y-3">
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 space-y-3 py-10">
               <Crosshair size={40} className="opacity-20" />
-              <p className="text-sm font-semibold uppercase tracking-wider">No se encontraron receptores</p>
+              <p className="text-sm font-semibold uppercase tracking-wider">No se encontraron receptores en esta sección</p>
             </div>
           ) : (
             Object.keys(groupedTargets).sort().map(family => (
@@ -177,6 +223,14 @@ export default function TargetSelectorModal({
                             </div>
                           </div>
                         </div>
+
+                        {/* Credits for author */}
+                        {target.creator_username && (
+                          <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                            <span>Colaborador:</span>
+                            <span className="text-cyan-400">@{target.creator_username}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
