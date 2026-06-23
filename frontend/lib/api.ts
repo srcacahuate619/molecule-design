@@ -28,6 +28,9 @@ export interface Target {
   grid_size_y?: number;
   grid_size_z?: number;
   hotspots?: Array<{ name: string; importance: number; x?: number; y?: number; z?: number }>;
+  is_private?: boolean;
+  is_community?: boolean;
+  creator_username?: string | null;
 }
 
 import { API_URL } from "./config";
