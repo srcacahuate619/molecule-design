@@ -18,6 +18,11 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
   const [gridY, setGridY] = useState("");
   const [gridZ, setGridZ] = useState("");
   
+  // Manual size
+  const [gridSizeX, setGridSizeX] = useState("20.0");
+  const [gridSizeY, setGridSizeY] = useState("20.0");
+  const [gridSizeZ, setGridSizeZ] = useState("20.0");
+  
   // Cofactors
   const [cofactors, setCofactors] = useState("");
   
@@ -34,7 +39,7 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setError("Por favor, selecciona un archivo.");
+      fileInputRef.current?.click();
       return;
     }
     if (!name.trim()) {
@@ -60,6 +65,12 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
         formData.append("grid_center_x", gridX);
         formData.append("grid_center_y", gridY);
         formData.append("grid_center_z", gridZ);
+      }
+      
+      if (mode === "manual" && gridSizeX && gridSizeY && gridSizeZ) {
+        formData.append("grid_size_x", gridSizeX);
+        formData.append("grid_size_y", gridSizeY);
+        formData.append("grid_size_z", gridSizeZ);
       }
       
       if (cofactors) {
@@ -196,46 +207,42 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
               )}
             </div>
 
-            {/* File & Coords */}
+            {/* Grid Box Settings */}
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-1">Archivo de Estructura</label>
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`w-full h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                    file ? 'border-cyan-500 bg-cyan-500/5' : 'border-zinc-700 hover:border-zinc-500 bg-zinc-800/50'
-                  }`}
-                >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    accept={mode === "auto" ? ".pdb" : ".pdbqt"} 
-                    onChange={handleFileChange}
-                    className="hidden" 
-                  />
-                  {file ? (
-                    <div className="flex items-center gap-2 text-cyan-400 font-medium">
-                      <FileText className="w-6 h-6" />
-                      <span className="truncate max-w-[200px]">{file.name}</span>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                accept={mode === "auto" ? ".pdb" : ".pdbqt"} 
+                onChange={handleFileChange}
+                className="hidden" 
+              />
+              
+              {mode === "manual" ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-1">Coordenadas del Centro (Grid Box)</label>
+                    <div className="flex gap-2">
+                      <input type="number" step="0.1" placeholder="X" value={gridX} onChange={e => setGridX(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
+                      <input type="number" step="0.1" placeholder="Y" value={gridY} onChange={e => setGridY(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
+                      <input type="number" step="0.1" placeholder="Z" value={gridZ} onChange={e => setGridZ(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
                     </div>
-                  ) : (
-                    <>
-                      <Upload className="w-6 h-6 text-zinc-500 mb-2" />
-                      <span className="text-sm text-zinc-400">Clic para subir ({mode === "auto" ? ".pdb" : ".pdbqt"})</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {(mode === "manual" || (mode === "auto" && !file)) && (
-                <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-1">Centro del Sitio Activo (Grid Box)</label>
-                  <div className="flex gap-2">
-                    <input type="number" step="0.1" placeholder="X" value={gridX} onChange={e => setGridX(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
-                    <input type="number" step="0.1" placeholder="Y" value={gridY} onChange={e => setGridY(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
-                    <input type="number" step="0.1" placeholder="Z" value={gridZ} onChange={e => setGridZ(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
                   </div>
-                  {mode === "auto" && <p className="text-xs text-zinc-500 mt-1">Opcional. Si lo omites, intentaremos auto-detectarlo.</p>}
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-300 mb-1">Tamaño de la Caja (Grid Size)</label>
+                    <div className="flex gap-2">
+                      <input type="number" step="0.1" placeholder="SX" value={gridSizeX} onChange={e => setGridSizeX(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
+                      <input type="number" step="0.1" placeholder="SY" value={gridSizeY} onChange={e => setGridSizeY(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
+                      <input type="number" step="0.1" placeholder="SZ" value={gridSizeZ} onChange={e => setGridSizeZ(e.target.value)} className="w-1/3 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:border-cyan-500 text-center" />
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-1">Valores recomendados: 20.0 x 20.0 x 20.0 Ångströms.</p>
+                  </div>
+                </>
+              ) : (
+                <div className="h-full flex flex-col justify-center bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 space-y-2">
+                  <h4 className="text-sm font-semibold text-cyan-400">Automatización Inteligente</h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Al no especificar coordenadas, nuestro servidor rastreará la estructura PDB y computará un centro espacial anclado al ligando con mayor relevancia farmacológica. El tamaño de búsqueda (Grid Size) se auto-ajustará dinámicamente a <span className="font-mono text-cyan-300">25.0 Å</span> para proveer flexibilidad computacional a Vina.
+                  </p>
                 </div>
               )}
             </div>
@@ -276,8 +283,8 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
                   </>
                 ) : (
                   <>
-                    <Upload className="w-4 h-4" />
-                    Subir y Procesar Receptor
+                    {file ? <CheckCircle2 className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+                    {file ? `Procesar y Subir: ${file.name.substring(0, 15)}...` : "Seleccionar Archivo y Continuar"}
                   </>
                 )}
               </span>
