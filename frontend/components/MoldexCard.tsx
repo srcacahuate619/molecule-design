@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Microscope, Activity, ShieldCheck, Zap } from 'lucide-react';
-import { API_URL } from '../lib/config';
+import { API_URL } from '@/lib/config';
 
 interface MoldexCardProps {
   molecule: any;

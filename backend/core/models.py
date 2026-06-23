@@ -539,6 +539,9 @@ class ScoreBreakdown(BaseModel):
     affinity_threshold: float | None = None
     affinity_multiplier: float | None = None
     specificity_multiplier: float | None = None
+    gnn_factor: float | None = None
+    sa_factor: float | None = None
+    blood_factor: float | None = None
 
     # Pesos usados en el cálculo (para transparencia)
     weight_affinity:     float

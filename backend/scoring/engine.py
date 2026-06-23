@@ -218,10 +218,12 @@ def calculate_score_breakdown(
         # Rango [0.5, 1.0].
         affinity_multiplier = ((adjusted_affinity_score - 20) / 80.0) * 0.5 + 0.5
     
+    sa_factor = 1.0
+    blood_factor = 1.0
+
     if is_control:
         # Si es ligando de control endógeno, ignorar propiedades fisicoquímicas
         total_score = clamp_score(adjusted_affinity_score)
-        sa_penalty_factor = 1.0
     else:
         # El score base se calcula usando el adjusted_affinity_score
         base_score = (adjusted_affinity_score * settings.score_weight_affinity) + (physico_score * affinity_multiplier)
@@ -238,7 +240,6 @@ def calculate_score_breakdown(
             )
 
         # --- Factor Blood Viability (Capa 3 MPO) ---
-        blood_factor = 1.0
         if properties.blood_viability_score is not None:
             blood_factor = properties.blood_viability_score / 100.0
             log.info(f"blood_factor_applied: {blood_factor:.2f}")
@@ -274,6 +275,9 @@ def calculate_score_breakdown(
         affinity_threshold=affinity_threshold,
         affinity_multiplier=affinity_multiplier,
         specificity_multiplier=specificity_multiplier,
+        gnn_factor=gnn_factor,
+        sa_factor=sa_factor,
+        blood_factor=blood_factor,
         weight_affinity=settings.score_weight_affinity,
         weight_adme=settings.score_weight_adme,
         weight_druglikeness=settings.score_weight_druglikeness,

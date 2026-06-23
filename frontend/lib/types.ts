@@ -72,6 +72,9 @@ export type EvaluationResult = {
   affinity_threshold: number | null;
   affinity_multiplier: number | null;
   specificity_multiplier: number | null;
+  gnn_factor: number | null;
+  sa_factor: number | null;
+  blood_factor: number | null;
   ligand_efficiency: number | null;
   ligand_lipophilicity_efficiency: number | null;
 

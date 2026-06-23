@@ -1021,6 +1021,9 @@ export default function ProEvaluation({
                 gnnScore={status.result.gnn_score}
                 bloodViabilityScore={status.result.blood_viability_score}
                 bloodSystemicReactivity={status.result.blood_systemic_reactivity}
+                gnnFactor={status.result.gnn_factor}
+                saFactor={status.result.sa_factor}
+                bloodFactor={status.result.blood_factor}
               />
             )}
             <div className="rounded-2xl border border-white/5 bg-slate-900/60 p-5 space-y-4 shadow-xl">
@@ -1168,6 +1171,80 @@ export default function ProEvaluation({
                         ))}
                       </div>
                     )}
+
+                    {/* MPO / ADMET pharmacokinetics detailed section [NUEVO] */}
+                    <div className="mt-4 border-t border-white/5 pt-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                          Perfil ADMET & Parámetros MPO
+                        </h4>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                          ADMET-AI & TabPFN
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                        <div className="bg-black/30 p-2.5 rounded-xl border border-white/5">
+                          <span className="text-slate-500 block uppercase font-sans font-semibold mb-0.5">Solubilidad Acuosa (LogS):</span>
+                          <span className="text-white text-xs font-bold">
+                            {status.result.blood_solubility_logs !== undefined && status.result.blood_solubility_logs !== null
+                              ? `${status.result.blood_solubility_logs.toFixed(2)} logS`
+                              : "N/A"}
+                          </span>
+                          <span className="text-[8px] text-slate-500 block mt-0.5 font-sans">(ADMET-AI)</span>
+                        </div>
+                        
+                        <div className="bg-black/30 p-2.5 rounded-xl border border-white/5">
+                          <span className="text-slate-500 block uppercase font-sans font-semibold mb-0.5">Plasma Protein Binding (PPB):</span>
+                          <span className="text-white text-xs font-bold">
+                            {status.result.blood_ppb_category || "N/A"}
+                          </span>
+                          <span className="text-[8px] text-slate-500 block mt-0.5 font-sans">(ADMET-AI)</span>
+                        </div>
+
+                        <div className="bg-black/30 p-2.5 rounded-xl border border-white/5">
+                          <span className="text-slate-500 block uppercase font-sans font-semibold mb-0.5">Absorción Intestinal (HIA):</span>
+                          <span className={`text-xs font-bold ${status.result.blood_hia_permeable ? "text-emerald-400" : "text-rose-400"}`}>
+                            {status.result.blood_hia_permeable !== undefined && status.result.blood_hia_permeable !== null
+                              ? (status.result.blood_hia_permeable ? "ALTA PERMEABILIDAD" : "BAJA ABSORCIÓN")
+                              : "N/A"}
+                          </span>
+                          <span className="text-[8px] text-slate-500 block mt-0.5 font-sans">(ADMET-AI)</span>
+                        </div>
+
+                        <div className="bg-black/30 p-2.5 rounded-xl border border-white/5">
+                          <span className="text-slate-500 block uppercase font-sans font-semibold mb-0.5">Barrera Hematoencefálica (BBB):</span>
+                          <span className={`text-xs font-bold ${status.result.blood_bbb_permeable ? "text-indigo-400" : "text-slate-300"}`}>
+                            {status.result.blood_bbb_permeable !== undefined && status.result.blood_bbb_permeable !== null
+                              ? (status.result.blood_bbb_permeable ? "BBB PERMEABLE" : "NO PERMEABLE (CNS-)")
+                              : "N/A"}
+                          </span>
+                          <span className="text-[8px] text-slate-500 block mt-0.5 font-sans">(ADMET-AI)</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-black/30 p-3 rounded-xl border border-white/5 text-[10px] space-y-1">
+                        <span className="text-slate-500 uppercase font-sans font-bold block mb-1">
+                          Evaluación de Reactividad Sistémica y Toxicología:
+                        </span>
+                        <div className="text-slate-300">
+                          {status.result.blood_systemic_reactivity && status.result.blood_systemic_reactivity.length > 0 ? (
+                            <div className="space-y-1">
+                              {status.result.blood_systemic_reactivity.map((err: string, idx: number) => (
+                                <div key={idx} className="text-red-400 font-semibold">• Alerta: {err}</div>
+                              ))}
+                              <p className="text-[9px] text-rose-300/80 font-sans mt-1">
+                                Toxicidad molecular clasificada por el motor TabPFN.
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-emerald-400 font-semibold">
+                              ✓ Sin alertas de reactividad sistémica identificadas por TabPFN.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center text-slate-500 text-xs py-8">

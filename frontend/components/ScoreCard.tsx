@@ -71,6 +71,9 @@ type ScoreCardProps = {
   gnnScore?: number | null;
   bloodViabilityScore?: number | null;
   bloodSystemicReactivity?: string[] | null;
+  gnnFactor?: number | null;
+  saFactor?: number | null;
+  bloodFactor?: number | null;
 };
 
 export function ScoreCard({
@@ -99,6 +102,9 @@ export function ScoreCard({
   gnnScore,
   bloodViabilityScore,
   bloodSystemicReactivity,
+  gnnFactor,
+  saFactor,
+  bloodFactor,
 }: ScoreCardProps) {
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -416,17 +422,14 @@ export function ScoreCard({
             onClick={() => setSelectedEducationalMetric({
               title: "Evaluación de Red Neuronal de Grafos (GNN)",
               icon: "🧠",
-              desc: "MolDesign usa una IA especializada llamada RTMScore (Red Neuronal de Grafos) que funciona como un inspector 3D. Revisa átomo por átomo cómo encaja tu molécula en el receptor y castiga duramente si hay 'choques estéricos' (átomos atravesándose entre sí).",
-              math: "Multiplicador de Calidad: Valores mayores a 20.0 aumentan tu score general. Valores menores lo reducen drásticamente."
+              desc: "MolDesign usa una IA especializada llamada RTMScore (Red Neuronal de Grafos) que funciona como un inspector 3D. Revisa átomo por átomo cómo encaja tu molécula en el receptor y castiga duramente si hay 'choques estéricos' (átomos atravesándose entre sí). Evaluado con RTMScore.",
+              math: `Multiplicador de Calidad: x${(gnnFactor ?? (0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)).toFixed(3)}`
             })}
             className="flex items-center gap-1 w-max hover:text-purple-300 transition-colors"
           >
             <span>Inteligencia GNN (Nivel 2):</span>
             <strong className="text-purple-400 border-b border-dashed border-purple-500/50 pb-0.5">
-              {gnnScore.toFixed(2)} (x{((() => {
-                const rawFactor = 1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)));
-                return 0.7 + (rawFactor * 0.45);
-              })()).toFixed(3)})
+              {gnnScore.toFixed(2)} (x{(gnnFactor ?? (0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)).toFixed(3)})
             </strong>
           </button>
         </div>
@@ -439,7 +442,7 @@ export function ScoreCard({
               onClick={() => setSelectedEducationalMetric({
                 title: "Accesibilidad Sintética (SA Score)",
                 icon: "🧪",
-                desc: "No sirve de nada diseñar el fármaco perfecto en la computadora si los químicos en la vida real no pueden fabricarlo. El SA Score analiza la complejidad de tus anillos, puentes y quiralidad para saber si tu molécula es viable para ser sintetizada en un laboratorio.",
+                desc: "No sirve de nada diseñar el fármaco perfecto en la computadora si los químicos en la vida real no pueden fabricarlo. El SA Score analiza la complejidad de tus anillos, puentes y quiralidad para saber si tu molécula es viable para ser sintetizada en un laboratorio. Su factor de penalización sintética final escala de forma no lineal.",
                 math: (
                   <div className="mt-2 flex justify-between border-t border-surface-800 pt-2 text-xs font-bold w-full">
                     <span className="text-emerald-400">1.0 = Muy Fácil</span>
@@ -487,20 +490,25 @@ export function ScoreCard({
 
       {bloodViabilityScore !== null && bloodViabilityScore !== undefined && (
         <div className="text-xs text-surface-400 mt-2">
-          <button 
-            onClick={() => setSelectedEducationalMetric({
-              title: "Viabilidad Sanguínea (M_v)",
-              icon: "🩸",
-              desc: "Mide la probabilidad de que la molécula sea viable en sangre sin causar toxicidades sistémicas fatales. Un valor de 100% significa sin toxicidad conocida. Valores menores reducen directamente el score final como multiplicador agresivo (M_v = Score / 100).",
-              math: `Multiplicador M_v: ${(bloodViabilityScore / 100).toFixed(3)}`
-            })}
-            className="flex items-center gap-1 w-max hover:text-red-300 transition-colors"
-          >
-            <span>Viabilidad en Sangre:</span>
-            <strong className={`border-b border-dashed pb-0.5 ${bloodViabilityScore < 100 ? "text-red-400 border-red-500/50" : "text-emerald-400 border-emerald-500/50"}`}>
-              {bloodViabilityScore.toFixed(1)}% (x{(bloodViabilityScore / 100).toFixed(3)})
-            </strong>
-          </button>
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => setSelectedEducationalMetric({
+                title: "Viabilidad Sanguínea (M_v)",
+                icon: "🩸",
+                desc: "Mide la probabilidad de que la molécula sea viable en sangre sin causar toxicidades sistémicas fatales. Evaluado mediante redes neuronales profundas (ADMET-AI) para absorción/distribución y clasificadores de Machine Learning Tabular (TabPFN) para alertas de toxicidad sistémica.",
+                math: `Multiplicador M_v: ${(bloodFactor ?? (bloodViabilityScore / 100)).toFixed(3)}`
+              })}
+              className="flex items-center gap-1 w-max hover:text-red-300 transition-colors"
+            >
+              <span>Viabilidad en Sangre:</span>
+              <strong className={`border-b border-dashed pb-0.5 ${bloodViabilityScore < 100 ? "text-red-400 border-red-500/50" : "text-emerald-400 border-emerald-500/50"}`}>
+                {bloodViabilityScore.toFixed(1)}% (x{(bloodFactor ?? (bloodViabilityScore / 100)).toFixed(3)})
+              </strong>
+            </button>
+            <span className="text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">
+              ADMET-AI | TabPFN
+            </span>
+          </div>
         </div>
       )}
 
@@ -545,8 +553,8 @@ export function ScoreCard({
                 {!isControl && gnnScore !== null && gnnScore !== undefined && (
                   <div className="flex justify-between">
                     <span>(M_g) Multipl. G:</span>
-                    <span className={((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)) < 1.0 ? "text-red-400" : "text-purple-400 font-bold"}>
-                      {((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)).toFixed(3)}
+                    <span className={(gnnFactor ?? (0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)) < 1.0 ? "text-red-400" : "text-purple-400 font-bold"}>
+                      {(gnnFactor ?? (0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)).toFixed(3)}
                     </span>
                   </div>
                 )}
@@ -573,15 +581,15 @@ export function ScoreCard({
                   <div className="flex justify-between">
                     <span>(M_sa) Penaliz. SA:</span>
                     <span className={(saScore ?? 0) > 6.0 ? "text-red-400" : "text-emerald-400"}>
-                      {(saScore ?? 0) > 6.0 ? ((saScore ?? 0) > 7.0 ? 0.0 : ((7.0 - (saScore ?? 0)) / 1.0)).toFixed(3) : "1.000"}
+                      {(saFactor ?? ((saScore ?? 0) > 6.0 ? ((saScore ?? 0) > 7.0 ? 0.0 : ((7.0 - (saScore ?? 0)) / 1.0)) : 1.0)).toFixed(3)}
                     </span>
                   </div>
                 )}
                 {!isControl && (
                   <div className="flex justify-between">
                     <span>(M_v) Viab. Sangre:</span>
-                    <span className={bloodViabilityScore && bloodViabilityScore < 100 ? "text-red-400" : "text-emerald-400"}>
-                      {bloodViabilityScore !== undefined && bloodViabilityScore !== null ? (bloodViabilityScore / 100).toFixed(3) : "1.000"}
+                    <span className={(bloodFactor ?? (bloodViabilityScore ? bloodViabilityScore / 100 : 1.0)) < 1.0 ? "text-red-400" : "text-emerald-400"}>
+                      {(bloodFactor ?? (bloodViabilityScore !== undefined && bloodViabilityScore !== null ? (bloodViabilityScore / 100) : 1.0)).toFixed(3)}
                     </span>
                   </div>
                 )}
@@ -591,7 +599,7 @@ export function ScoreCard({
                 {!isControl && (
                   <p className="text-[10px] text-surface-500 mb-2 font-sans">
                     * Nota: El "Phys. Score" es la suma ponderada de ADME y Drug-likeness. 
-                    M_g aplica sólo sobre Afinidad (A). M_a penaliza afinidad general baja. M_s penaliza hotspots. M_sa y M_v (Viabilidad Sanguínea) son factores finales agresivos.
+                    M_g aplica sólo sobre Afinidad (A). M_a penaliza afinidad general baja. M_s penaliza hotspots. M_sa y M_v (Viabilidad Sanguínea de ADMET-AI / TabPFN) son factores finales directos del backend.
                   </p>
                 )}
                 <div className="flex justify-between text-xs font-bold text-gray-200 bg-surface-800/30 p-2 rounded">
