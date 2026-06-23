@@ -373,6 +373,13 @@ export async function uploadCustomTarget(formData: FormData): Promise<{ success:
   return result;
 }
 
+export async function shareCustomTarget(targetId: string): Promise<{ success: boolean; message: string }> {
+  return request<{ success: boolean; message: string }>(`/targets/${targetId}/share`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+}
+
 // ── Blockchain ────────────────────────────────────────────────────
 
 export async function certifyMolecule(

@@ -776,7 +776,7 @@ export default function ProEvaluation({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500 font-bold uppercase">Spearman Global (ρ):</span>
-                  <span className="text-indigo-300 font-mono font-bold">{activeTargetObj.spearman_rho ? activeTargetObj.spearman_rho.toFixed(3) : "0.512"}</span>
+                  <span className="text-indigo-300 font-mono font-bold">{activeTargetObj.spearman_rho != null ? activeTargetObj.spearman_rho.toFixed(3) : "N/A"}</span>
                 </div>
               </div>
             )}

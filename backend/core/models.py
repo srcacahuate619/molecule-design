@@ -114,7 +114,7 @@ class TargetORM(Base):
     affinity_threshold = Column(Float, nullable=True, default=-7.5) # Suelo de afinidad absoluta
     specificity_floor  = Column(Float, nullable=True, default=0.5)  # [NUEVO] Mínimo del multiplier de especificidad (0.1–0.5)
     is_hot             = Column(Boolean, default=False, nullable=False)
-    spearman_rho       = Column(Float, nullable=True, default=0.512)
+    spearman_rho       = Column(Float, nullable=True)
     calibration_date   = Column(DateTime(timezone=True), nullable=True)
 
     # Ruta en MinIO al archivo .pdbqt preparado (listo para Vina)
@@ -566,7 +566,7 @@ class Target(BaseModel):
     hotspots: list[dict] | None = None
     affinity_threshold: float | None = -7.5
     is_hot: bool = False
-    spearman_rho: float | None = 0.512
+    spearman_rho: float | None = None
     calibration_date: datetime | None = None
     grid_center_x: float | None = None
     grid_center_y: float | None = None

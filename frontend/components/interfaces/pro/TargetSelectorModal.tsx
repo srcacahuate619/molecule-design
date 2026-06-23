@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { X, Search, Database, Fingerprint, Activity, Crosshair } from "lucide-react";
 import type { Target } from "../../../lib/api";
+import { shareCustomTarget } from "../../../lib/api";
 import { CustomReceptorModal } from "./CustomReceptorModal";
 
 interface TargetSelectorModalProps {
@@ -26,16 +27,42 @@ export default function TargetSelectorModal({
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [activeTab, setActiveTab] = useState<"oficiales" | "propios" | "comunidad">("oficiales");
 
+  const handleShareTarget = async (id: string) => {
+    try {
+      const res = await shareCustomTarget(id);
+      if (res.success && onTargetUploadSuccess) {
+        onTargetUploadSuccess();
+        alert("¡Receptor compartido con la comunidad exitosamente!");
+      }
+    } catch (err: any) {
+      alert("Error al compartir receptor: " + (err.message || err));
+    }
+  };
+
   // Categorize targets by structural_family and filter by search term and tab
   const groupedTargets = useMemo(() => {
     const term = searchTerm.toLowerCase();
     
+    // Obtener los IDs de targets propios del localStorage
+    const ownTargetIds: string[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("moldesign_custom_targets");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            ownTargetIds.push(...parsed.map((id: string) => id.toLowerCase()));
+          }
+        }
+      } catch {}
+    }
+
     // Filter by active tab
     let tabTargets = targets;
     if (activeTab === "oficiales") {
       tabTargets = targets.filter(t => !t.is_private && !t.is_community);
     } else if (activeTab === "propios") {
-      tabTargets = targets.filter(t => t.is_private);
+      tabTargets = targets.filter(t => t.is_private || (t.id && ownTargetIds.includes(t.id.toLowerCase())) || (t.pdb_id && ownTargetIds.includes(t.pdb_id.toLowerCase())));
     } else if (activeTab === "comunidad") {
       tabTargets = targets.filter(t => t.is_community);
     }
@@ -190,18 +217,25 @@ export default function TargetSelectorModal({
                             </div>
                           </div>
                         )}
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-lg font-black text-white tracking-widest font-mono">
-                            {target.pdb_id}
-                          </span>
-                          <span className="text-[9px] px-2 py-1 bg-white/5 rounded-md font-bold text-slate-400 uppercase">
+                        <div className="flex justify-between items-start mb-1 gap-2">
+                          <h4 className="text-sm font-bold text-white tracking-wide line-clamp-2 h-10 flex-1 leading-snug">
+                            {target.name}
+                          </h4>
+                          <span className="text-[9px] px-2 py-1 bg-white/5 rounded-md font-bold text-slate-400 uppercase whitespace-nowrap shrink-0">
                             {target.organism || "Desconocido"}
                           </span>
                         </div>
                         
-                        <p className="text-xs text-slate-300 font-medium line-clamp-2 mb-4 h-8">
-                          {target.name}
-                        </p>
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="text-[10px] font-mono text-slate-500 font-bold bg-white/5 px-1.5 py-0.5 rounded">
+                            {target.pdb_id}
+                          </span>
+                          {target.structural_family && (
+                            <span className="text-[9px] font-black text-indigo-400/80 uppercase tracking-wider">
+                              {target.structural_family}
+                            </span>
+                          )}
+                        </div>
 
                         <div className="mt-auto grid grid-cols-2 gap-2">
                           <div className="flex items-center gap-1.5 p-2 rounded-lg bg-black/40 border border-white/5">
@@ -209,7 +243,7 @@ export default function TargetSelectorModal({
                             <div className="flex flex-col">
                               <span className="text-[8px] text-slate-500 uppercase font-bold">Spearman ρ</span>
                               <span className="text-[10px] text-white font-mono font-black">
-                                {target.spearman_rho ? target.spearman_rho.toFixed(3) : "N/A"}
+                                {target.spearman_rho != null ? target.spearman_rho.toFixed(3) : "N/A"}
                               </span>
                             </div>
                           </div>
@@ -224,13 +258,26 @@ export default function TargetSelectorModal({
                           </div>
                         </div>
 
-                        {/* Credits for author */}
-                        {target.creator_username && (
+                        {/* Credits for author / Share button */}
+                        {activeTab === "propios" && !target.is_community ? (
+                          <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[9px] font-bold uppercase tracking-wider">
+                            <span className="text-slate-500">Privado</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShareTarget(target.id || target.pdb_id);
+                              }}
+                              className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[8px] uppercase tracking-widest transition-colors cursor-pointer"
+                            >
+                              Compartir con Comunidad
+                            </button>
+                          </div>
+                        ) : target.creator_username ? (
                           <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[9px] text-slate-500 font-bold uppercase tracking-wider">
                             <span>Colaborador:</span>
                             <span className="text-cyan-400">@{target.creator_username}</span>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     );
                   })}

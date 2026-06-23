@@ -14,8 +14,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.models import Target
+from core.models import Target, UserORM
 from db.repository import Repository
+from api.dependencies import get_current_user_optional
 
 from utils.logger import get_logger
 
@@ -191,6 +192,44 @@ async def list_targets(
         enriched_targets.append(t_schema)
         
     return enriched_targets
+
+
+@router.post(
+    "/{target_id}/share",
+    summary="Compartir un target privado con la comunidad",
+)
+async def share_target_with_community(
+    target_id: str,
+    current_user: UserORM | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import select
+    from core.models import TargetORM
+    import uuid
+    
+    stmt = None
+    try:
+        target_uuid = uuid.UUID(target_id)
+        stmt = select(TargetORM).where(TargetORM.id == target_uuid)
+    except ValueError:
+        stmt = select(TargetORM).where(TargetORM.pdb_id == target_id.upper())
+        
+    result = await db.execute(stmt)
+    target = result.scalar_one_or_none()
+    
+    if not target:
+        raise HTTPException(status_code=404, detail="Target no encontrado")
+        
+    target.is_community = True
+    target.is_private = False
+    
+    if current_user and not target.creator_username:
+        target.creator_username = current_user.username
+    elif not target.creator_username:
+        target.creator_username = "Colaborador"
+        
+    await db.commit()
+    return {"success": True, "message": "Target compartido con la comunidad exitosamente.", "target_id": target_id}
 
 
 class AlphaFoldLookupRequest(BaseModel):

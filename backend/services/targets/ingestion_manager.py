@@ -6,6 +6,7 @@ Automatiza la descarga, análisis de pockets y preparación estructural.
 """
 
 import asyncio
+import uuid
 from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.models import TargetORM
@@ -142,6 +143,33 @@ async def ingest_new_target(
         "ligand_reference": pocket_info.get("ligand_id")
     }
 
+def extract_pdb_metadata(pdb_text: str) -> dict:
+    """
+    Extrae metadatos del PDB como el organismo (científico o común) y la resolución.
+    """
+    organism = None
+    resolution = None
+    for line in pdb_text.splitlines():
+        if line.startswith("SOURCE"):
+            if "ORGANISM_SCIENTIFIC:" in line:
+                org_part = line.split("ORGANISM_SCIENTIFIC:")[1].split(";")[0].strip().title()
+                if org_part:
+                    organism = org_part
+            elif "ORGANISM_COMMON:" in line and not organism:
+                org_part = line.split("ORGANISM_COMMON:")[1].split(";")[0].strip().title()
+                if org_part:
+                    organism = org_part
+        elif line.startswith("REMARK   2 RESOLUTION."):
+            parts = line.split()
+            for p in parts:
+                try:
+                    val = float(p)
+                    resolution = val
+                    break
+                except ValueError:
+                    continue
+    return {"organism": organism, "resolution": resolution}
+
 async def ingest_custom_target(
     file_content: bytes,
     filename: str,
@@ -167,6 +195,17 @@ async def ingest_custom_target(
     
     log.info("ingesta_custom_iniciada", pdb_id=pdb_id, is_curated=is_curated)
     
+    # Intentar extraer metadatos del archivo subido
+    extracted_organism = None
+    extracted_resolution = None
+    try:
+        decoded_text = file_content.decode('utf-8', errors='ignore')
+        metadata = extract_pdb_metadata(decoded_text)
+        extracted_organism = metadata.get("organism")
+        extracted_resolution = metadata.get("resolution")
+    except Exception as e:
+        log.warning("error_extracting_metadata_from_custom_target", error=str(e))
+        
     if is_curated:
         if not filename.endswith(".pdbqt"):
             raise ValueError("Los archivos curados deben ser formato .pdbqt")
@@ -194,7 +233,10 @@ async def ingest_custom_target(
             is_community=is_community,
             creator_id=creator_id,
             creator_username=creator_username,
-            cofactors_whitelist=cofactors_whitelist or []
+            cofactors_whitelist=cofactors_whitelist or [],
+            organism=extracted_organism,
+            resolution=extracted_resolution,
+            spearman_rho=None
         )
         db.add(target)
         await db.commit()
@@ -261,7 +303,10 @@ async def ingest_custom_target(
             creator_id=creator_id,
             creator_username=creator_username,
             hotspots=hotspots,
-            cofactors_whitelist=cofactors_whitelist or []
+            cofactors_whitelist=cofactors_whitelist or [],
+            organism=extracted_organism,
+            resolution=extracted_resolution,
+            spearman_rho=None
         )
         db.add(target)
         await db.commit()
