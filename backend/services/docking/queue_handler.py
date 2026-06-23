@@ -306,7 +306,7 @@ async def _run_full_evaluation_async(
                 await cache.set_job_progress(task_id, 55, "docking")
 
                 docking = await run_vina_docking(
-                    smiles_hash=molecule.smiles_hash,
+                    smiles_hash=conformer["smiles_hash"],
                     target_pdb_id=target.pdb_id,
                     target_chain=target.chain,
                     target_center=box_center,

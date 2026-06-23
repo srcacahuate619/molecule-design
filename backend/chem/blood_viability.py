@@ -49,19 +49,22 @@ def predict_admet_ai(smiles: str) -> Dict[str, Any]:
             "Clearance": 5.0
         }
     
-    # admet_ai devuelve un DataFrame
     try:
-        df = model.predict_smiles([smiles])
+        # [FIX] La API de ADMET-AI v2 usa predict() con un DataFrame de pandas.
+        # El método predict_smiles() no existe en la versión actual (Chemprop v2).
+        import pandas as pd
+        df_input = pd.DataFrame({"smiles": [smiles]})
+        df = model.predict(df_input)
         row = df.iloc[0]
         return {
-            # Map predictions to expected keys. (Keys depend on the actual admet-ai version).
-            # These are educated guesses based on TDC endpoints in admet-ai.
-            "Solubility": float(row.get("ESOL", -3.0)), # LogS
-            "PPB": float(row.get("PPBR_AZ", 90.0)),     # Plasma Protein Binding
-            "BBB": int(row.get("BBB_Martins", 1)),      # BBB Permeable
-            "HIA": int(row.get("HIA_Hou", 1)),          # Human Intestinal Absorption
-            "hERG": int(row.get("hERG", 0)),            # hERG Blockers
-            "Clearance": float(row.get("Clearance_Hepatocyte_AZ", 10.0))
+            # Los nombres de columna dependen de la versión instalada de admet-ai.
+            # Usamos .get() con defaults razonables para tolerancia a cambios de API.
+            "Solubility": float(row.get("ESOL", row.get("Solubility", -3.0))),
+            "PPB": float(row.get("PPBR_AZ", row.get("PPB", 90.0))),
+            "BBB": int(row.get("BBB_Martins", row.get("BBB", 1))),
+            "HIA": int(row.get("HIA_Hou", row.get("HIA", 1))),
+            "hERG": int(row.get("hERG", 0)),
+            "Clearance": float(row.get("Clearance_Hepatocyte_AZ", row.get("Clearance", 10.0)))
         }
     except Exception as e:
         logger.error(f"ADMET-AI prediction failed: {e}")

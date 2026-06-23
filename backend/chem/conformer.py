@@ -158,13 +158,13 @@ async def generate_conformer(smiles: str) -> dict:
     # Paso 1: validar SMILES
     validation: ValidationResult = validate_smiles_or_raise(smiles)
     canonical = validation.canonical_smiles
-    smiles_hash = validation.smiles_hash
+    # NOTA: smiles_hash se recalculará DESPUÉS de la protonación (ver abajo)
 
     log.info(
         "generando conformer 3D",
         formula=validation.molecular_formula,
         heavy_atoms=validation.heavy_atom_count,
-        hash_prefix=smiles_hash[:8],
+        hash_prefix=validation.smiles_hash[:8],
     )
 
     # Paso 2: Tautomería canónica y protonación fisiológica
@@ -195,6 +195,14 @@ async def generate_conformer(smiles: str) -> dict:
         log.warning("dimorphite_dl no instalado. Usando SMILES neutro (sin corrección de pH).")
     except Exception as e:
         log.warning("Error en dimorphite_dl, usando neutro", error=str(e))
+
+    # [FIX] Recalcular el hash con el SMILES FINAL (post-tautomería + post-protonación).
+    # El archivo en MinIO debe guardarse con el mismo hash que vina_service usará para buscarlo.
+    # Si no recalculamos aquí, dimorphite puede cambiar el SMILES (ej. protonando un nitrógeno)
+    # y el hash original (del SMILES neutro) no coincidirá con la ruta guardada.
+    import hashlib as _hashlib
+    smiles_hash = _hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    log.debug("hash recalculado post-protonación", hash_prefix=smiles_hash[:8])
 
     # Los H explícitos son necesarios para que ETKDG coloque
     # correctamente los átomos de hidrógeno en 3D
@@ -341,11 +349,12 @@ async def generate_conformer(smiles: str) -> dict:
         converged=converged,
         had_macrocycle=has_macro,
         path=object_path,
+        final_hash_prefix=smiles_hash[:8],
     )
 
     return {
         "canonical_smiles":        canonical,
-        "smiles_hash":             smiles_hash,
+        "smiles_hash":             smiles_hash,   # hash del SMILES final (post-protonación)
         "conformer_path":          object_path,
         "num_atoms_3d":            num_atoms_3d,
         "optimization_converged":  converged,
