@@ -670,6 +670,7 @@ export default function ProEvaluation({
           targets={targets}
           selectedTargetId={target}
           onSelect={setTarget}
+          onTargetUploadSuccess={onTargetUploadSuccess}
         />
 
       {/* PEPTIDE ENGINE SELECTION MODAL */}

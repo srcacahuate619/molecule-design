@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { X, Search, Database, Fingerprint, Activity, Crosshair } from "lucide-react";
 import type { Target } from "../../../lib/api";
+import { CustomReceptorModal } from "./CustomReceptorModal";
 
 interface TargetSelectorModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface TargetSelectorModalProps {
   targets: Target[];
   onSelect: (pdbId: string) => void;
   selectedTargetId: string | null;
+  onTargetUploadSuccess?: () => void;
 }
 
 export default function TargetSelectorModal({
@@ -17,9 +19,11 @@ export default function TargetSelectorModal({
   onClose,
   targets,
   onSelect,
-  selectedTargetId
+  selectedTargetId,
+  onTargetUploadSuccess
 }: TargetSelectorModalProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   // Categorize targets by structural_family and filter by search term
   const groupedTargets = useMemo(() => {
@@ -73,16 +77,25 @@ export default function TargetSelectorModal({
             </button>
           </div>
 
-          {/* Search Bar */}
-          <div className="relative w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-            <input
-              type="text"
-              placeholder="Buscar por PDB ID, nombre de la proteína, o familia..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#03060c] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-600 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all duration-200"
-            />
+          {/* Search Bar & Actions */}
+          <div className="flex gap-4 w-full">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              <input
+                type="text"
+                placeholder="Buscar por PDB ID, nombre de la proteína, o familia..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#03060c] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-600 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all duration-200"
+              />
+            </div>
+            <button 
+              onClick={() => setShowCustomModal(true)}
+              className="px-6 rounded-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:shadow-[0_0_15px_rgba(8,145,178,0.5)] transition-all flex items-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Subir Receptor
+            </button>
           </div>
         </div>
 
@@ -171,6 +184,16 @@ export default function TargetSelectorModal({
           )}
         </div>
       </div>
+      
+      {showCustomModal && (
+        <CustomReceptorModal 
+          onClose={() => setShowCustomModal(false)} 
+          onSuccess={() => {
+            setShowCustomModal(false);
+            if (onTargetUploadSuccess) onTargetUploadSuccess();
+          }} 
+        />
+      )}
     </div>
   );
 }

@@ -141,3 +141,111 @@ async def ingest_new_target(
         "hotspots_mined": len(hotspots),
         "ligand_reference": pocket_info.get("ligand_id")
     }
+
+async def ingest_custom_target(
+    file_content: bytes,
+    filename: str,
+    name: str,
+    is_curated: bool,
+    db: AsyncSession,
+    chain_id: str = "A",
+    grid_center: tuple[float, float, float] | None = None,
+    grid_size: tuple[float, float, float] = (20.0, 20.0, 20.0),
+    cofactors_whitelist: list[str] | None = None
+) -> dict:
+    """
+    Ingesta un target subido manualmente por el usuario.
+    Si is_curated=True, asume que es un archivo .pdbqt listo.
+    Si is_curated=False, asume que es un .pdb y lo cura.
+    """
+    import uuid
+    pdb_id = f"USR_{uuid.uuid4().hex[:6].upper()}"
+    repo = Repository(db)
+    
+    log.info("ingesta_custom_iniciada", pdb_id=pdb_id, is_curated=is_curated)
+    
+    if is_curated:
+        if not filename.endswith(".pdbqt"):
+            raise ValueError("Los archivos curados deben ser formato .pdbqt")
+        if not grid_center:
+            raise ValueError("Debe proporcionar las coordenadas del grid (centro) para archivos curados (.pdbqt)")
+            
+        prepared_path = StoragePath.target_prepared(pdb_id)
+        await upload_text(file_content.decode('utf-8'), prepared_path)
+        
+        target = TargetORM(
+            pdb_id=pdb_id,
+            name=name,
+            chain=chain_id,
+            grid_center_x=grid_center[0],
+            grid_center_y=grid_center[1],
+            grid_center_z=grid_center[2],
+            grid_size_x=grid_size[0],
+            grid_size_y=grid_size[1],
+            grid_size_z=grid_size[2],
+            requires_cns=False,
+            is_prepared=True,
+            prepared_file_path=prepared_path,
+            is_hot=False,
+            is_private=True,
+            is_community=False,
+            cofactors_whitelist=cofactors_whitelist or []
+        )
+        db.add(target)
+        await db.commit()
+        return {"success": True, "message": f"Target personalizado {pdb_id} subido exitosamente.", "target": target}
+    else:
+        if not filename.endswith(".pdb"):
+            raise ValueError("Los archivos crudos deben ser formato .pdb")
+            
+        raw_path = StoragePath.target_raw(pdb_id)
+        await upload_text(file_content.decode('utf-8'), raw_path)
+        
+        pdb_text = file_content.decode('utf-8')
+        hotspots = []
+        center = grid_center
+        
+        if not center:
+            # Intentar descubrir pocket
+            pocket_info = discover_pocket_from_pdb(pdb_text, chain_id)
+            if not pocket_info["success"]:
+                raise ValueError(f"No se pudo autodescubrir el sitio activo: {pocket_info.get('error')}. Por favor proporcione las coordenadas manuales.")
+            center = pocket_info["grid_center"]
+            hotspots = pocket_info["suggested_hotspots"]
+            
+        # Curacion
+        try:
+            prepared_file_path = await prepare_target(
+                pdb_id=pdb_id,
+                chain_id=chain_id,
+                center=center,
+                size=grid_size,
+                force_reprepare=True,
+                cofactors_whitelist=cofactors_whitelist or []
+            )
+        except Exception as e:
+            log.error("preparacion_custom_fallida", pdb_id=pdb_id, error=str(e))
+            raise ValueError(f"Error curando el receptor: {str(e)}")
+            
+        target = TargetORM(
+            pdb_id=pdb_id,
+            name=name,
+            chain=chain_id,
+            grid_center_x=center[0],
+            grid_center_y=center[1],
+            grid_center_z=center[2],
+            grid_size_x=grid_size[0],
+            grid_size_y=grid_size[1],
+            grid_size_z=grid_size[2],
+            requires_cns=False,
+            is_prepared=True,
+            prepared_file_path=prepared_file_path,
+            is_hot=False,
+            is_private=True,
+            is_community=False,
+            hotspots=hotspots,
+            cofactors_whitelist=cofactors_whitelist or []
+        )
+        db.add(target)
+        await db.commit()
+        return {"success": True, "message": f"Target personalizado {pdb_id} curado e ingestado exitosamente.", "target": target}

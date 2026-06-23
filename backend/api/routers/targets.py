@@ -66,21 +66,87 @@ async def ingest_target(
             detail=f"Fallo en la ingesta científica: {str(e)}"
         )
 
+from fastapi import UploadFile, File, Form
+@router.post(
+    "/upload",
+    status_code=status.HTTP_201_CREATED,
+    summary="Subir y preparar un target personalizado",
+)
+async def upload_custom_target(
+    file: UploadFile = File(...),
+    name: str = Form(...),
+    is_curated: bool = Form(...),
+    chain_id: str = Form("A"),
+    grid_center_x: float | None = Form(None),
+    grid_center_y: float | None = Form(None),
+    grid_center_z: float | None = Form(None),
+    grid_size_x: float = Form(20.0),
+    grid_size_y: float = Form(20.0),
+    grid_size_z: float = Form(20.0),
+    cofactors_whitelist: str | None = Form(None, description="Coma-separated list"),
+    db: AsyncSession = Depends(get_db)
+):
+    from services.targets.ingestion_manager import ingest_custom_target
+    
+    grid_center = None
+    if grid_center_x is not None and grid_center_y is not None and grid_center_z is not None:
+        grid_center = (grid_center_x, grid_center_y, grid_center_z)
+        
+    grid_size = (grid_size_x, grid_size_y, grid_size_z)
+    
+    cofactors = []
+    if cofactors_whitelist:
+        cofactors = [c.strip().upper() for c in cofactors_whitelist.split(",") if c.strip()]
+        
+    content = await file.read()
+    
+    try:
+        result = await ingest_custom_target(
+            file_content=content,
+            filename=file.filename or "unknown",
+            name=name,
+            is_curated=is_curated,
+            db=db,
+            chain_id=chain_id,
+            grid_center=grid_center,
+            grid_size=grid_size,
+            cofactors_whitelist=cofactors
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        log.error("error_upload_target_api", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
 @router.get(
     "/",
     response_model=list[Target],
     summary="Listar todos los targets biológicos disponibles",
 )
-async def list_targets(db: AsyncSession = Depends(get_db)) -> list[Target]:
+async def list_targets(
+    private_ids: str | None = Query(None, description="Coma-separated list of private target IDs owned by the client"),
+    db: AsyncSession = Depends(get_db)
+) -> list[Target]:
     import os
     from utils.structural import get_residue_coordinates
 
     repo = Repository(db)
-    targets = await repo.get_all_targets()
+    all_targets = await repo.get_all_targets()
     # Ensure default target is seeded if empty
-    if not targets:
+    if not all_targets:
         await repo.ensure_default_target()
-        targets = await repo.get_all_targets()
+        all_targets = await repo.get_all_targets()
+        
+    client_private_ids = set()
+    if private_ids:
+        client_private_ids = set([x.strip() for x in private_ids.split(",") if x.strip()])
+        
+    targets = []
+    for t in all_targets:
+        if t.is_private and str(t.id) not in client_private_ids:
+            continue
+        targets.append(t)
     
     enriched_targets = []
     for t in targets:

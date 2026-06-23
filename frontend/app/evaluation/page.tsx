@@ -133,13 +133,18 @@ export default function EvaluationPage() {
   const [targets, setTargets] = useState<Target[]>([]);
   const [loadingTargets, setLoadingTargets] = useState(true);
 
-  useEffect(() => {
+  const loadTargets = () => {
+    setLoadingTargets(true);
     getTargets()
       .then((data) => {
         setTargets(data);
       })
       .catch((err) => console.error("Error loading targets:", err))
       .finally(() => setLoadingTargets(false));
+  };
+
+  useEffect(() => {
+    loadTargets();
   }, []);
 
   // --- Pipeline state ---
@@ -538,6 +543,7 @@ export default function EvaluationPage() {
         setTarget={setTarget}
         targets={targets}
         loadingTargets={loadingTargets}
+        onTargetUploadSuccess={loadTargets}
         validation={validation}
         setValidation={setValidation}
         taskId={taskId}

@@ -123,6 +123,10 @@ class TargetORM(Base):
     created_at         = Column(DateTime(timezone=True), server_default=func.now())
     cofactors_whitelist = Column(JSONB, nullable=True, default=[])
 
+    # Custom Targets
+    is_private         = Column(Boolean, default=False, nullable=False)
+    is_community       = Column(Boolean, default=False, nullable=False)
+
     molecules = relationship("MoleculeORM", back_populates="target")
 
 
@@ -566,6 +570,8 @@ class Target(BaseModel):
     grid_size_y: float | None = None
     grid_size_z: float | None = None
     cofactors_whitelist: list[str] | None = []
+    is_private: bool = False
+    is_community: bool = False
 
     model_config = {"from_attributes": True}
 

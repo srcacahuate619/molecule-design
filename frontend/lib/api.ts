@@ -323,7 +323,50 @@ export async function lookupAlphaFold(uniprotId: string): Promise<AlphaFoldEntry
 // ── Targets ──────────────────────────────────────────────────────
 
 export async function getTargets(): Promise<Target[]> {
-  return request<Target[]>("/targets/");
+  const customIds = [];
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("moldesign_custom_targets");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) customIds.push(...parsed);
+      }
+    } catch {}
+  }
+  const query = customIds.length > 0 ? `?private_ids=${customIds.join(",")}` : "";
+  return request<Target[]>(`/targets/${query}`);
+}
+
+export async function uploadCustomTarget(formData: FormData): Promise<{ success: boolean; message: string; target: Target }> {
+  const fetchUrl = `${API_URL}/targets/upload`;
+  const fetchInit = {
+    method: "POST",
+    body: formData,
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+      ...getAuthHeaders(),
+    },
+  };
+
+  const response = await fetch(fetchUrl, fetchInit);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Fallo al subir el receptor personalizado");
+  }
+  
+  const result = await response.json();
+  if (result.target && typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem("moldesign_custom_targets");
+      const parsed = stored ? JSON.parse(stored) : [];
+      if (!parsed.includes(result.target.id)) {
+        parsed.push(result.target.id);
+        localStorage.setItem("moldesign_custom_targets", JSON.stringify(parsed));
+      }
+    } catch {}
+  }
+  
+  return result;
 }
 
 // ── Blockchain ────────────────────────────────────────────────────
