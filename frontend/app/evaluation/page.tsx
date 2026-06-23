@@ -66,6 +66,19 @@ const PIPELINE_STEPS = [
   {
     index: 2,
     step: "LEVEL 2",
+    title: "Viabilidad Sanguínea (MPO)",
+    tech: "ADMET-AI + TabPFN",
+    desc: "Nivel toxicológico impulsado por redes neuronales y machine learning tabular. Evalúa en milisegundos la probabilidad de absorción intestinal (HIA), el cruce de la barrera hematoencefálica (BBB), y el riesgo sistémico (PAINS/Alertas Médicas). Descarta drogas tóxicas antes del análisis de grafos.",
+    icon: "🩸",
+    colors: {
+      COMPLETED: "border-cyan-500/30 bg-cyan-500/5 text-cyan-400",
+      ACTIVE: "border-cyan-400 bg-cyan-500/10 text-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.15)] animate-pulse",
+      IDLE: "border-surface-800/80 bg-surface-950/40 text-surface-500 opacity-60"
+    }
+  },
+  {
+    index: 3,
+    step: "LEVEL 3",
     title: "Análisis Topológico",
     tech: "GNN RTMScore",
     desc: "Aquí usamos Redes Neuronales de Grafos (RTMScore) de aprendizaje profundo para evaluar la topología y forma de la molécula como si fuera un 'grafo' espacial. La IA analiza cómo interactúa cada átomo de tu fármaco con cada aminoácido de la proteína receptora en 3D. Esto nos permite descartar moléculas que 'parecen' encajar matemáticamente, pero que en un entorno biológico real sufrirían choques estéricos severos o serían incompatibles.",
@@ -77,8 +90,8 @@ const PIPELINE_STEPS = [
     }
   },
   {
-    index: 3,
-    step: "LEVEL 3",
+    index: 4,
+    step: "LEVEL 4",
     title: "Refinamiento Dinámico",
     tech: "OpenMM MD Engine",
     desc: "A través del motor OpenMM, sometemos el complejo proteína-fármaco a dinámica molecular y minimización de gradientes conjugados. Imagina esto como 'agitar' suavemente la molécula dentro del bolsillo de la proteína para disipar cualquier tensión física acumulada. Este paso microscópico relaja la estructura, optimiza la formación de puentes de hidrógeno clave y asegura que el acoplamiento sea termodinámicamente estable a largo plazo.",
@@ -90,7 +103,7 @@ const PIPELINE_STEPS = [
     }
   },
   {
-    index: 4,
+    index: 5,
     step: "SECURE",
     title: "Consenso Ledger",
     tech: "Solana Devnet",
@@ -168,26 +181,31 @@ export default function EvaluationPage() {
 
     const progress = status.progress;
     if (stepIndex === 0) { // RDKit
-      if (progress > 25) return "COMPLETED";
-      if (progress >= 1 && progress <= 25) return "ACTIVE";
+      if (progress > 20) return "COMPLETED";
+      if (progress >= 1 && progress <= 20) return "ACTIVE";
       return "IDLE";
     }
     if (stepIndex === 1) { // Vina + XGBoost
-      if (progress > 60) return "COMPLETED";
-      if (progress > 25 && progress <= 60) return "ACTIVE";
+      if (progress > 50) return "COMPLETED";
+      if (progress > 20 && progress <= 50) return "ACTIVE";
       return "IDLE";
     }
-    if (stepIndex === 2) { // GNN RTMScore
-      if (progress > 80) return "COMPLETED";
-      if (progress > 60 && progress <= 80) return "ACTIVE";
+    if (stepIndex === 2) { // ADMET-AI + TabPFN
+      if (progress > 70) return "COMPLETED";
+      if (progress > 50 && progress <= 70) return "ACTIVE";
       return "IDLE";
     }
-    if (stepIndex === 3) { // OpenMM
+    if (stepIndex === 3) { // GNN RTMScore
+      if (progress > 85) return "COMPLETED";
+      if (progress > 70 && progress <= 85) return "ACTIVE";
+      return "IDLE";
+    }
+    if (stepIndex === 4) { // OpenMM
       if (progress > 95) return "COMPLETED";
-      if (progress > 80 && progress <= 95) return "ACTIVE";
+      if (progress > 85 && progress <= 95) return "ACTIVE";
       return "IDLE";
     }
-    if (stepIndex === 4) { // Solana
+    if (stepIndex === 5) { // Solana
       if (progress === 100 || status.status === "done") return "COMPLETED";
       if (progress > 95 && progress < 100) return "ACTIVE";
       return "IDLE";
@@ -1141,6 +1159,8 @@ export default function EvaluationPage() {
               affinityMultiplier={status.result.affinity_multiplier}
               specificityMultiplier={status.result.specificity_multiplier}
               gnnScore={status.result.gnn_score}
+              bloodViabilityScore={status.result.blood_viability_score}
+              bloodSystemicReactivity={status.result.blood_systemic_reactivity}
             />
             
             <div className="flex flex-col gap-5">

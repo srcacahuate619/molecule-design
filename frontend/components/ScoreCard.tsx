@@ -503,8 +503,8 @@ export function ScoreCard({
                 <span>Fórmula del Score Compuesto:</span>
                 <span className="text-surface-500">
                   {gnnScore !== null && gnnScore !== undefined 
-                    ? "[(A·0.45) + (P·M_a)] · M_s · M_g" 
-                    : "[(A·0.45) + (P·M_a)] · M_s"}
+                    ? "[(A·M_g·0.45) + (P·M_a)] · M_s · M_sa · M_v" 
+                    : "[(A·0.45) + (P·M_a)] · M_s · M_sa · M_v"}
                 </span>
               </div>
             )}
@@ -520,6 +520,14 @@ export function ScoreCard({
                     <span>(P) Phys. Score:</span>
                     <span className="text-purple-400">
                       {((adme || 0) * 0.30 + (druglikeness || 0) * 0.25).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+                {!isControl && gnnScore !== null && gnnScore !== undefined && (
+                  <div className="flex justify-between">
+                    <span>(M_g) Multipl. G:</span>
+                    <span className={((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)) < 1.0 ? "text-red-400" : "text-purple-400 font-bold"}>
+                      {((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)).toFixed(3)}
                     </span>
                   </div>
                 )}
@@ -542,11 +550,19 @@ export function ScoreCard({
                     </span>
                   </div>
                 )}
-                {!isControl && gnnScore !== null && gnnScore !== undefined && (
+                {!isControl && (
                   <div className="flex justify-between">
-                    <span>(M_g) Multipl. G:</span>
-                    <span className={((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)) < 1.0 ? "text-red-400" : "text-purple-400 font-bold"}>
-                      {((0.7 + (1.0 / (1.0 + Math.exp(-0.05 * (gnnScore - 20.0)))) * 0.45)).toFixed(3)}
+                    <span>(M_sa) Penaliz. SA:</span>
+                    <span className={(saScore ?? 0) > 6.0 ? "text-red-400" : "text-emerald-400"}>
+                      {(saScore ?? 0) > 6.0 ? ((saScore ?? 0) > 7.0 ? 0.0 : ((7.0 - (saScore ?? 0)) / 1.0)).toFixed(3) : "1.000"}
+                    </span>
+                  </div>
+                )}
+                {!isControl && (
+                  <div className="flex justify-between">
+                    <span>(M_v) Viab. Sangre:</span>
+                    <span className={bloodViabilityScore && bloodViabilityScore < 100 ? "text-red-400" : "text-emerald-400"}>
+                      {bloodViabilityScore !== undefined && bloodViabilityScore !== null ? (bloodViabilityScore / 100).toFixed(3) : "1.000"}
                     </span>
                   </div>
                 )}
@@ -555,8 +571,8 @@ export function ScoreCard({
               <div className="col-span-2 pt-2 border-t border-surface-800/30">
                 {!isControl && (
                   <p className="text-[10px] text-surface-500 mb-2 font-sans">
-                    * Nota: El "Phys. Score" es la suma ponderada de ADME (30%) y Drug-likeness (25%). 
-                    M_a penaliza afinidad baja, M_s penaliza hotspots no acoplados, y M_g representa el factor corrector del RTMScore GNN (Nivel 2).
+                    * Nota: El "Phys. Score" es la suma ponderada de ADME y Drug-likeness. 
+                    M_g aplica sólo sobre Afinidad (A). M_a penaliza afinidad general baja. M_s penaliza hotspots. M_sa y M_v (Viabilidad Sanguínea) son factores finales agresivos.
                   </p>
                 )}
                 <div className="flex justify-between text-xs font-bold text-gray-200 bg-surface-800/30 p-2 rounded">

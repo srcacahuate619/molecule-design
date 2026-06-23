@@ -1006,6 +1006,8 @@ export default function ProEvaluation({
                 affinityMultiplier={status.result.affinity_multiplier}
                 specificityMultiplier={status.result.specificity_multiplier}
                 gnnScore={status.result.gnn_score}
+                bloodViabilityScore={status.result.blood_viability_score}
+                bloodSystemicReactivity={status.result.blood_systemic_reactivity}
               />
             )}
             <div className="rounded-2xl border border-white/5 bg-slate-900/60 p-5 space-y-4 shadow-xl">
