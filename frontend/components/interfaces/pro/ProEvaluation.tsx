@@ -117,6 +117,7 @@ interface ProEvaluationProps {
   handleUseSuggestion: (sug: MolecularSuggestion) => Promise<void>;
   startPolling: (tid: string) => void;
   stopPolling: () => void;
+  onTargetUploadSuccess?: () => void;
 }
 
 export default function ProEvaluation({
@@ -154,6 +155,7 @@ export default function ProEvaluation({
   handleUseSuggestion,
   startPolling,
   stopPolling,
+  onTargetUploadSuccess,
 }: ProEvaluationProps) {
   const { user } = useAuth();
   const consoleRef = useRef<HTMLDivElement>(null);

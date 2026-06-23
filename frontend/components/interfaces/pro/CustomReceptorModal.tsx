@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { X, Upload, Info, FileText, CheckCircle2, Zap } from "lucide-react";
-import { uploadCustomTarget } from "@/lib/api";
+import { uploadCustomTarget } from "../../../lib/api";
 
 interface CustomReceptorModalProps {
   onClose: () => void;
