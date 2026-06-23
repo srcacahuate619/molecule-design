@@ -56,15 +56,22 @@ def predict_admet_ai(smiles: str) -> Dict[str, Any]:
         df_input = pd.DataFrame({"smiles": [smiles]})
         df = model.predict(df_input)
         row = df.iloc[0]
+        # [FIX] Series.get(key, Series.get(fallback)) no funciona en pandas:
+        # si la clave primaria no existe, devuelve el default de la outer llamada
+        # (-3.0), nunca evalúa el fallback interno. Usamos `in` explícito.
+        def _col(series, *keys, default=0.0):
+            for k in keys:
+                if k in series.index:
+                    return series[k]
+            return default
+
         return {
-            # Los nombres de columna dependen de la versión instalada de admet-ai.
-            # Usamos .get() con defaults razonables para tolerancia a cambios de API.
-            "Solubility": float(row.get("ESOL", row.get("Solubility", -3.0))),
-            "PPB": float(row.get("PPBR_AZ", row.get("PPB", 90.0))),
-            "BBB": int(row.get("BBB_Martins", row.get("BBB", 1))),
-            "HIA": int(row.get("HIA_Hou", row.get("HIA", 1))),
-            "hERG": int(row.get("hERG", 0)),
-            "Clearance": float(row.get("Clearance_Hepatocyte_AZ", row.get("Clearance", 10.0)))
+            "Solubility": float(_col(row, "ESOL", "Solubility", default=-3.0)),
+            "PPB":        float(_col(row, "PPBR_AZ", "PPB", default=90.0)),
+            "BBB":        int(_col(row, "BBB_Martins", "BBB", default=1)),
+            "HIA":        int(_col(row, "HIA_Hou", "HIA", default=1)),
+            "hERG":       int(_col(row, "hERG", default=0)),
+            "Clearance":  float(_col(row, "Clearance_Hepatocyte_AZ", "Clearance", default=10.0)),
         }
     except Exception as e:
         logger.error(f"ADMET-AI prediction failed: {e}")

@@ -29,8 +29,8 @@ export default function TargetSelectorModal({
   const groupedTargets = useMemo(() => {
     const term = searchTerm.toLowerCase();
     const filtered = targets.filter(t => 
-      t.name.toLowerCase().includes(term) || 
-      t.pdb_id.toLowerCase().includes(term) || 
+      (t.name || "").toLowerCase().includes(term) || 
+      (t.pdb_id || "").toLowerCase().includes(term) || 
       (t.organism && t.organism.toLowerCase().includes(term))
     );
 
@@ -121,12 +121,14 @@ export default function TargetSelectorModal({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {groupedTargets[family].map(target => {
-                    const isSelected = target.pdb_id === selectedTargetId;
+                    const isSelected = 
+                      (target.pdb_id && selectedTargetId && target.pdb_id.toLowerCase() === selectedTargetId.toLowerCase()) ||
+                      (target.id && selectedTargetId && target.id.toLowerCase() === selectedTargetId.toLowerCase());
                     return (
                       <div 
-                        key={target.pdb_id}
+                        key={target.pdb_id || target.id}
                         onClick={() => {
-                          onSelect(target.pdb_id);
+                          onSelect(target.pdb_id || target.id || "");
                           onClose();
                         }}
                         className={`group relative flex flex-col p-4 rounded-xl border cursor-pointer transition-all duration-300 ${

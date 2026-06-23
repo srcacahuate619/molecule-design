@@ -10,6 +10,7 @@ import type {
 } from "./types";
 
 export interface Target {
+  id?: string;
   pdb_id: string;
   name: string;
   organism: string;

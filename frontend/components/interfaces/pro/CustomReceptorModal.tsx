@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { X, Upload, Info, FileText, CheckCircle2, Zap } from "lucide-react";
 import { uploadCustomTarget } from "../../../lib/api";
 
@@ -32,13 +32,39 @@ export function CustomReceptorModal({ onClose, onSuccess }: CustomReceptorModalP
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selected = e.target.files[0];
+      // Validación de tipo de archivo en cliente
+      const ext = selected.name.split(".").pop()?.toLowerCase();
+      const allowed = mode === "manual" ? ["pdbqt"] : ["pdb"];
+      if (!allowed.includes(ext || "")) {
+        setError(`Archivo inválido. Se esperaba .${allowed.join(" o .")} para el modo seleccionado.`);
+        e.target.value = "";
+        return;
+      }
+      setError(null);
+      setFile(selected);
     }
   };
+
+  // [FIX] Auto-enviar cuando el archivo es seleccionado (evita el doble click)
+  // Cuando el file picker cierra y file cambia de null -> File, se re-ejecuta handleSubmit
+  const pendingSubmitRef = useRef(false);
+
+  useEffect(() => {
+    if (pendingSubmitRef.current && file) {
+      pendingSubmitRef.current = false;
+      // Crear un evento sintético para reutilizar la lógica de handleSubmit
+      const syntheticEvent = { preventDefault: () => {} } as React.FormEvent;
+      handleSubmit(syntheticEvent);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
+      // Marcar que, cuando el usuario seleccione un archivo, se re-envíe el form
+      pendingSubmitRef.current = true;
       fileInputRef.current?.click();
       return;
     }

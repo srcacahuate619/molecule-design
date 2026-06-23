@@ -311,96 +311,9 @@ export default function EvaluationPage() {
     getPoseFile(moleculeId).then((pose) => setPoseData(pose));
   }, [status?.result?.molecule_id]);
 
-  useEffect(() => {
-    // NOTA: El módulo de interpretación de IA se encuentra inactivo en producción.
-    // Se prioriza el Reporte Científico PDF que contiene datos moleculares de grado clínico.
-    return;
-
-    const moleculeId = status?.result?.molecule_id;
-    if (!moleculeId) return;
-    setAiReport(null);
-    setLoadingAiReport(true);
-
-    let isMounted = true;
-    const fetchStream = async () => {
-      try {
-        // Necesitamos importar API_URL y getAuthHeaders si no están en scope,
-        // pero podemos usar window.location.origin o importarlos.
-        // wait, api.ts is usually imported as `import * as api from "@/lib/api";`
-        // so we can use api.API_URL
-      } catch (e) {
-      }
-    };
-    // We will use native fetch to the stream endpoint
-    
-    // Attempt to get the correct URL from api module if we could import it, 
-    // but we can just hardcode the logic for token parsing:
-    const headers: Record<string, string> = {};
-    try {
-      const stored = localStorage.getItem("moldesign_auth");
-      if (stored) {
-        const parsed = JSON.parse(stored as string);
-        if (parsed.token) headers["Authorization"] = `Bearer ${parsed.token}`;
-      }
-    } catch (e) {}
-
-    const fetchAiStream = async () => {
-      try {
-        let url = process.env.NEXT_PUBLIC_API_URL;
-        if (!url) {
-           url = window.location.hostname === "localhost" ? "http://localhost:8010" : `${window.location.protocol}//${window.location.hostname}:8010`;
-        }
-        
-        const res = await fetch(`${url}/evaluation/ai-report/${moleculeId}/stream`, {
-          headers
-        });
-        
-        if (!res.ok) throw new Error("Network error");
-        if (!res.body) throw new Error("No body in response");
-        
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        
-        if (isMounted) {
-          setLoadingAiReport(false);
-          setAiReport("");
-        }
-
-        let done = false;
-        while (!done) {
-          const { value, done: readerDone } = await reader.read();
-          done = readerDone;
-          if (value) {
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n\n");
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                try {
-                  const tokenText = JSON.parse(line.slice(6));
-                  if (isMounted) {
-                    setAiReport((prev) => (prev || "") + tokenText);
-                  }
-                } catch (e) {
-                  // ignore JSON parse errors for incomplete chunks, though SSE chunks should be complete
-                }
-              }
-            }
-          }
-        }
-      } catch (error) {
-        if (isMounted) {
-          setAiReport("No se pudo generar la interpretación. Revisa el servidor local.");
-          setLoadingAiReport(false);
-        }
-      }
-    };
-    
-    fetchAiStream();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [status?.result?.molecule_id]);
+  // NOTA: El módulo de interpretación de IA está desactivado en producción.
+  // Se prioriza el Reporte Científico PDF con datos moleculares de grado clínico.
+  // El endpoint de streaming /evaluation/ai-report/:id/stream está reservado para versiones futuras.
 
   useEffect(() => {
     if (!aiReport) {
@@ -595,7 +508,7 @@ export default function EvaluationPage() {
         <h3 className="text-sm font-bold text-indigo-400 uppercase mb-4 tracking-widest border-b border-indigo-900/50 pb-2">
           Pipeline de Evaluación
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {PIPELINE_STEPS.map((s) => {
             const stepState = getStepState(s.index);
             const cardStyle = s.colors[stepState];
