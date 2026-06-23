@@ -174,39 +174,53 @@ async def upload_bytes(
     Lanza FileUploadError si MinIO no está disponible o falla el upload.
     """
     bucket = bucket or settings.minio_bucket_poses
+    from datetime import timedelta
+    import httpx
     
-    def sync_upload():
-        log.info("sync_upload_iniciando_cliente", object_name=object_name)
-        client = get_minio_client()
-        log.info("sync_upload_cliente_inicializado", object_name=object_name)
-        data_stream = io.BytesIO(data)
-        log.info("sync_upload_ejecutando_put_object", object_name=object_name, size=len(data))
-        client.put_object(
+    client = get_minio_client()
+    
+    try:
+        log.info("generando_url_prefirmada_local", object_name=object_name)
+        url = client.presigned_put_object(
             bucket_name=bucket,
             object_name=object_name,
-            data=data_stream,
-            length=len(data),
-            content_type=content_type,
+            expires=timedelta(minutes=15)
         )
-        log.info("sync_upload_put_object_ok", object_name=object_name)
-
-    try:
-        await asyncio.get_event_loop().run_in_executor(None, sync_upload)
-        log.debug(
-            "archivo subido a MinIO",
+        log.info("url_prefirmada_generada_ok", object_name=object_name)
+        
+        log.info("subiendo_bytes_via_httpx", object_name=object_name, size=len(data))
+        async with httpx.AsyncClient() as httpx_client:
+            response = await httpx_client.put(
+                url,
+                content=data,
+                headers={"Content-Type": content_type},
+                timeout=30.0
+            )
+            
+        if response.status_code != 200:
+            raise FileUploadError(
+                filename=object_name,
+                bucket=bucket,
+                detail=f"HTTP Error {response.status_code} al subir a URL pre-firmada: {response.text}"
+            )
+            
+        log.info(
+            "archivo subido a MinIO via HTTP PUT",
             object_name=object_name,
             bucket=bucket,
             size_bytes=len(data),
         )
         return object_name
 
-    except S3Error as e:
+    except Exception as e:
         log.error(
             "error subiendo archivo a MinIO",
             object_name=object_name,
             bucket=bucket,
             error=str(e),
         )
+        if isinstance(e, FileUploadError):
+            raise
         raise FileUploadError(
             filename=object_name,
             bucket=bucket,
@@ -358,24 +372,34 @@ async def delete_object(
     bucket: str | None = None,
 ) -> bool:
     """
-    Elimina un objeto de MinIO.
-
-    Retorna True si se eliminó, False si no existía.
-    Útil para limpiar archivos temporales después del docking.
+    Elimina un objeto de MinIO usando una petición DELETE firmada HTTP.
+    Evita usar miniopy-async para prevenir Segmentation Faults.
     """
-    bucket = bucket or settings.minio_bucket_poses
+    from datetime import timedelta
+    import httpx
     
-    def sync_delete():
-        client = get_minio_client()
-        client.remove_object(bucket_name=bucket, object_name=object_name)
+    bucket = bucket or settings.minio_bucket_poses
+    client = get_minio_client()
 
     try:
-        await asyncio.get_event_loop().run_in_executor(None, sync_delete)
-        log.debug("objeto eliminado de MinIO", object_name=object_name)
-        return True
-    except S3Error as e:
-        if e.code == "NoSuchKey":
+        url = client.get_presigned_url(
+            method="DELETE",
+            bucket_name=bucket,
+            object_name=object_name,
+            expires=timedelta(minutes=15)
+        )
+        async with httpx.AsyncClient() as httpx_client:
+            response = await httpx_client.delete(url, timeout=10.0)
+            
+        if response.status_code in (200, 204):
+            log.debug("objeto eliminado de MinIO", object_name=object_name)
+            return True
+        elif response.status_code == 404:
             return False
+        else:
+            log.warning("error eliminando objeto", object_name=object_name, code=response.status_code)
+            return False
+    except Exception as e:
         log.warning("error eliminando objeto", object_name=object_name, error=str(e))
         return False
 
