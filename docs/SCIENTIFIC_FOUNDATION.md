@@ -50,6 +50,16 @@ Los dos componentes del score fisicoquímico miden cosas distintas y complementa
 - **Score ADME (peso 0.30):** Evalúa el perfil de absorción/distribución explícitamente mediante 3 factores físicos independientes: TPSA (permeabilidad oral y BBB), logP (lipofilia, distribución en tejido) y SA Score (accesibilidad sintética). Penaliza directamente los factores que afectan la viabilidad clínica.
 - **Score Drug-likeness (peso 0.25):** Basado en el **QED** (Bickerton et al., *Nat. Chem.* 2012), que combina 8 propiedades moleculares ponderadas (MW, logP, HBD, HBA, PSA, RotBonds, Aromáticos, Alertas estructurales) en un único índice de 0 a 1 calibrado contra el juicio de expertos en química medicinal sobre ~1,500 moléculas aprobadas.
 
+### Perfil ADMET / MPO y Sincronización de Multiplicadores [v6.10]
+Para evitar la desviación de cálculos y garantizar que el frontend audite de manera matemáticamente estricta lo que computa el motor de física y ML, en la versión **v6.10** se implementó:
+1. **Sincronización Directa de Factores**: El backend calcula y transmite directamente los factores finales de penalización armónica (`gnn_factor`, `sa_factor` y `blood_factor`) de forma que la UI no realiza ninguna recalculación o aproximación local imprecisa de las penalizaciones de GNN o SA.
+2. **Perfil Farmacocinético MPO (ADMET-AI)**: Evaluación en paralelo de descriptores ADMET:
+   - **LogS**: Solubilidad termodinámica acuosa.
+   - **PPB**: Unión a proteínas plasmáticas (Plasma Protein Binding).
+   - **HIA**: Coeficiente de absorción intestinal humana (Human Intestinal Absorption).
+   - **BBB**: Penetración pasiva a la barrera hematoencefálica (Blood-Brain Barrier).
+3. **Filtro Toxicológico Tabular (TabPFN)**: Detección in-context de grupos químicos reactivos, inmunogenicidad y alertas toxicológicas mediante un clasificador de machine learning tabular entrenado con alertas de toxicología industrial.
+
 ### Protocolo Endógeno vs. Diseño de Fármacos Sintéticos [v6.6]
 El sistema de puntuación tiene dos modos de operación distintos, diseñados para reflejar la diferencia fundamental entre el desarrollo de un fármaco clínico y el estudio biológico de la naturaleza:
 
