@@ -2,7 +2,7 @@
 
 **Plataforma de Descubrimiento Farmacológico In Silico — Docking Físico · ML Rescoring · Certificación Blockchain**
 
-[![Versión](https://img.shields.io/badge/Versión-v6.7-blue.svg)]()
+[![Versión](https://img.shields.io/badge/Versión-v6.10-blue.svg)]()
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Python: 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)]()
 [![Next.js: 14](https://img.shields.io/badge/Next.js-14-black.svg)]()
@@ -13,9 +13,9 @@
 
 > *"Democratizando el diseño de fármacos mediante rigor científico, transparencia total y registro inmutable de autoría."*
 
-**MolDesign AI (v6.7)** es una plataforma *Open Science* para el cribado virtual de moléculas contra blancos biológicos de relevancia terapéutica. Combina un pipeline de **docking físico real** (AutoDock Vina), **rescoring por Machine Learning** (XGBoost, 176 features 3D), **auditoría científica profunda** (LE, LLE, Hotspot Analysis) y **certificación inmutable de autoría** en la blockchain de Solana. Los resultados completos se exportan como **Reporte Científico PDF** generado automáticamente.
+**MolDesign AI (v6.10)** es una plataforma *Open Science* para el cribado virtual de moléculas contra blancos biológicos de relevancia terapéutica. Combina un pipeline de **docking físico real** (AutoDock Vina), **rescoring por Machine Learning** (XGBoost, 176 features 3D), **auditoría científica profunda** (LE, LLE, Hotspot Analysis) y **certificación inmutable de autoría** en la blockchain de Solana. Los resultados completos se exportan como **Reporte Científico PDF** generado automáticamente.
 
-El módulo **Moldex** sirve como la interfaz principal de evaluación y registro histórico de moléculas. *(Nota v6.7: Calibración final del motor GNN y protecciones contra Silent Timeouts para la Fase 3 de Spearman, detalles en [CHANGELOG_v6.7.md](docs/CHANGELOG_v6.7.md)).*
+El módulo **Moldex** sirve como la interfaz principal de evaluación y registro histórico de moléculas. *(Nota v6.10: Alineación matemática estricta de multiplicadores y panel de perfil ADMET/MPO con atribución explícita a ADMET-AI y TabPFN, detalles en [CHANGELOG_v6.10_Mathematical_Alignment_MPO_ADMET.md](docs/CHANGELOG_v6.10_Mathematical_Alignment_MPO_ADMET.md)).*
 
 ---
 
