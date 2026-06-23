@@ -366,9 +366,10 @@ export default function ProEvaluation({
     const stages = [
       { id: "validation", label: "L0: Curación Estructural (RDKit Engine)", min: 0 },
       { id: "conformation", label: "Generación de Conformómeros 3D + MMFF94", min: 20 },
-      { id: "docking", label: dockingLabel, min: 55 },
-      { id: "scoring", label: "L2: Inferencia de Afinidad (GNN RTMScore + XGBoost)", min: 80 },
-      { id: "refinement", label: "L3: Relajación de Choques Estéricos (OpenMM MD)", min: 90 },
+      { id: "docking", label: dockingLabel, min: 50 },
+      { id: "admet", label: "Viabilidad Sanguínea (ADMET-AI + TabPFN)", min: 70 },
+      { id: "scoring", label: "L2: Inferencia de Afinidad (GNN RTMScore + XGBoost)", min: 85 },
+      { id: "refinement", label: "L3: Relajación de Choques Estéricos (OpenMM MD)", min: 95 },
       { id: "blockchain", label: "Firma Ledger Blockchain (Solana Devnet)", min: 98 }
     ];
 
@@ -415,14 +416,21 @@ export default function ProEvaluation({
           "[vina] Muestreando espacio conformacional de torsión del ligando..."
         );
       }
-      if (prog >= 75) {
+      if (prog >= 50) {
         logs.push(
           "[vina] Optimización de energía local por algoritmo BFGS completada.",
           "[vina] Pose número 1 resuelta como configuración de mínima energía.",
           "[rescoring] Extrayendo descriptores moleculares descriptores de contacto ODDT..."
         );
       }
-      if (prog >= 80) {
+      if (prog >= 70) {
+        logs.push(
+          "[admet] Analizando viabilidad sistémica y MPO con ADMET-AI...",
+          "[tabpfn] Inferencia en batch completada. Evaluando riesgos de HIA y BBB.",
+          "[admet] Filtros PAINS y toxicidad hepática validados."
+        );
+      }
+      if (prog >= 85) {
         logs.push(
           "[rescoring] Calculando score combinado con modelo de boosting XGBoost Nivel 1...",
           "[rescoring] Enviando complejo 3D reconstituido al microservicio rescoring...",
@@ -430,7 +438,7 @@ export default function ProEvaluation({
           "[rtmscore] Evaluando densidad de interacción por Red Convolucional de Grafos..."
         );
       }
-      if (prog >= 90) {
+      if (prog >= 95) {
         logs.push(
           "[openmm] Cargando motor de Dinámica Molecular OpenMM...",
           "[openmm] Aplicando campo de fuerza AMBER14SB para proteína y GAFF2 para ligando...",
@@ -534,6 +542,8 @@ export default function ProEvaluation({
             if (log.includes("[ERROR]")) color = "text-rose-400 font-semibold";
             if (log.includes("[rdkit]")) color = "text-cyan-400";
             if (log.includes("[vina]")) color = "text-blue-400";
+            if (log.includes("[admet]")) color = "text-rose-300";
+            if (log.includes("[tabpfn]")) color = "text-fuchsia-400";
             if (log.includes("[rtmscore]")) color = "text-purple-400";
             if (log.includes("[openmm]")) color = "text-amber-400";
             if (log.includes("[blockchain]")) color = "text-emerald-400";
