@@ -199,7 +199,17 @@ async def ingest_custom_target(
             raise ValueError("Los archivos crudos deben ser formato .pdb")
             
         raw_path = StoragePath.target_raw(pdb_id)
-        await upload_text(file_content.decode('utf-8'), raw_path)
+        log.info("ingesta_custom_decodificando_archivo", pdb_id=pdb_id)
+        try:
+            decoded_content = file_content.decode('utf-8')
+            log.info("ingesta_custom_decodificado_ok", pdb_id=pdb_id, size=len(decoded_content))
+        except Exception as e:
+            log.error("ingesta_custom_decodificado_error", pdb_id=pdb_id, error=str(e))
+            raise ValueError(f"El archivo no es UTF-8 válido: {str(e)}")
+            
+        log.info("ingesta_custom_subiendo_minio_raw", pdb_id=pdb_id, path=raw_path)
+        await upload_text(decoded_content, raw_path)
+        log.info("ingesta_custom_subido_minio_raw_ok", pdb_id=pdb_id)
         
         pdb_text = file_content.decode('utf-8')
         hotspots = []

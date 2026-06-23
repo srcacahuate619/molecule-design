@@ -176,8 +176,11 @@ async def upload_bytes(
     bucket = bucket or settings.minio_bucket_poses
     
     def sync_upload():
+        log.info("sync_upload_iniciando_cliente", object_name=object_name)
         client = get_minio_client()
+        log.info("sync_upload_cliente_inicializado", object_name=object_name)
         data_stream = io.BytesIO(data)
+        log.info("sync_upload_ejecutando_put_object", object_name=object_name, size=len(data))
         client.put_object(
             bucket_name=bucket,
             object_name=object_name,
@@ -185,6 +188,7 @@ async def upload_bytes(
             length=len(data),
             content_type=content_type,
         )
+        log.info("sync_upload_put_object_ok", object_name=object_name)
 
     try:
         await asyncio.get_event_loop().run_in_executor(None, sync_upload)
