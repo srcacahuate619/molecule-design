@@ -174,38 +174,47 @@ async def upload_bytes(
     Lanza FileUploadError si MinIO no está disponible o falla el upload.
     """
     bucket = bucket or settings.minio_bucket_poses
-    from datetime import timedelta
-    import httpx
     
-    client = get_minio_client()
-    
-    try:
-        log.info("generando_url_prefirmada_local", object_name=object_name)
-        url = client.presigned_put_object(
-            bucket_name=bucket,
-            object_name=object_name,
-            expires=timedelta(minutes=15)
-        )
-        log.info("url_prefirmada_generada_ok", object_name=object_name)
+    # Escribir bytes a un archivo temporal local
+    with tempfile.NamedTemporaryFile(delete=False, dir=settings.vina_temp_dir) as tmp:
+        tmp.write(data)
+        tmp_path = tmp.name
         
-        log.info("subiendo_bytes_via_httpx", object_name=object_name, size=len(data))
-        async with httpx.AsyncClient() as httpx_client:
-            response = await httpx_client.put(
-                url,
-                content=data,
-                headers={"Content-Type": content_type},
-                timeout=30.0
-            )
-            
-        if response.status_code != 200:
+    try:
+        log.info("subiendo_bytes_via_subproceso", object_name=object_name, size=len(data))
+        # Ejecutar un script Python en su propio espacio de proceso para evitar conflictos SSL/urllib3
+        cmd = [
+            "/opt/conda/bin/python",
+            "-c",
+            "import sys; from minio import Minio; "
+            "client = Minio(sys.argv[1], sys.argv[2], sys.argv[3], secure=sys.argv[4].lower() == 'true'); "
+            "client.fput_object(sys.argv[5], sys.argv[6], sys.argv[7], content_type=sys.argv[8])",
+            settings.minio_endpoint,
+            settings.minio_access_key,
+            settings.minio_secret_key,
+            str(settings.minio_secure),
+            bucket,
+            object_name,
+            tmp_path,
+            content_type
+        ]
+        
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        
+        if process.returncode != 0:
             raise FileUploadError(
                 filename=object_name,
                 bucket=bucket,
-                detail=f"HTTP Error {response.status_code} al subir a URL pre-firmada: {response.text}"
+                detail=f"Subprocess upload failed: {stderr.decode('utf-8', errors='replace')}"
             )
             
         log.info(
-            "archivo subido a MinIO via HTTP PUT",
+            "archivo subido a MinIO via subproceso",
             object_name=object_name,
             bucket=bucket,
             size_bytes=len(data),
@@ -226,6 +235,11 @@ async def upload_bytes(
             bucket=bucket,
             detail=str(e),
         ) from e
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except:
+            pass
 
 
 async def upload_text(
@@ -372,33 +386,31 @@ async def delete_object(
     bucket: str | None = None,
 ) -> bool:
     """
-    Elimina un objeto de MinIO usando una petición DELETE firmada HTTP.
-    Evita usar miniopy-async para prevenir Segmentation Faults.
+    Elimina un objeto de MinIO usando un subproceso para evitar conflictos de SSL en Uvicorn.
     """
-    from datetime import timedelta
-    import httpx
-    
     bucket = bucket or settings.minio_bucket_poses
-    client = get_minio_client()
-
     try:
-        url = client.get_presigned_url(
-            method="DELETE",
-            bucket_name=bucket,
-            object_name=object_name,
-            expires=timedelta(minutes=15)
+        cmd = [
+            "/opt/conda/bin/python",
+            "-c",
+            "import sys; from minio import Minio; "
+            "client = Minio(sys.argv[1], sys.argv[2], sys.argv[3], secure=sys.argv[4].lower() == 'true'); "
+            "client.remove_object(sys.argv[5], sys.argv[6])",
+            settings.minio_endpoint,
+            settings.minio_access_key,
+            settings.minio_secret_key,
+            str(settings.minio_secure),
+            bucket,
+            object_name
+        ]
+        
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
         )
-        async with httpx.AsyncClient() as httpx_client:
-            response = await httpx_client.delete(url, timeout=10.0)
-            
-        if response.status_code in (200, 204):
-            log.debug("objeto eliminado de MinIO", object_name=object_name)
-            return True
-        elif response.status_code == 404:
-            return False
-        else:
-            log.warning("error eliminando objeto", object_name=object_name, code=response.status_code)
-            return False
+        stdout, stderr = await process.communicate()
+        return process.returncode == 0
     except Exception as e:
         log.warning("error eliminando objeto", object_name=object_name, error=str(e))
         return False
