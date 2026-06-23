@@ -69,6 +69,8 @@ type ScoreCardProps = {
   affinityMultiplier?: number | null;
   specificityMultiplier?: number | null;
   gnnScore?: number | null;
+  bloodViabilityScore?: number | null;
+  bloodSystemicReactivity?: string[] | null;
 };
 
 export function ScoreCard({
@@ -95,6 +97,8 @@ export function ScoreCard({
   affinityMultiplier,
   specificityMultiplier,
   gnnScore,
+  bloodViabilityScore,
+  bloodSystemicReactivity,
 }: ScoreCardProps) {
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -281,6 +285,18 @@ export function ScoreCard({
       
       {!isControl ? (
         <>
+          {bloodViabilityScore !== undefined && (
+            <ScoreBar 
+              label="Viabilidad Sanguínea" 
+              value={bloodViabilityScore} 
+              color="#ef4444" 
+              onClick={() => setSelectedEducationalMetric({
+                title: "Viabilidad Sanguínea (ADMET)",
+                icon: "🩸",
+                desc: "Representa qué tan probable es que tu molécula sobreviva en la sangre y órganos sin causar toxicidad fatal. Un score bajo aquí destruirá tu Score Compuesto sin importar qué tan buena sea la afinidad, ya que una molécula tóxica nunca podría ser un fármaco aprobado."
+              })}
+            />
+          )}
           <ScoreBar 
             label="ADME" 
             value={adme} 
@@ -449,6 +465,19 @@ export function ScoreCard({
               <ul className="space-y-1">
                 {saReasons.map((reason, idx) => (
                   <li key={idx} className="text-[11px] text-red-300/80 leading-tight">• {reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {bloodSystemicReactivity && bloodSystemicReactivity.length > 0 && (
+            <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-2.5 animate-pulse">
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] font-black text-red-500 uppercase tracking-wider">
+                <span className="text-sm">☠️</span> Peligro Toxicológico
+              </div>
+              <ul className="space-y-1">
+                {bloodSystemicReactivity.map((reason, idx) => (
+                  <li key={idx} className="text-[11px] font-bold text-red-400/90 leading-tight">• {reason}</li>
                 ))}
               </ul>
             </div>

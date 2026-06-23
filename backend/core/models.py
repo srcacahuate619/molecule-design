@@ -260,6 +260,14 @@ class EvaluationResultORM(Base):
     sa_score         = Column(Float, nullable=True)   # Synthetic Accessibility Score (1-10)
     sa_reasons       = Column(JSONB, nullable=True)   # Lista de motivos (tensión de anillo, etc.)
 
+    # ── Viabilidad Sanguínea (Capa 3: ADMET-AI & TabPFN) ─────────────────────
+    blood_viability_score = Column(Float, nullable=True)
+    blood_solubility_logs = Column(Float, nullable=True)
+    blood_ppb_category    = Column(String(50), nullable=True)
+    blood_bbb_permeable   = Column(Boolean, nullable=True)
+    blood_hia_permeable   = Column(Boolean, nullable=True)
+    blood_systemic_reactivity = Column(JSONB, nullable=True)  # Lista de alertas de toxicidad
+
     # ── Drug-likeness ────────────────────────────────────────────────────────
     lipinski_pass    = Column(Boolean, nullable=True)
     veber_pass       = Column(Boolean, nullable=True)
@@ -314,6 +322,14 @@ class PhysicochemicalProperties(BaseModel):
     sa_reasons:       list[str] = Field(default_factory=list, description="Motivos de la dificultad sintética")
     lipinski_pass:    bool
     veber_pass:       bool
+    
+    # ── Viabilidad Sanguínea (ADMET-AI & TabPFN) ────────────────────────────
+    blood_viability_score: float | None = Field(None, description="Score combinado MPO de viabilidad sanguínea")
+    blood_solubility_logs: float | None = Field(None, description="Solubilidad acuosa logS")
+    blood_ppb_category: str | None = Field(None, description="Categoría de unión a proteínas plasmáticas (low, high, extreme)")
+    blood_bbb_permeable: bool | None = Field(None, description="¿Cruza la barrera hematoencefálica?")
+    blood_hia_permeable: bool | None = Field(None, description="¿Se absorbe en el intestino?")
+    blood_systemic_reactivity: list[str] = Field(default_factory=list, description="Alertas de toxicidad TabPFN/PAINS")
 
     @model_validator(mode="after")
     def validate_lipinski_consistency(self) -> "PhysicochemicalProperties":

@@ -37,6 +37,7 @@ from rdkit.Chem import Crippen, Descriptors, Lipinski, QED, rdMolDescriptors
 from rdkit.Chem.rdchem import Mol
 
 from chem.validator import validate_smiles_or_raise
+from chem.blood_viability import calculate_blood_viability
 from core.exceptions import PropertyCalculationError
 from core.models import PhysicochemicalProperties, ValidationResult
 from utils.logger import get_logger
@@ -376,6 +377,9 @@ def calculate_properties(smiles: str) -> PhysicochemicalProperties:
         lipinski_pass=lipinski_pass,
         veber_pass=veber_pass,
     )
+
+    # NUEVO: Capa 3 Blood Viability (ADMET-AI + TabPFN + MPO)
+    props = calculate_blood_viability(validation.canonical_smiles, props)
 
     log.info(
         "propiedades calculadas",

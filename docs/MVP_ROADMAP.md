@@ -1127,3 +1127,9 @@ total_score = clamp(
 - Molécula con grupos reactivos conocidos (PAINS severe) nunca supera 50/100
 - Molécula con TPSA < 10 Å² no puede superar 65/100
 - Fármacos aprobados (aspirina, ibuprofeno, paracetamol) no pierden más de 5 puntos vs el score actual
+
+---
+
+## 🔮 Futuro: Funciones "PRO" (Post-Fase 10)
+- **Modelos Fundacionales Químicos (ej. ChemBERTa / Uni-Mol)**: Integrar un Transformer fundacional pesado como característica premium. Servirá para evaluar química "fuera de distribución" (OOD) y drogas hiper-novedosas.
+- **Chatbot Asistente SOTA**: Conectar el Modelo Fundacional con un LLM conversacional para que el investigador pueda chatear directamente sobre la biología de la molécula evaluada.

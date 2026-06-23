@@ -274,3 +274,7 @@ dimorphite_dl==2.0.2
 google-auth==2.30.0
 cryptography==42.0.7
 flower==2.0.1
+
+# AI para Capa 3: Viabilidad Sanguínea
+admet-ai
+tabpfn

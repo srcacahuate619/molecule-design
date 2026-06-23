@@ -58,6 +58,12 @@ export type EvaluationResult = {
   // Scores
   adme_score: number | null;
   druglikeness_score: number | null;
+  blood_viability_score: number | null;
+  blood_solubility_logs: number | null;
+  blood_ppb_category: string | null;
+  blood_bbb_permeable: boolean | null;
+  blood_hia_permeable: boolean | null;
+  blood_systemic_reactivity: string[] | null;
   total_score: number | null;
   gnn_score: number | null;
   specificity_score: number | null;

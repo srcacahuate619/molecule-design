@@ -20,7 +20,7 @@ function Pill({ ok, label }: { ok: boolean | null; label: string }) {
   );
 }
 
-function Row({ label, value, unit, onClick }: { label: string; value: number | null | undefined; unit?: string, onClick?: () => void }) {
+function Row({ label, value, unit, onClick }: { label: string; value: number | string | null | undefined; unit?: string, onClick?: () => void }) {
   if (value === null || value === undefined) return null;
   const display = typeof value === "number" ? (Number.isInteger(value) ? String(value) : value.toFixed(2)) : String(value);
   
@@ -135,6 +135,42 @@ export function PropertiesPanel({ result }: Props) {
             title: "Quantitative Estimate of Drug-likeness (QED)",
             icon: "🌟",
             desc: "Es un puntaje global de 0 a 1 que resume qué tan similar es tu molécula a los fármacos aprobados existentes, basándose en todas sus propiedades físicas simultáneamente. 1.0 es la perfección farmacéutica."
+          })}
+        />
+        <Row 
+          label="LogS (Solubilidad)" 
+          value={result.blood_solubility_logs} 
+          onClick={() => setSelectedProperty({
+            title: "Solubilidad Acuosa (LogS)",
+            icon: "💧",
+            desc: "Qué tan bien se disuelve en agua. Valores entre -4 y 0.5 son ideales. Si es menor a -6, es prácticamente una piedra que el estómago no podrá disolver."
+          })}
+        />
+        <Row 
+          label="PPB" 
+          value={result.blood_ppb_category} 
+          onClick={() => setSelectedProperty({
+            title: "Unión a Proteínas Plasmáticas (PPB)",
+            icon: "🩸",
+            desc: "Si es 'High' (Alta), la molécula se pega a las proteínas de la sangre y no queda libre para atacar la enfermedad. Queremos idealmente 'Low' o 'Medium'."
+          })}
+        />
+        <Row 
+          label="Absorción Intestinal" 
+          value={result.blood_hia_permeable !== null ? (result.blood_hia_permeable ? "✓ Pasa" : "✗ Bloqueado") : null} 
+          onClick={() => setSelectedProperty({
+            title: "Absorción Intestinal Humana (HIA)",
+            icon: "🫀",
+            desc: "Predicción de Inteligencia Artificial sobre si la pastilla logrará cruzar las paredes del intestino hacia el torrente sanguíneo."
+          })}
+        />
+        <Row 
+          label="Llega al Cerebro" 
+          value={result.blood_bbb_permeable !== null ? (result.blood_bbb_permeable ? "✓ Pasa" : "✗ Bloqueado") : null} 
+          onClick={() => setSelectedProperty({
+            title: "Barrera Hematoencefálica (BBB)",
+            icon: "🧠",
+            desc: "Predicción de si la molécula es capaz de entrar al cerebro. Vital si estás curando Alzheimer, pero peligroso si es un fármaco para el corazón (porque causaría efectos psiquiátricos secundarios)."
           })}
         />
         <Row label="SA Score" value={result.sa_score} />

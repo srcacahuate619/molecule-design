@@ -228,9 +228,6 @@ def calculate_score_breakdown(
         base_score_with_specificity = base_score * specificity_multiplier
 
         # --- Factor SA (Accesibilidad Sintética) ---
-        # Penaliza el total_score si la molécula es difícil/imposible de sintetizar.
-        # Actua independientemente del ADME score como gate de viabilidad química.
-        # Ref: Ertl & Schuffenhauer (2009), J. Cheminform. 1:8.
         sa_factor, sa_severity = _calculate_sa_factor(properties.sa_score)
         if sa_factor < 1.0:
             log.info(
@@ -240,8 +237,14 @@ def calculate_score_breakdown(
                 sa_severity=sa_severity,
             )
 
-        # El GNN ya se aplicó a la afinidad, por lo que aquí solo aplicamos SA factor
-        total_score = clamp_score(base_score_with_specificity * sa_factor)
+        # --- Factor Blood Viability (Capa 3 MPO) ---
+        blood_factor = 1.0
+        if properties.blood_viability_score is not None:
+            blood_factor = properties.blood_viability_score / 100.0
+            log.info(f"blood_factor_applied: {blood_factor:.2f}")
+
+        # El GNN ya se aplicó a la afinidad, por lo que aquí aplicamos SA factor y Blood factor
+        total_score = clamp_score(base_score_with_specificity * sa_factor * blood_factor)
 
     strongest, weakest = _pick_dimensions(
         affinity_score,
