@@ -601,13 +601,23 @@ def generate_certificate_pdf(
     # DOCKING & INTERACTION SECTION
     story.append(Paragraph("Interacción Molecular y Docking (AutoDock Vina)", section_title_style))
     
+    # Guarantee main_affinity matches Pose 1 in docking_poses to resolve audit discrepancies
+    main_affinity = eval_result.affinity_kcal
+    if eval_result.docking_poses:
+        try:
+            poses_affs = [p.get("affinity") for p in eval_result.docking_poses if p.get("affinity") is not None]
+            if poses_affs:
+                main_affinity = poses_affs[0]
+        except Exception:
+            pass
+
     le = None
-    if eval_result.affinity_kcal is not None and eval_result.heavy_atom_count and eval_result.heavy_atom_count > 0:
-        le = eval_result.affinity_kcal / eval_result.heavy_atom_count
+    if main_affinity is not None and eval_result.heavy_atom_count and eval_result.heavy_atom_count > 0:
+        le = main_affinity / eval_result.heavy_atom_count
         
     lle = None
-    if eval_result.affinity_kcal is not None and eval_result.log_p is not None:
-        lle = (-eval_result.affinity_kcal / 1.36) - eval_result.log_p
+    if main_affinity is not None and eval_result.log_p is not None:
+        lle = (-main_affinity / 1.36) - eval_result.log_p
 
     # Reference control metrics
     CO_CRYSTAL_AFFINITIES = {
@@ -646,7 +656,7 @@ def generate_certificate_pdf(
     dock_headers = ["Métrica de Unión", "Molécula Diseñada", f"Control: {ctrl_name}" if ctrl_name != "N/A" else "Control Nativo"]
     dock_data = [
         dock_headers,
-        ["Afinidad (Energía libre de unión)", f"{eval_result.affinity_kcal:.2f} {affinity_err} kcal/mol" if eval_result.affinity_kcal is not None else "N/A", f"{ctrl_aff:.2f} kcal/mol" if ctrl_aff is not None else "N/A"],
+        ["Afinidad (Energía libre de unión)", f"{main_affinity:.2f} {affinity_err} kcal/mol" if main_affinity is not None else "N/A", f"{ctrl_aff:.2f} kcal/mol" if ctrl_aff is not None else "N/A"],
         ["Score Global de Selección", f"{eval_result.total_score:.2f} / 100" if eval_result.total_score is not None else "N/A", f"{ctrl_total_score:.2f} / 100" if ctrl_total_score is not None else "N/A"],
         ["Eficiencia de Ligando (LE)", f"{le:.3f}" if le is not None else "N/A", "N/A"],
         ["Eficiencia Lipofílica (LLE)", f"{lle:.3f}" if lle is not None else "N/A", "N/A"]
@@ -803,16 +813,31 @@ def generate_certificate_pdf(
     # ADMET-AI Pharmacokinetics Table
     admet_headers = ["Propiedad Biológica (ADMET-AI)", "Predicción", "Significado Clínico"]
     
-    solubility_val = f"{eval_result.blood_solubility_logs:.2f} logS" if eval_result.blood_solubility_logs is not None else "N/A"
+    # 1. Solubility qualitative tier classification
+    solubility_val = "N/A"
+    if eval_result.blood_solubility_logs is not None:
+        logs = eval_result.blood_solubility_logs
+        if logs >= -4.0:
+            solubility_val = f"{logs:.2f} logS (Soluble)"
+        elif logs <= -6.0:
+            solubility_val = f"{logs:.2f} logS (Poco soluble)"
+        else:
+            solubility_val = f"{logs:.2f} logS (Mod. soluble)"
+
     ppb_val = str(eval_result.blood_ppb_category) if eval_result.blood_ppb_category else "N/A"
     
     if eval_result.blood_hia_permeable is not None:
-        hia_val = "Alta Permeabilidad (HIA+)" if eval_result.blood_hia_permeable else "Baja Absorción (HIA-)"
+        hia_val = "Alta (HIA+)" if eval_result.blood_hia_permeable else "Baja (HIA-)"
     else:
         hia_val = "N/A"
         
+    # 2. BBB permeability contextualization (Favorable/Desfavorable based on target requires_cns)
+    requires_cns = bool(mol.target.requires_cns) if (mol.target and hasattr(mol.target, "requires_cns")) else False
     if eval_result.blood_bbb_permeable is not None:
-        bbb_val = "Permeable (SNC+)" if eval_result.blood_bbb_permeable else "No Permeable (SNC-)"
+        if eval_result.blood_bbb_permeable:
+            bbb_val = "Permeable (SNC+) [Favorable]" if requires_cns else "Permeable (SNC+) [Riesgo de efectos centrales]"
+        else:
+            bbb_val = "No Permeable (SNC-) [Riesgo]" if requires_cns else "No Permeable (SNC-) [Favorable (Evita toxicidad)]"
     else:
         bbb_val = "N/A"
         
@@ -1059,6 +1084,23 @@ def generate_certificate_pdf(
                 ('PADDING', (0,0), (-1,-1), 3)
             ]))
             story.append(ph_table)
+            
+            # Check for structural deviation warning dynamically (e.g. Aliphatics or Aromatics > 10% deviation)
+            high_dev_alerts = []
+            for k, v in eval_result.gnn_pharmacophores.items():
+                ref_val = ref_data.get(k, 0.0)
+                diff = v - ref_val
+                if diff > 10.0:
+                    if k == "Alifáticos":
+                        high_dev_alerts.append("Un exceso de grupos alifáticos incrementa la lipofilicidad (LogP), reduciendo la solubilidad y aumentando el aclaramiento hepático.")
+                    elif k == "Aromáticos":
+                        high_dev_alerts.append("Un exceso de anillos aromáticos favorece la insolubilidad y aumenta la propensión a la promiscuidad o uniones off-target.")
+            
+            if high_dev_alerts:
+                story.append(Spacer(1, 4))
+                dev_text = "<b>Diagnóstico Farmacofórico:</b> " + " ".join(high_dev_alerts)
+                story.append(Paragraph(dev_text, ParagraphStyle('DevWarning', parent=normal_style, fontSize=7.5, leading=9.5, textColor=colors.HexColor('#9a3412'))))
+
             story.append(Spacer(1, 10))
 
     # GLOBAL SCORE
