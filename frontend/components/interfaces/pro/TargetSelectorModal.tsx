@@ -117,7 +117,7 @@ export default function TargetSelectorModal({
           </div>
 
           {/* Search Bar & Actions */}
-          <div className="flex gap-4 w-full">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
               <input
@@ -125,12 +125,12 @@ export default function TargetSelectorModal({
                 placeholder="Buscar por PDB ID, nombre de la proteína, o familia..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#03060c] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-600 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all duration-200"
+                className="w-full bg-[#03060c] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white placeholder-slate-600 outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all duration-200"
               />
             </div>
             <button 
               onClick={() => setShowCustomModal(true)}
-              className="px-6 rounded-xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:shadow-[0_0_15px_rgba(8,145,178,0.5)] transition-all flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-850 hover:shadow-[0_0_15px_rgba(168,85,247,0.4)] text-white transition-all flex items-center justify-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Subir Receptor
@@ -153,7 +153,7 @@ export default function TargetSelectorModal({
               onClick={() => setActiveTab("propios")}
               className={`pb-3 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all ${
                 activeTab === "propios"
-                  ? "border-cyan-500 text-cyan-400"
+                  ? "border-purple-500 text-purple-400"
                   : "border-transparent text-slate-500 hover:text-slate-300"
               }`}
             >
