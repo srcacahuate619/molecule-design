@@ -1199,7 +1199,7 @@ def generate_certificate_pdf(
         "• <b>Motor de Docking:</b> AutoDock Vina v1.2.5<br/>"
         "• <b>Motor Quimioinformático (ADME):</b> RDKit v2024.09.6 (Cálculo de descriptores fisicoquímicos, QED y reglas de Lipinski/Veber)<br/>"
         "• <b>Modelo de Scoring de Afinidad:</b> RTMScore-GNN (Modelo geométrico: geomscore_v1.0)<br/>"
-        "• <b>Modelo de Selección Global:</b> XGBoost v2.1.1 (Modelo predictivo: mol_design_affinity_v3.2)<br/>"
+        "• <b>Modelo de Selección Global:</b> XGBoost v2.1.1 (Ensemble de Consenso Dinámico: mol_design_affinity_v3.2 + _extended)<br/>"
         "• <b>Métrica de Correlación de Dianas (Spearman ρ):</b> Pendiente de verificación (En proceso de recalibración estadística del dataset)"
     )
     story.append(Paragraph(tech_info, tech_style))
