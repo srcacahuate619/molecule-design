@@ -386,9 +386,9 @@ function ProHome({ stats, error }: { stats: GlobalStats | null, error: boolean }
             {/* ── STEP 5: ML Rescoring ── */}
             <div className="w-full flex flex-col sm:flex-row sm:items-stretch gap-0 max-w-2xl">
               <div className="flex-1 px-5 py-3 border border-purple-500 bg-purple-500/10 text-purple-300 text-center rounded sm:rounded-r-none">
-                <div className="font-bold">5. ML Rescoring · XGBoost v4</div>
-                <div className="text-[9px] text-purple-300/70 mt-0.5">176 features 3D: shell counts + ECIF-lite + ProLIF</div>
-                <div className="text-[9px] text-purple-300/60">Modelo A (3D) vs NULL (1D/2D) · Δ Especificidad · Mahalanobis</div>
+                <div className="font-bold">5. ML Rescoring · XGBoost Dual</div>
+                <div className="text-[9px] text-purple-300/70 mt-0.5">Consenso dinámico Core + Extended (176 features 3D)</div>
+                <div className="text-[9px] text-purple-300/60">Modelo A vs NULL · Δ Especificidad · Interpolación Mahalanobis</div>
               </div>
               <div className="hidden sm:flex items-center px-2 text-red-500/50 font-bold">→</div>
               <div className="sm:w-40 px-3 py-2 border border-red-500/50 bg-red-950/20 text-red-400 rounded sm:rounded-l-none flex flex-col justify-center text-center gap-0.5">
