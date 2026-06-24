@@ -823,25 +823,60 @@ def generate_certificate_pdf(
                 cyp_warnings.append(alert.replace("Inhibidor ", "Inh ").replace("Sustrato ", "Sub "))
     cyp_val = ", ".join(cyp_warnings) if cyp_warnings else "Estándar (No inhibidor)"
 
+    tbl_cell_style = ParagraphStyle(
+        'TblCell',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor('#1e293b')
+    )
+    tbl_cell_bold = ParagraphStyle(
+        'TblCellBold',
+        parent=tbl_cell_style,
+        fontName='Helvetica-Bold'
+    )
+    tbl_cell_center = ParagraphStyle(
+        'TblCellCenter',
+        parent=tbl_cell_style,
+        alignment=1 # Center
+    )
+
     admet_data = [
-        admet_headers,
-        ["Solubilidad Acuosa (LogS)", solubility_val, "Solubilidad teórica en agua a pH fisiológico"],
-        ["Unión a Proteínas (PPB)", ppb_val, "Categoría de unión a albúmina plasmática"],
-        ["Absorción Intestinal (HIA)", hia_val, "Permeabilidad en el epitelio intestinal"],
-        ["Barrera Hematoencefálica (BBB)", bbb_val, "Capacidad de cruce hacia el sistema nervioso central"],
-        ["Metabolismo CYP (P450)", cyp_val, "Interacción con enzimas hepáticas metabolizadoras"]
+        [Paragraph(f"<b>{h}</b>", tbl_cell_bold) for h in admet_headers],
+        [
+            Paragraph("Solubilidad Acuosa (LogS)", tbl_cell_bold),
+            Paragraph(solubility_val, tbl_cell_center),
+            Paragraph("Solubilidad teórica en agua a pH fisiológico", tbl_cell_style)
+        ],
+        [
+            Paragraph("Unión a Proteínas (PPB)", tbl_cell_bold),
+            Paragraph(ppb_val, tbl_cell_center),
+            Paragraph("Categoría de unión a albúmina plasmática", tbl_cell_style)
+        ],
+        [
+            Paragraph("Absorción Intestinal (HIA)", tbl_cell_bold),
+            Paragraph(hia_val, tbl_cell_center),
+            Paragraph("Permeabilidad en el epitelio intestinal", tbl_cell_style)
+        ],
+        [
+            Paragraph("Barrera Hematoencefálica (BBB)", tbl_cell_bold),
+            Paragraph(bbb_val, tbl_cell_center),
+            Paragraph("Capacidad de cruce hacia el sistema nervioso central", tbl_cell_style)
+        ],
+        [
+            Paragraph("Metabolismo CYP (P450)", tbl_cell_bold),
+            Paragraph(cyp_val, tbl_cell_center),
+            Paragraph("Interacción con enzimas hepáticas metabolizadoras", tbl_cell_style)
+        ]
     ]
     
-    admet_table = Table(admet_data, colWidths=[170, 150, 170])
+    admet_table = Table(admet_data, colWidths=[160, 140, 190])
     admet_table.setStyle(TableStyle([
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('BACKGROUND', (0,1), (0,-1), colors.HexColor('#f8fafc')),
-        ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold'),
-        ('PADDING', (0,0), (-1,-1), 3),
-        ('FONTSIZE', (0,0), (-1,-1), 8),
-        ('ALIGN', (1,0), (1,-1), 'CENTER')
+        ('PADDING', (0,0), (-1,-1), 4),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
     ]))
     story.append(admet_table)
     
