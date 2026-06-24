@@ -268,12 +268,79 @@ async def get_certificate(molecule_id: uuid.UUID, db: AsyncSession = Depends(get
         await db.refresh(mol)
         
     target_name = mol.target.name if mol.target else "7E2Y (5-HT1A)"
-    pdf_buf = generate_certificate_pdf(mol, evaluation, target_name)
     
+    # Download SDF poses and Receptor PDB content for advanced PDF generation
+    pose_sdf_content = None
+    if evaluation.poses_file_path:
+        try:
+            from utils.file_handlers import download_text
+            pose_sdf_content = await download_text(evaluation.poses_file_path)
+        except Exception:
+            pass
+
+    receptor_pdb_content = None
+    if mol.target:
+        import os
+        pdb_id = mol.target.pdb_id.upper()
+        # Try local paths first
+        possible_paths = [
+            f"/data/targets/{pdb_id}.pdb",
+            f"data/targets/{pdb_id}.pdb",
+            f"data/{pdb_id.lower()}/receptor.pdb",
+            f"data/{pdb_id.upper()}/receptor.pdb",
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8", errors="replace") as f:
+                        receptor_pdb_content = f.read()
+                    break
+                except Exception:
+                    pass
+        # Fallback to MinIO
+        if not receptor_pdb_content:
+            try:
+                from utils.file_handlers import download_text, StoragePath
+                raw_path = StoragePath.target_raw(pdb_id)
+                receptor_pdb_content = await download_text(raw_path)
+            except Exception:
+                pass
+                
+    pdf_buf = generate_certificate_pdf(
+        mol, 
+        evaluation, 
+        target_name, 
+        pose_sdf_content=pose_sdf_content, 
+        receptor_pdb_content=receptor_pdb_content
+    )
+    
+    # Calculate Score Band dynamically based on total_score:
+    # S: >= 90, A: >= 80, B: >= 70, C: >= 50, D: < 50
+    score = evaluation.total_score if evaluation.total_score is not None else 0.0
+    if score >= 90.0:
+        band = "S"
+    elif score >= 80.0:
+        band = "A"
+    elif score >= 70.0:
+        band = "B"
+    elif score >= 50.0:
+        band = "C"
+    else:
+        band = "D"
+        
+    pdb_id = mol.target.pdb_id.upper() if mol.target else "UNKNOWN"
+    mol_hash = mol.smiles_hash[:8] if mol.smiles_hash else "nohash"
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    score_val = int(score)
+    dynamic_filename = f"{pdb_id}_{mol_hash}_{band}{score_val}_{date_str}.pdf"
+
     return StreamingResponse(
         pdf_buf, 
         media_type="application/pdf", 
-        headers={"Content-Disposition": f"attachment; filename=MolDesign_Certificate.pdf"}
+        headers={
+            "Content-Disposition": f"attachment; filename={dynamic_filename}",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
     )
 
 
@@ -302,13 +369,77 @@ async def get_certificate_preview(molecule_id: uuid.UUID, db: AsyncSession = Dep
         await db.refresh(mol)
         
     target_name = mol.target.name if mol.target else "7E2Y (5-HT1A)"
-    pdf_buf = generate_certificate_pdf(mol, evaluation, target_name)
+    
+    # Download SDF poses and Receptor PDB content for advanced PDF generation
+    pose_sdf_content = None
+    if evaluation.poses_file_path:
+        try:
+            from utils.file_handlers import download_text
+            pose_sdf_content = await download_text(evaluation.poses_file_path)
+        except Exception:
+            pass
+
+    receptor_pdb_content = None
+    if mol.target:
+        import os
+        pdb_id = mol.target.pdb_id.upper()
+        # Try local paths first
+        possible_paths = [
+            f"/data/targets/{pdb_id}.pdb",
+            f"data/targets/{pdb_id}.pdb",
+            f"data/{pdb_id.lower()}/receptor.pdb",
+            f"data/{pdb_id.upper()}/receptor.pdb",
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8", errors="replace") as f:
+                        receptor_pdb_content = f.read()
+                    break
+                except Exception:
+                    pass
+        # Fallback to MinIO
+        if not receptor_pdb_content:
+            try:
+                from utils.file_handlers import download_text, StoragePath
+                raw_path = StoragePath.target_raw(pdb_id)
+                receptor_pdb_content = await download_text(raw_path)
+            except Exception:
+                pass
+                
+    pdf_buf = generate_certificate_pdf(
+        mol, 
+        evaluation, 
+        target_name, 
+        pose_sdf_content=pose_sdf_content, 
+        receptor_pdb_content=receptor_pdb_content
+    )
+    
+    # Calculate Score Band dynamically based on total_score:
+    # S: >= 90, A: >= 80, B: >= 70, C: >= 50, D: < 50
+    score = evaluation.total_score if evaluation.total_score is not None else 0.0
+    if score >= 90.0:
+        band = "S"
+    elif score >= 80.0:
+        band = "A"
+    elif score >= 70.0:
+        band = "B"
+    elif score >= 50.0:
+        band = "C"
+    else:
+        band = "D"
+        
+    pdb_id = mol.target.pdb_id.upper() if mol.target else "UNKNOWN"
+    mol_hash = mol.smiles_hash[:8] if mol.smiles_hash else "nohash"
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    score_val = int(score)
+    dynamic_filename = f"{pdb_id}_{mol_hash}_{band}{score_val}_{date_str}.pdf"
     
     return StreamingResponse(
         pdf_buf, 
         media_type="application/pdf", 
         headers={
-            "Content-Disposition": f"inline; filename=MolDesign_Certificate_{str(molecule_id)[:8]}.pdf",
+            "Content-Disposition": f"inline; filename={dynamic_filename}",
             "Access-Control-Expose-Headers": "Content-Disposition"
         }
     )

@@ -437,7 +437,27 @@ export async function downloadCertificate(moleculeId: string): Promise<void> {
   const downloadUrl = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = downloadUrl;
-  a.download = `Certificado_${moleculeId}.pdf`;
+  
+  // Try to extract dynamic filename from Content-Disposition header
+  let filename = `Certificado_${moleculeId}.pdf`;
+  console.log("Response headers received by frontend:");
+  response.headers.forEach((value, key) => {
+    console.log(`${key}: ${value}`);
+  });
+  const disposition = response.headers.get("content-disposition") || response.headers.get("Content-Disposition");
+  console.log("Extracted Content-Disposition header:", disposition);
+  if (disposition && disposition.includes("filename=")) {
+    // split by filename= and get the second part
+    const parts = disposition.split("filename=");
+    if (parts.length > 1) {
+      let rawFilename = parts[1].split(";")[0];
+      // strip quotes if present
+      filename = rawFilename.replace(/['"]/g, "").trim();
+    }
+  }
+  
+  console.log("Assigning dynamic download filename to element:", filename);
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();

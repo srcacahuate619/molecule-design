@@ -38,7 +38,7 @@ def register_middleware(app: FastAPI) -> None:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-        expose_headers=["X-Request-ID", "X-Process-Time"],
+        expose_headers=["X-Request-ID", "X-Process-Time", "Content-Disposition", "content-disposition"],
     )
 
     @app.middleware("http")
