@@ -43,10 +43,10 @@ AutoDock Vina es el estándar industrial para predecir *dónde* se une una molé
 
 MolDesign resuelve esto con:
 
-1. **ML Rescoring sobre PDBbind 2020**: XGBoost entrenado con 3,019 complejos proteína-ligando, 176 features que capturan interacciones geométricas 3D reales (shell counts, ECIF-lite, ProLIF).
+1. **ML Rescoring Dual sobre PDBbind**: Consenso dinámico de XGBoost (Core + Extended), con 176 features que capturan interacciones geométricas 3D reales (shell counts, ECIF-lite, ProLIF).
 2. **Control dual Modelo A + NULL**: Detecta si la afinidad proviene de encaje geométrico específico o de propiedades fisicoquímicas brutas.
 3. **Score compuesto auditable**: Ponderación documentada Afinidad 45% + ADME 30% + Drug-likeness 25%.
-4. **Dominio de aplicabilidad**: Distancia de Mahalanobis — degrada la confianza si la molécula está fuera del espacio químico de entrenamiento, en lugar de extrapolar ciegamente.
+4. **Dominio de aplicabilidad**: Distancia de Mahalanobis con interpolación dinámica para suavizar la frontera entre el modelo Core ($D_M \le 16.2$) y el modelo Extended ($D_M \le 200.0 - 300.0$).
 
 ---
 
@@ -180,9 +180,9 @@ SMILES / Editor Molecular 2D (Ketcher)
              │
              ▼
 ┌─────────────────────────────────┐
-│  ML Rescoring (XGBoost v4)      │  ← 176 features: shell counts (3D) +
-│  Modelo A (3D) + NULL (1D/2D)   │     ECIF-lite + ProLIF fingerprints
-│  Dominio de Applicabilidad      │  ← Mahalanobis p99 = 7.2365
+│  ML Rescoring (XGBoost Dual)    │  ← Consenso Dinámico Core + Extended
+│  Modelo A (3D) + NULL (1D/2D)   │     176 features (shell + ECIF + ProLIF)
+│  Dominio de Applicabilidad      │  ← Mahalanobis Core (16.2) y Ext (200.0)
 │  Delta de Especificidad         │  ← A − NULL: ¿binding real o bruto?
 └────────────┬────────────────────┘
              │

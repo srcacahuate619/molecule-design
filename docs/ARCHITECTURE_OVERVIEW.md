@@ -38,7 +38,7 @@ Debido a los requisitos científicos (ODDT, ProLIF, XGBoost, PyTorch, DGL), el r
 5.  **Delta de Especificidad**: `Score_A - Score_NULL`. Mide cuánto de la afinidad es debida al encaje geométrico real.
 6.  **Nivel 2 GNN RTMScore**: Inferencia profunda basada en grafos utilizando un Residue-Atom Graph Transformer y predicción de densidad de distancias GMM en el bolsillo.
 7.  **Hotspot Matching**: Identificación de contactos con residuos críticos biológicos (Threshold 5.0Å).
-- **Dominio de Aplicabilidad (Mahalanobis)**: Check automático de si la molécula es similar a los datos de entrenamiento (PDBbind). Si es demasiado exótica, el sistema degrada la confianza del ML para evitar la extrapolación ciega.
+- **Dominio de Aplicabilidad y Consenso Dual (Mahalanobis)**: Implementa una arquitectura dual de XGBoost (Core + Extended). La distancia de Mahalanobis determina la ponderación lineal entre el modelo Core ($D_M \le 16.2$) y el modelo Extended ($D_M \le 200.0$) para evitar discontinuidades de predicción y extrapolación ciega en fronteras de espacio químico.
 - **Interpretación por Likelihood Ratios (LR)**: En lugar de dar un número frío, el sistema comunica cuánto más probable es encontrar actividad real dado el score obtenido (basado en el panel de calibración de 40 compuestos).
 
 ## 3. Infraestructura y Orquestación
@@ -85,11 +85,13 @@ Para más detalle, ver [DATA_MANAGEMENT.md](./DATA_MANAGEMENT.md).
 
 ## 5. Algoritmos de Machine Learning
 
-### El Modelo XGBoost (v4)
-El "Cerebro" de MolDesign no predice afinidades absolutas, sino que optimiza el **Ranking** (Spearman):
-- **Dataset**: PDBbind Refined Set (v2020), filtrado mediante una "Auditoría VIP" que eliminó estructuras de baja resolución (>2.5Å).
+### El Modelo XGBoost Dual (Consenso Dinámico)
+El "Cerebro" de MolDesign no predice afinidades absolutas, sino que optimiza el **Ranking** (Spearman) mediante un ensemble dinámico:
+- **Estructura Dual**:
+  * **Modelo Core**: Entrenado en PDBbind Refined Set, altamente preciso en su nicho químico ($D_M \le 16.2$).
+  * **Modelo Extended**: Entrenado en PDBbind General Set + ChEMBL, con un dominio de aplicabilidad ampliado ($D_M \le 200.0 - 300.0$).
 - **Features (176)**:
     - `shell_counts`: Contactos átomo-átomo en 3 capas de distancia (3Å, 6Å, 12Å).
     - `ecif_lite`: Interaction fingerprints basados en tipos de átomos electro-químicos.
     - `physchem`: MW, LogP, TPSA normalizados.
-- **Optimización**: Función de pérdida `rank:pairwise` (LambdaMART). Esto asegura que el sistema sea excelente identificando cuál molécula es mejor que otra, incluso si el valor absoluto de kcal/mol tiene ruido.
+- **Optimización**: Función de pérdida `rank:pairwise` (LambdaMART). Se realiza un consenso dinámico interpolado en zonas de frontera para mantener la continuidad matemática y la máxima estabilidad del coeficiente Spearman.

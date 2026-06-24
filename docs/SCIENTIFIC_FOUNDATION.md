@@ -139,6 +139,20 @@ Para garantizar que el modelo aprenda auténtica física estructural y no tome "
 - **Razón Científica**: Si se incluye, el modelo sufre de *Data Leakage*. Al ver un score de Vina de `0.0` (debido a colisiones severas o penalizaciones por tensión de anillo), el modelo de ML simplemente aprenderá a predecir `0.0` ignorando las características 3D (contactos H-bond, pi-stacking) que debe analizar.
 - **Física Pura**: Al censurar a Vina, obligamos al árbol de decisión a comprender por sí mismo la topología del bolsillo mediante los vectores de ProLIF y RDKit.
 
+### 5.4 Consenso de Dominio de Aplicabilidad Híbrido (XGBoost Dual) [NUEVO v6.8]
+Los modelos de machine learning tabulares sufren al extrapolar fuera de su espacio de entrenamiento (alucinando valores constantes en los extremos). Para mitigar este problema técnico, MolDesign v6.8 introduce la arquitectura de **Consenso Dinámico Interpolado**:
+- **Distancia de Mahalanobis ($D_M$)**: Se calcula para el vector de descriptores fisicoquímicos correlacionados. Al usar la matriz de covarianza del training set, se evitan distorsiones por colinealidad.
+- **Ensemble de Dos Modelos**:
+  * **Modelo Core**: Calibrado exclusivamente en el *Refined Set* de PDBbind (máxima confianza, $D_M \le 16.2$).
+  * **Modelo Extended**: Entrenado con el *General Set* de PDBbind y decodificadores sintéticos complejos (rango ampliado, $D_M \le 200.0 - 300.0$).
+- **Fórmula de Consenso Interpolado**:
+  * Si $D_M \le 16.2$: se promedian ambos modelos con un peso predominante del Core ($85\%$ Core / $15\%$ Extended).
+  * Si $16.2 < D_M < 200.0$: el peso del modelo Core ($w_{\text{core}}$) decae de forma lineal y continua hacia cero:
+    $$w_{\text{core}} = 0.85 \times \left(1.0 - \frac{D_M - 16.2}{200.0 - 16.2}\right)$$
+    $$w_{\text{extended}} = 1.0 - w_{\text{core}}$$
+  * Si $D_M \ge 200.0$: se utiliza exclusivamente el modelo Extended ($w_{\text{extended}} = 1.0$) con advertencias científicas graduadas de confianza según el límite superior ($300.0$).
+- **Por qué importa**: Esta interpolación dinámica evita las discontinuidades numéricas en la frontera del dominio de aplicabilidad y protege la estabilidad del coeficiente Spearman en conjuntos de moléculas diversas.
+
 ## 5. Física de la Tensión de Anillo y SA Score
 
 El **SA Score (Synthetic Accessibility)** se calcula mediante un algoritmo de fragmentación de RDKit (Ertl & Schuffenhauer), pero en MolDesign v4 lo hemos endurecido:
