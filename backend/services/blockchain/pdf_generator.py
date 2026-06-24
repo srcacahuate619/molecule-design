@@ -800,6 +800,45 @@ def generate_certificate_pdf(
     
     story.append(Spacer(1, 10))
 
+    # ADMET-AI Pharmacokinetics Table
+    admet_headers = ["Propiedad Biológica (ADMET-AI)", "Predicción", "Significado Clínico"]
+    
+    solubility_val = f"{eval_result.blood_solubility_logs:.2f} logS" if eval_result.blood_solubility_logs is not None else "N/A"
+    ppb_val = str(eval_result.blood_ppb_category) if eval_result.blood_ppb_category else "N/A"
+    
+    if eval_result.blood_hia_permeable is not None:
+        hia_val = "Alta Permeabilidad (HIA+)" if eval_result.blood_hia_permeable else "Baja Absorción (HIA-)"
+    else:
+        hia_val = "N/A"
+        
+    if eval_result.blood_bbb_permeable is not None:
+        bbb_val = "Permeable (SNC+)" if eval_result.blood_bbb_permeable else "No Permeable (SNC-)"
+    else:
+        bbb_val = "N/A"
+        
+    admet_data = [
+        admet_headers,
+        ["Solubilidad Acuosa (LogS)", solubility_val, "Solubilidad teórica en agua a pH fisiológico"],
+        ["Unión a Proteínas (PPB)", ppb_val, "Categoría de unión a albúmina plasmática"],
+        ["Absorción Intestinal (HIA)", hia_val, "Permeabilidad en el epitelio intestinal"],
+        ["Barrera Hematoencefálica (BBB)", bbb_val, "Capacidad de cruce hacia el sistema nervioso central"]
+    ]
+    
+    admet_table = Table(admet_data, colWidths=[170, 150, 170])
+    admet_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f5f9')),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0,1), (0,-1), colors.HexColor('#f8fafc')),
+        ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold'),
+        ('PADDING', (0,0), (-1,-1), 3),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('ALIGN', (1,0), (1,-1), 'CENTER')
+    ]))
+    story.append(admet_table)
+    
+    story.append(Spacer(1, 10))
+
     # DRUG-LIKENESS & TOXICOLOGY ALERTS
     story.append(Paragraph("Drug-likeness y Viabilidad Sintética", section_title_style))
     
