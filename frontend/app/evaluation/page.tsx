@@ -54,8 +54,8 @@ const PIPELINE_STEPS = [
     index: 1,
     step: "LEVEL 1",
     title: "Screening Virtual",
-    tech: "AutoDock Vina + XGBoost",
-    desc: "En esta etapa simulamos físicamente cómo la molécula 3D encaja dentro de la proteína. AutoDock Vina prueba miles de posiciones y ángulos para encontrar el acoplamiento perfecto. Después, los resultados pasan por XGBoost, un algoritmo de Machine Learning que corrige estadísticamente el puntaje de afinidad aprendiendo de miles de estructuras cristalinas reales, eliminando así los falsos positivos típicos de los motores puramente físicos.",
+    tech: "AutoDock Vina + XGBoost Dual",
+    desc: "En esta etapa simulamos físicamente cómo la molécula 3D encaja dentro de la proteína usando AutoDock Vina. Luego, corregimos la afinidad mediante un sistema dual de XGBoost: un modelo Core de alta precisión y un modelo Extended de rango ampliado. Evaluando la distancia de Mahalanobis, el sistema realiza una interpolación lineal para calcular un consenso dinámico continuo, eliminando falsos positivos físicos y expandiendo la cobertura química.",
     icon: "🤖",
     colors: {
       COMPLETED: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400",
