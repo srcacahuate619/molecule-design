@@ -816,12 +816,20 @@ def generate_certificate_pdf(
     else:
         bbb_val = "N/A"
         
+    cyp_warnings = []
+    if eval_result.blood_systemic_reactivity:
+        for alert in eval_result.blood_systemic_reactivity:
+            if "CYP" in alert:
+                cyp_warnings.append(alert.replace("Inhibidor ", "Inh ").replace("Sustrato ", "Sub "))
+    cyp_val = ", ".join(cyp_warnings) if cyp_warnings else "Estándar (No inhibidor)"
+
     admet_data = [
         admet_headers,
         ["Solubilidad Acuosa (LogS)", solubility_val, "Solubilidad teórica en agua a pH fisiológico"],
         ["Unión a Proteínas (PPB)", ppb_val, "Categoría de unión a albúmina plasmática"],
         ["Absorción Intestinal (HIA)", hia_val, "Permeabilidad en el epitelio intestinal"],
-        ["Barrera Hematoencefálica (BBB)", bbb_val, "Capacidad de cruce hacia el sistema nervioso central"]
+        ["Barrera Hematoencefálica (BBB)", bbb_val, "Capacidad de cruce hacia el sistema nervioso central"],
+        ["Metabolismo CYP (P450)", cyp_val, "Interacción con enzimas hepáticas metabolizadoras"]
     ]
     
     admet_table = Table(admet_data, colWidths=[170, 150, 170])
@@ -1093,7 +1101,8 @@ def generate_certificate_pdf(
         "(dimensiones aproximadas de 25×25×25 Å a 30×30×30 Å). La exhaustividad de la búsqueda se fijó en 8 o 16 para asegurar la reproducibilidad de la pose. "
         "Las afinidades reportadas corresponden al estado termodinámico de menor energía libre de unión (pose de mayor afinidad, ΔG en kcal/mol). El rescorado geométrico se "
         "calculó mediante la red neuronal geométrica RTMScore-GNN entrenada sobre el conjunto de datos refinado de PDBbind, y los descriptores fisicoquímicos se computaron utilizando RDKit. "
-        "El score global final se determinó a través de un modelo XGBoost parametrizado que integra el perfil de docking, el cumplimiento de reglas ADME y la viabilidad sintética."
+        "El perfil farmacocinético predictivo profundo (absorción intestinal, cruce de barrera hematoencefálica, unión a proteínas y metabolismo por citocromo P450 CYP) "
+        "se infirió mediante los modelos GNN de ADMET-AI, y la puntuación de viabilidad global se determinó a través de un modelo XGBoost parametrizado."
     )
     story.append(Paragraph(methodology_text, methodology_style))
     story.append(Spacer(1, 8))

@@ -72,10 +72,20 @@ def predict_admet_ai(smiles: str) -> Dict[str, Any]:
             "HIA":        int(_col(row, "HIA_Hou", "HIA", default=1)),
             "hERG":       int(_col(row, "hERG", default=0)),
             "Clearance":  float(_col(row, "Clearance_Hepatocyte_AZ", "Clearance", default=10.0)),
+            "CYP3A4_Inh": int(_col(row, "CYP3A4_Veith", default=0)),
+            "CYP2D6_Inh": int(_col(row, "CYP2D6_Veith", default=0)),
+            "CYP2C9_Inh": int(_col(row, "CYP2C9_Veith", default=0)),
+            "CYP3A4_Sub": int(_col(row, "CYP3A4_Substrate_CarbonMangels", default=0)),
+            "CYP2D6_Sub": int(_col(row, "CYP2D6_Substrate_CarbonMangels", default=0)),
+            "CYP2C9_Sub": int(_col(row, "CYP2C9_Substrate_CarbonMangels", default=0)),
         }
     except Exception as e:
         logger.error(f"ADMET-AI prediction failed: {e}")
-        return {"Solubility": -3.0, "PPB": 90.0, "BBB": 1, "HIA": 1, "hERG": 0, "Clearance": 10.0}
+        return {
+            "Solubility": -3.0, "PPB": 90.0, "BBB": 1, "HIA": 1, "hERG": 0, "Clearance": 10.0,
+            "CYP3A4_Inh": 0, "CYP2D6_Inh": 0, "CYP2C9_Inh": 0,
+            "CYP3A4_Sub": 0, "CYP2D6_Sub": 0, "CYP2C9_Sub": 0
+        }
 
 def predict_tabpfn_custom_toxicity(properties: PhysicochemicalProperties) -> List[str]:
     """
@@ -106,11 +116,27 @@ def calculate_blood_viability(smiles: str, properties: PhysicochemicalProperties
     # 2. Predicciones TabPFN (Custom Data)
     tabpfn_alerts = predict_tabpfn_custom_toxicity(properties)
     
+    # --- CYP METABOLISM ALERTS ---
+    cyp_alerts = []
+    if admet_preds.get("CYP3A4_Inh") == 1:
+        cyp_alerts.append("Inhibidor CYP3A4")
+    if admet_preds.get("CYP2D6_Inh") == 1:
+        cyp_alerts.append("Inhibidor CYP2D6")
+    if admet_preds.get("CYP2C9_Inh") == 1:
+        cyp_alerts.append("Inhibidor CYP2C9")
+        
+    if admet_preds.get("CYP3A4_Sub") == 1:
+        cyp_alerts.append("Sustrato CYP3A4")
+    if admet_preds.get("CYP2D6_Sub") == 1:
+        cyp_alerts.append("Sustrato CYP2D6")
+    if admet_preds.get("CYP2C9_Sub") == 1:
+        cyp_alerts.append("Sustrato CYP2C9")
+
     # --- ASIGNACIÓN DE PROPIEDADES INFORMATIVAS ---
     properties.blood_solubility_logs = admet_preds["Solubility"]
     properties.blood_bbb_permeable = bool(admet_preds["BBB"])
     properties.blood_hia_permeable = bool(admet_preds["HIA"])
-    properties.blood_systemic_reactivity = tabpfn_alerts
+    properties.blood_systemic_reactivity = tabpfn_alerts + cyp_alerts
     
     ppb = admet_preds["PPB"]
     if ppb > 99.0:
