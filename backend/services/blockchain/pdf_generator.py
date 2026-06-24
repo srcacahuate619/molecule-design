@@ -72,9 +72,12 @@ CO_CRYSTAL_LIGANDS = {
     "4I5I": "EX-527 (Selisistat)",
     "6D8X": "GW1929",
     "5IKR": "Ácido Mefenámico",
-    "4RER": "A-769662",
-    "5VEW": "PF-06305591"
+    "4RER": "Estaurosporina (STU)",
+    "5VEW": "PF-06305591",
+    "1ERE": "Estradiol (EST)",
+    "4EKL": "Ipatasertib (0RF)"
 }
+
 
 def get_2d_image(smiles: str, width=2.5*inch, height=2.5*inch):
     mol = Chem.MolFromSmiles(smiles)
@@ -691,20 +694,24 @@ def generate_certificate_pdf(
     # Control Ligand definition & calculation (on-the-fly for reference)
     CO_CRYSTAL_SMILES = {
         "7E2Y": "NCCc1c[nH]c2ccc(O)cc12",  # Serotonina
-        "6X1A": "CC(C)(C)c1cc(cc(c1)F)C(=O)NCC2(CCN(CC2)c3cc(ncn3)C#N)C(=O)O", # Danuglipron
-        "2P4E": "CN1CCN(CC1)C(=O)c2cc3c(cc2F)[nH]c(n3)c4ccc(cc4)C#N", # SBC-115076-like
-        "3ERT": "CC\\C(=C(/c1ccc(cc1)OCCN(C)C)\\c2ccccc2)\\c3ccccc3",  # 4-Hidroxitamoxifeno
-        "5L2I": "CCN1CCN(CC1)Cc2ccc(cc2)Nc3ncc4c(n3)nc(n4C5CCCC5)C(=O)c6c(C)n[nH]c6C", # Palbociclib
-        "2W96": "CCN1CCN(CC1)Cc2ccc(cc2)Nc3ncc4c(n3)nc(n4C5CCCC5)C(=O)c6c(C)n[nH]c6C", # Palbociclib
-        "4JPS": "CC(C)S(=O)(=O)c1ccc(cc1)c2cc(nc(n2)N3CCOCC3)c4cn[nH]c4", # Alpelisib
-        "3PP0": "CC(=O)N1CCC(CC1)c2cc3c(cc2)c(cn3)c4ccc(cc4)S(=O)(=O)C(C)C", # SYR-475
-        "4ZZZ": "CC(C)S(=O)(=O)c1ccc(cc1)c2cn3c(c2)c(cn3)C#N", # NMS-P118-like
-        "1HVY": "CN(Cc1ccc(s1)C(=O)Nc2ccc(cc2)C(=O)O)c3cc4c(s3)nc(o4)N", # Raltitrexed-like
-        "4I5I": "c1ccc2c(c1)[nH]c3c2c(=O)n(c3)C4CCCC4", # EX-527 (Selisistat)
-        "6D8X": "CC(C)c1ccc(cc1)C(C)Cc2ccc(cc2)OCC(=O)Nc3ccc(cc3)C(=O)O", # GW1929
-        "5IKR": "Cc1cccc(C)c1Nc2ccccc2C(=O)O", # Ácido Mefenámico
-        "4RER": "Cc1cc(nc(n1)C)C2=C(C=C(C=C2)C#N)O", # A-769662-like
-        "5VEW": "Cc1cccc(c1)c2cc(c(cn2)C#N)Oc3ccc(cc3)S(=O)(=O)C" # PF-06305591-like
+        "6X1A": "c1cc(nc(c1)OCc2ccc(cc2F)C#N)C3CCN(CC3)Cc4nc5ccc(cc5n4CC6CCO6)C(=O)O", # Danuglipron (UK4)
+        "2P4E": "CN1CCN(CC1)C(=O)c2cc3c(cc2F)[nH]c(n3)c4ccc(cc4)C#N", # SBC-115076
+        "6U26": "CC1(c2cc(c(cc2CCN1)OCCOCCNC(=O)C(CCCNC(=NC(=O)OC(C)(C)C)NC(=O)OC(C)(C)C)NC(=O)OC(C)(C)C)Oc3ccc(c(c3)F)c4ccc(cc4)C(=O)O)CC(=O)Nc5nccs5", # Inhibidor Alostérico 11a (063)
+        "3ERT": "CCC(=C(c1ccc(cc1)O)c2ccc(cc2)OCCN(C)C)c3ccccc3",  # 4-Hidroxitamoxifeno (OHT)
+        "5L2I": "CC1=C(C(=O)N(c2c1cnc(n2)Nc3ccc(cn3)N4CCNCC4)C5CCCC5)C(=O)C", # Palbociclib (LQQ)
+        "2W96": "CC1=C(C(=O)N(c2c1cnc(n2)Nc3ccc(cn3)N4CCNCC4)C5CCCC5)C(=O)C", # Palbociclib (LQQ)
+        "4JPS": "Cc1c(sc(n1)NC(=O)N2CCCC2C(=O)N)c3ccnc(c3)C(C)(C)C(F)(F)F", # Alpelisib (1LT)
+        "3O96": "c1ccc(cc1)c2c(nc3cc4c(cc3n2)nc[nH]4)c5ccc(cc5)CN6CCC(CC6)N7c8ccccc8NC7=O", # Inhibidor Alostérico VIII (IQO)
+        "3PP0": "c1cc(cc(c1)Oc2c(cc(cn2)Nc3c4c(ccn4CCOCCO)ncn3)Cl)C(F)(F)F", # SYR-475 (03Q)
+        "4ZZZ": "COCCCN1Cc2cccc(c2C1=O)C(=O)N", # FSU (isoindolinone inhibitor)
+        "1HVY": "CC1=NC(=O)c2cc(ccc2N1)CN(C)c3ccc(s3)C(=O)NC(CCC(=O)O)C(=O)O", # Raltitrexed (D16)
+        "4I5I": "c1cc2c(cc1Cl)c3c([nH]2)C(CCCC3)C(=O)N", # EX-527 (4I5)
+        "6D8X": "CN(CCOc1ccc(cc1)CC(C(=O)O)Nc2ccccc2C(=O)c3ccccc3)c4ccccn4", # GW1929 (EDK)
+        "5IKR": "Cc1cccc(c1C)Nc2ccccc2C(=O)O", # Ácido Mefenámico (ID8)
+        "4RER": "CC12C(C(CC(O1)n3c4ccccc4c5c3c6n2c7ccccc7c6c8c5C(=O)NC8)NC)OC", # Estaurosporina (STU)
+        "5VEW": "CC1(CC(C1)C(c2ccc(cc2)C(=O)NCCC(=O)O)Nc3ccc(nc3)n4cc(nc4)C(F)(F)F)C", # PF-06305591 (97Y)
+        "1ERE": "CC12CCC3c4ccc(O)cc4CCC3C1CCC2O", # Estradiol (EST)
+        "4EKL": "CC1CC(c2c1c(ncn2)N3CCN(CC3)C(=O)C(CNC(C)C)c4ccc(cc4)Cl)O" # Ipatasertib (0RF)
     }
 
     pdb_upper = (mol.target.pdb_id.upper() if mol.target else "")
